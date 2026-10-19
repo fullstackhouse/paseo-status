@@ -44,7 +44,7 @@ export default function contribute(client: PluginClientContext) {
   });
   // Replaces typing "tldr, where are we?": the agent updates its card instead of answering in chat.
   client.addSlashCommand({
-    name: "tldr",
+    name: "paseo-status",
     description: "Ask this agent to update its status card",
     argumentHint: "",
     context: "agent",

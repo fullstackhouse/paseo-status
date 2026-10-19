@@ -47,7 +47,7 @@ export function StatusView({ theme, compact, workspaceId, openAgent }: ViewProps
     return (
       <Message
         styles={styles}
-        text={`No agent has published a status ${workspaceId ? "here" : "yet"}. Agents created after this plugin was installed publish one as they work; type /tldr in a chat to ask.`}
+        text={`No agent has published a status ${workspaceId ? "here" : "yet"}. Agents created after this plugin was installed publish one as they work; type /paseo-status in a chat to ask.`}
       />
     );
   }
