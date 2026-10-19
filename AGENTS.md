@@ -7,6 +7,7 @@ Paseo plugin: agents publish where their work stands via one MCP tool (`status_s
 - `index.server.ts` wires everything. `server/`: `store` (one JSON per workspace, keyed by agent; counts turns since the last update), `service` (the MCP tool, agent instructions, refresh held until the turn ends, read-only view of the asks plugin's open asks), `bridge` (stdio MCP script written to the data dir), `listener` (localhost HTTP the bridge calls), `agents` (agentId → workspaceId).
 - `client/` + `index.client.tsx`: React Native only (runs on mobile). Colors from `theme.colors`.
 - `shared/status.ts`: Zod schemas and RPC contracts.
+- `preview/`: own package.json; renders `client/` with react-native-web and mocked host modules for the README screenshots (`docs/*.png`). Not shipped.
 - `bridge`, `listener`, `agents` are copied from `paseo-asks`. Fix a bug in one, fix it in both.
 
 ## Load-bearing facts (Paseo 0.12)
