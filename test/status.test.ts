@@ -18,7 +18,7 @@ class FakeCourier implements Courier {
 
 const WS = "wks_1";
 const AGENT = "agent-1";
-const status = { state: "working", tldr: "Adding memoized steps; tests pass, soak test running.", done: ["unit tests: 105/105"], next: ["commit and push"] };
+const status = { state: "working", tldr: "Adding a gift-card checkout to the demo shop; tests pass.", done: ["unit tests: 42/42"], next: ["commit and push"] };
 
 describe("status", () => {
   let dir: string;
@@ -111,11 +111,11 @@ describe("status", () => {
       JSON.stringify({
         nextId: 3,
         asks: [
-          { id: "A1", title: "Merge PR #22?", ownerAgentId: AGENT, status: "open" },
-          { id: "A2", title: "Name it memo?", ownerAgentId: AGENT, status: "done" },
+          { id: "A1", title: "Merge PR #7?", ownerAgentId: AGENT, status: "open" },
+          { id: "A2", title: "Call it store credit?", ownerAgentId: AGENT, status: "done" },
         ],
       }),
     );
-    expect(readWaiting(asksDir, [WS, "wks_missing"])).toEqual([{ id: "A1", title: "Merge PR #22?", agentId: AGENT }]);
+    expect(readWaiting(asksDir, [WS, "wks_missing"])).toEqual([{ id: "A1", title: "Merge PR #7?", agentId: AGENT }]);
   });
 });
