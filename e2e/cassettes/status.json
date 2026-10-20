@@ -1,0 +1,635 @@
+{
+  "entries": [
+    {
+      "key": "8644a7d4fc70cea6",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "system": "You are a Claude agent, built on Anthropic's Claude Agent SDK.\n\nYou are an agent working with the user toward their goal",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Reply with exactly \"Ready.\" and nothing else."
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011CgE9LCioGbjRVCodtqVVf\",\"type\":\"message\",\"role\":\"assistant\",\"container\":null,\"content\":[],\"model\":\"anthropic/claude-haiku-5.5\",\"stop_reason\":null,\"stop_details\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":6,\"output_tokens_details\":null,\"cache_creation_input_tokens\":18201,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":18201,\"ephemeral_1h_input_tokens\":0},\"inference_geo\":\"global\",\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\"},\"provider\":\"Claude Platform on AWS\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\",\"citations\":[]}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Ready.\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"container\":null,\"stop_details\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":2,\"output_tokens\":6,\"output_tokens_details\":{\"thinking_tokens\":0},\"cache_creation_input_tokens\":18201,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":18201,\"ephemeral_1h_input_tokens\":0},\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\",\"cost\":0.002278325,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.002278325,\"upstream_inference_prompt_cost\":0.002275325,\"upstream_inference_completions_cost\":0.000003}},\"context_management\":{\"applied_edits\":[]}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\nevent: data\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "a9310c2c699a99c9",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "system": "You are a Claude agent, built on Anthropic's Claude Agent SDK.\n\nYou are an agent working with the user toward their goal",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Write a file notes.txt containing \"hello\". Then call the status_set tool with state \"done\", tldr \"Created notes.txt.\", done [\"notes.txt written\"], and next []. Then reply with exactly \"Done.\" and nothing else."
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011CgE9LNadQPnCGwiXE4chi\",\"type\":\"message\",\"role\":\"assistant\",\"container\":null,\"content\":[],\"model\":\"anthropic/claude-haiku-5.5\",\"stop_reason\":null,\"stop_details\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":16,\"output_tokens_details\":null,\"cache_creation_input_tokens\":18939,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":18939,\"ephemeral_1h_input_tokens\":0},\"inference_geo\":\"global\",\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\"},\"provider\":\"Claude Platform on AWS\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_017Y5Jba1W98cSVMisb8V18s\",\"caller\":{\"type\":\"direct\"},\"name\":\"Write\",\"input\":{}}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"file_path\\\": \\\"__E2E_ROOT__/project/notes.txt\\\", \\\"content\\\": \\\"hello\\\"}\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"container\":null,\"stop_details\":null,\"stop_reason\":\"tool_use\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":2,\"output_tokens\":130,\"output_tokens_details\":{\"thinking_tokens\":0},\"cache_creation_input_tokens\":18939,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":18939,\"ephemeral_1h_input_tokens\":0},\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\",\"cost\":0.002432575,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.002432575,\"upstream_inference_prompt_cost\":0.002367575,\"upstream_inference_completions_cost\":0.000065}},\"context_management\":{\"applied_edits\":[]}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\nevent: data\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "9fe3a70336bd7710",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "system": "You are a Claude agent, built on Anthropic's Claude Agent SDK.\n\nYou are an agent working with the user toward their goal",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Write a file notes.txt containing \"hello\". Then call the status_set tool with state \"done\", tldr \"Created notes.txt.\", done [\"notes.txt written\"], and next []. Then reply with exactly \"Done.\" and nothing else."
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "Write",
+                "input": {
+                  "file_path": "<root>/project/notes.txt",
+                  "content": "hello"
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": "File created successfully at: <root>/project/notes.txt (file state is current in your context — no need to Read it back)"
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011CgE9LVFE4LsKDEmHXejSQ\",\"type\":\"message\",\"role\":\"assistant\",\"container\":null,\"content\":[],\"model\":\"anthropic/claude-haiku-5.5\",\"stop_reason\":null,\"stop_details\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":24,\"output_tokens_details\":null,\"cache_creation_input_tokens\":244,\"cache_read_input_tokens\":18939,\"cache_creation\":{\"ephemeral_5m_input_tokens\":244,\"ephemeral_1h_input_tokens\":0},\"inference_geo\":\"global\",\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\"},\"provider\":\"Claude Platform on AWS\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_01LHfUWcbP4FEYduLP1tEjux\",\"caller\":{\"type\":\"direct\"},\"name\":\"mcp__status__status_set\",\"input\":{}}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"state\\\": \\\"done\\\", \\\"tldr\\\": \\\"Created notes.txt.\\\", \\\"done\\\": [\\\"notes.txt written\\\"], \\\"next\\\": []}\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"container\":null,\"stop_details\":null,\"stop_reason\":\"tool_use\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":2,\"output_tokens\":134,\"output_tokens_details\":{\"thinking_tokens\":0},\"cache_creation_input_tokens\":244,\"cache_read_input_tokens\":18939,\"cache_creation\":{\"ephemeral_5m_input_tokens\":244,\"ephemeral_1h_input_tokens\":0},\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\",\"cost\":0.00028709,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.00028709,\"upstream_inference_prompt_cost\":0.00022009,\"upstream_inference_completions_cost\":0.000067}},\"context_management\":{\"applied_edits\":[]}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\nevent: data\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "27bff8ffb2de9206",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "system": "You are a Claude agent, built on Anthropic's Claude Agent SDK.\n\nYou are an agent working with the user toward their goal",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Write a file notes.txt containing \"hello\". Then call the status_set tool with state \"done\", tldr \"Created notes.txt.\", done [\"notes.txt written\"], and next []. Then reply with exactly \"Done.\" and nothing else."
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "Write",
+                "input": {
+                  "file_path": "<root>/project/notes.txt",
+                  "content": "hello"
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": "File created successfully at: <root>/project/notes.txt (file state is current in your context — no need to Read it back)"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "mcp__status__status_set",
+                "input": {
+                  "state": "done",
+                  "tldr": "Created notes.txt.",
+                  "done": [
+                    "notes.txt written"
+                  ],
+                  "next": []
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Status published (done)."
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011CgE9LaUFnEvXZqWxTDFXE\",\"type\":\"message\",\"role\":\"assistant\",\"container\":null,\"content\":[],\"model\":\"anthropic/claude-haiku-5.5\",\"stop_reason\":null,\"stop_details\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":5,\"output_tokens_details\":null,\"cache_creation_input_tokens\":169,\"cache_read_input_tokens\":19183,\"cache_creation\":{\"ephemeral_5m_input_tokens\":169,\"ephemeral_1h_input_tokens\":0},\"inference_geo\":\"global\",\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\"},\"provider\":\"Claude Platform on AWS\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\",\"citations\":[]}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Done.\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"container\":null,\"stop_details\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":2,\"output_tokens\":5,\"output_tokens_details\":{\"thinking_tokens\":0},\"cache_creation_input_tokens\":169,\"cache_read_input_tokens\":19183,\"cache_creation\":{\"ephemeral_5m_input_tokens\":169,\"ephemeral_1h_input_tokens\":0},\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\",\"cost\":0.000215655,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.000215655,\"upstream_inference_prompt_cost\":0.000213155,\"upstream_inference_completions_cost\":0.0000025}},\"context_management\":{\"applied_edits\":[]}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\nevent: data\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "72d2b2b2d5a6961c",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "system": "You are a Claude agent, built on Anthropic's Claude Agent SDK.\n\nYou are an agent working with the user toward their goal",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Write a file notes.txt containing \"hello\". Then call the status_set tool with state \"done\", tldr \"Created notes.txt.\", done [\"notes.txt written\"], and next []. Then reply with exactly \"Done.\" and nothing else."
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "Write",
+                "input": {
+                  "file_path": "<root>/project/notes.txt",
+                  "content": "hello"
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": "File created successfully at: <root>/project/notes.txt (file state is current in your context — no need to Read it back)"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "mcp__status__status_set",
+                "input": {
+                  "state": "done",
+                  "tldr": "Created notes.txt.",
+                  "done": [
+                    "notes.txt written"
+                  ],
+                  "next": []
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Status published (done)."
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "Done."
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "[status] The human asked where things stand. Call status_set with your current status, then carry on with what you were doing, if anything."
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011CgE9M3KXVugo7K7hcK4pX\",\"type\":\"message\",\"role\":\"assistant\",\"container\":null,\"content\":[],\"model\":\"anthropic/claude-haiku-5.5\",\"stop_reason\":null,\"stop_details\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":24,\"output_tokens_details\":null,\"cache_creation_input_tokens\":69,\"cache_read_input_tokens\":19352,\"cache_creation\":{\"ephemeral_5m_input_tokens\":69,\"ephemeral_1h_input_tokens\":0},\"inference_geo\":\"global\",\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\"},\"provider\":\"Claude Platform on AWS\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_01Md3phKK9VHUbM9tCrPaxEk\",\"caller\":{\"type\":\"direct\"},\"name\":\"mcp__status__status_set\",\"input\":{}}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"state\\\": \\\"done\\\", \\\"tldr\\\": \\\"Created notes.txt containing \\\\\\\"hello\\\\\\\" in the project directory. Nothing else is pending.\\\", \\\"done\\\": [\\\"notes.txt written with \\\\\\\"hello\\\\\\\"\\\"], \\\"next\\\": []}\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"container\":null,\"stop_details\":null,\"stop_reason\":\"tool_use\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":2,\"output_tokens\":160,\"output_tokens_details\":{\"thinking_tokens\":0},\"cache_creation_input_tokens\":69,\"cache_read_input_tokens\":19352,\"cache_creation\":{\"ephemeral_5m_input_tokens\":69,\"ephemeral_1h_input_tokens\":0},\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\",\"cost\":0.000282345,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.000282345,\"upstream_inference_prompt_cost\":0.000202345,\"upstream_inference_completions_cost\":0.00008}},\"context_management\":{\"applied_edits\":[]}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\nevent: data\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "db07b935c9fe0148",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "system": "You are a Claude agent, built on Anthropic's Claude Agent SDK.\n\nYou are an agent working with the user toward their goal",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Write a file notes.txt containing \"hello\". Then call the status_set tool with state \"done\", tldr \"Created notes.txt.\", done [\"notes.txt written\"], and next []. Then reply with exactly \"Done.\" and nothing else."
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "Write",
+                "input": {
+                  "file_path": "<root>/project/notes.txt",
+                  "content": "hello"
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": "File created successfully at: <root>/project/notes.txt (file state is current in your context — no need to Read it back)"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "mcp__status__status_set",
+                "input": {
+                  "state": "done",
+                  "tldr": "Created notes.txt.",
+                  "done": [
+                    "notes.txt written"
+                  ],
+                  "next": []
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Status published (done)."
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "Done."
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "[status] The human asked where things stand. Call status_set with your current status, then carry on with what you were doing, if anything."
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "mcp__status__status_set",
+                "input": {
+                  "state": "done",
+                  "tldr": "Created notes.txt containing \"hello\" in the project directory. Nothing else is pending.",
+                  "done": [
+                    "notes.txt written with \"hello\""
+                  ],
+                  "next": []
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Status published (done)."
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011CgE9MAugcaYCmTx3F7rfM\",\"type\":\"message\",\"role\":\"assistant\",\"container\":null,\"content\":[],\"model\":\"anthropic/claude-haiku-5.5\",\"stop_reason\":null,\"stop_details\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":7,\"output_tokens_details\":null,\"cache_creation_input_tokens\":195,\"cache_read_input_tokens\":19421,\"cache_creation\":{\"ephemeral_5m_input_tokens\":195,\"ephemeral_1h_input_tokens\":0},\"inference_geo\":\"global\",\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\"},\"provider\":\"Claude Platform on AWS\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\",\"citations\":[]}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Status updated: the task is done. `notes.txt` was written with \\\"hello\\\", and nothing else is pending.\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"container\":null,\"stop_details\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":2,\"output_tokens\":35,\"output_tokens_details\":{\"thinking_tokens\":0},\"cache_creation_input_tokens\":195,\"cache_read_input_tokens\":19421,\"cache_creation\":{\"ephemeral_5m_input_tokens\":195,\"ephemeral_1h_input_tokens\":0},\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\",\"cost\":0.000236285,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.000236285,\"upstream_inference_prompt_cost\":0.000218785,\"upstream_inference_completions_cost\":0.0000175}},\"context_management\":{\"applied_edits\":[]}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\nevent: data\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "c3cc3a4996464351",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "system": "You are a Claude agent, built on Anthropic's Claude Agent SDK.\n\nYou are an agent working with the user toward their goal",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Run the shell command \"sleep 8\". Then reply with exactly \"Slept.\" and nothing else."
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011CgE9MJQt7mpKxUR7YKAvf\",\"type\":\"message\",\"role\":\"assistant\",\"container\":null,\"content\":[],\"model\":\"anthropic/claude-haiku-5.5\",\"stop_reason\":null,\"stop_details\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":16,\"output_tokens_details\":null,\"cache_creation_input_tokens\":4066,\"cache_read_input_tokens\":14833,\"cache_creation\":{\"ephemeral_5m_input_tokens\":4066,\"ephemeral_1h_input_tokens\":0},\"inference_geo\":\"global\",\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\"},\"provider\":\"Claude Platform on AWS\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_01TtcKquyvumeV6zjPjVKycY\",\"caller\":{\"type\":\"direct\"},\"name\":\"Bash\",\"input\":{}}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"command\\\": \\\"sleep 8\\\", \\\"description\\\": \\\"Sleep for 8 seconds\\\"}\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"container\":null,\"stop_details\":null,\"stop_reason\":\"tool_use\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":2,\"output_tokens\":82,\"output_tokens_details\":{\"thinking_tokens\":0},\"cache_creation_input_tokens\":4066,\"cache_read_input_tokens\":14833,\"cache_creation\":{\"ephemeral_5m_input_tokens\":4066,\"ephemeral_1h_input_tokens\":0},\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\",\"cost\":0.00069778,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.00069778,\"upstream_inference_prompt_cost\":0.00065678,\"upstream_inference_completions_cost\":0.000041}},\"context_management\":{\"applied_edits\":[]}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\nevent: data\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "5633a24aa1c02a28",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "system": "You are a Claude agent, built on Anthropic's Claude Agent SDK.\n\nYou are an agent working with the user toward their goal",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Run the shell command \"sleep 8\". Then reply with exactly \"Slept.\" and nothing else."
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "Bash",
+                "input": {
+                  "command": "sleep 8",
+                  "description": "Sleep for 8 seconds"
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": "(Bash completed with no output)"
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011CgE9MzKjCFNEmRzJKSvin\",\"type\":\"message\",\"role\":\"assistant\",\"container\":null,\"content\":[],\"model\":\"anthropic/claude-haiku-5.5\",\"stop_reason\":null,\"stop_details\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":4,\"output_tokens_details\":null,\"cache_creation_input_tokens\":121,\"cache_read_input_tokens\":18899,\"cache_creation\":{\"ephemeral_5m_input_tokens\":121,\"ephemeral_1h_input_tokens\":0},\"inference_geo\":\"global\",\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\"},\"provider\":\"Claude Platform on AWS\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\",\"citations\":[]}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Slept.\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"container\":null,\"stop_details\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":2,\"output_tokens\":6,\"output_tokens_details\":{\"thinking_tokens\":0},\"cache_creation_input_tokens\":121,\"cache_read_input_tokens\":18899,\"cache_creation\":{\"ephemeral_5m_input_tokens\":121,\"ephemeral_1h_input_tokens\":0},\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\",\"cost\":0.000207315,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.000207315,\"upstream_inference_prompt_cost\":0.000204315,\"upstream_inference_completions_cost\":0.000003}},\"context_management\":{\"applied_edits\":[]}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\nevent: data\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "70b361b8cd98a59b",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "system": "You are a Claude agent, built on Anthropic's Claude Agent SDK.\n\nYou are an agent working with the user toward their goal",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Run the shell command \"sleep 8\". Then reply with exactly \"Slept.\" and nothing else."
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "Bash",
+                "input": {
+                  "command": "sleep 8",
+                  "description": "Sleep for 8 seconds"
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": "(Bash completed with no output)"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "Slept."
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "[status] The human asked where things stand. Call status_set with your current status, then carry on with what you were doing, if anything."
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011CgE9N5JdPmAB35d2FwizN\",\"type\":\"message\",\"role\":\"assistant\",\"container\":null,\"content\":[],\"model\":\"anthropic/claude-haiku-5.5\",\"stop_reason\":null,\"stop_details\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":24,\"output_tokens_details\":null,\"cache_creation_input_tokens\":70,\"cache_read_input_tokens\":19020,\"cache_creation\":{\"ephemeral_5m_input_tokens\":70,\"ephemeral_1h_input_tokens\":0},\"inference_geo\":\"global\",\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\"},\"provider\":\"Claude Platform on AWS\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_01Nn27bRMwNphZXFwVttj6qZ\",\"caller\":{\"type\":\"direct\"},\"name\":\"mcp__status__status_set\",\"input\":{}}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"state\\\": \\\"done\\\", \\\"tldr\\\": \\\"Ran `sleep 8` as requested; it finished with no output and I replied \\\\\\\"Slept.\\\\\\\" Nothing else is pending.\\\", \\\"done\\\": [\\\"Ran shell command `sleep 8` (completed, no output)\\\", \\\"Replied \\\\\\\"Slept.\\\\\\\"\\\"], \\\"next\\\": []}\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"container\":null,\"stop_details\":null,\"stop_reason\":\"tool_use\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":2,\"output_tokens\":190,\"output_tokens_details\":{\"thinking_tokens\":0},\"cache_creation_input_tokens\":70,\"cache_read_input_tokens\":19020,\"cache_creation\":{\"ephemeral_5m_input_tokens\":70,\"ephemeral_1h_input_tokens\":0},\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\",\"cost\":0.00029415,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.00029415,\"upstream_inference_prompt_cost\":0.00019915,\"upstream_inference_completions_cost\":0.000095}},\"context_management\":{\"applied_edits\":[]}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\nevent: data\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "668c4c267226f0b9",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "system": "You are a Claude agent, built on Anthropic's Claude Agent SDK.\n\nYou are an agent working with the user toward their goal",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Run the shell command \"sleep 8\". Then reply with exactly \"Slept.\" and nothing else."
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "Bash",
+                "input": {
+                  "command": "sleep 8",
+                  "description": "Sleep for 8 seconds"
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": "(Bash completed with no output)"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "Slept."
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "[status] The human asked where things stand. Call status_set with your current status, then carry on with what you were doing, if anything."
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "mcp__status__status_set",
+                "input": {
+                  "state": "done",
+                  "tldr": "Ran `sleep 8` as requested; it finished with no output and I replied \"Slept.\" Nothing else is pending.",
+                  "done": [
+                    "Ran shell command `sleep 8` (completed, no output)",
+                    "Replied \"Slept.\""
+                  ],
+                  "next": []
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Status published (done)."
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011CgE9NBtkkHe6JZuwXBAAn\",\"type\":\"message\",\"role\":\"assistant\",\"container\":null,\"content\":[],\"model\":\"anthropic/claude-haiku-5.5\",\"stop_reason\":null,\"stop_details\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":3,\"output_tokens_details\":null,\"cache_creation_input_tokens\":225,\"cache_read_input_tokens\":19090,\"cache_creation\":{\"ephemeral_5m_input_tokens\":225,\"ephemeral_1h_input_tokens\":0},\"inference_geo\":\"global\",\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\"},\"provider\":\"Claude Platform on AWS\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\",\"citations\":[]}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Status is set to done. The `sleep 8` command finished and there's nothing else pending.\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"container\":null,\"stop_details\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":2,\"output_tokens\":30,\"output_tokens_details\":{\"thinking_tokens\":0},\"cache_creation_input_tokens\":225,\"cache_read_input_tokens\":19090,\"cache_creation\":{\"ephemeral_5m_input_tokens\":225,\"ephemeral_1h_input_tokens\":0},\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\",\"cost\":0.000234225,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.000234225,\"upstream_inference_prompt_cost\":0.000219225,\"upstream_inference_completions_cost\":0.000015}},\"context_management\":{\"applied_edits\":[]}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\nevent: data\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "17b844ce134a8ec4",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "system": "You are a Claude agent, built on Anthropic's Claude Agent SDK.\n\nYou are an agent working with the user toward their goal",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Reply with exactly \"Ready.\" and nothing else."
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "Ready."
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "[status] The human asked where things stand, for a status card shown outside this chat. End your reply with a fenced code block tagged paseo-status holding one JSON object:\n```paseo-status\n{\"state\": \"working | waiting_on_you | blocked | done\", \"tldr\": \"one or two plain sentences: what this work is and where it stands\", \"now\": \"what you are doing or waiting on\", \"done\": [\"finished step, with its proof\"], \"next\": [\"what is left, in order; mark what needs the human\"]}\n```\nWrite for someone who skipped the transcript. Say \"not committed\" or \"not pushed\" when that is true. Then carry on with what you were doing, if anything."
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011CgE9NJRfA2cPxcs4q1W8X\",\"type\":\"message\",\"role\":\"assistant\",\"container\":null,\"content\":[],\"model\":\"anthropic/claude-haiku-5.5\",\"stop_reason\":null,\"stop_details\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":8,\"output_tokens_details\":null,\"cache_creation_input_tokens\":3455,\"cache_read_input_tokens\":14987,\"cache_creation\":{\"ephemeral_5m_input_tokens\":3455,\"ephemeral_1h_input_tokens\":0},\"inference_geo\":\"global\",\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\"},\"provider\":\"Claude Platform on AWS\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"CAQS0goKEAgTGAI4AUIIdGhpbmtpbmcSDAfDoi4AsnoLImHJXRoMxMG3gvv9Rq8hbZmHIjD5T4dLNME5KgXiCYzqnRyJHIBBiqsgMxLGPc63GjyaI7QUE5stSIN+ic8FzhJnzskq7wlcLguUUDlnsAkbVYVSA+XtViDmYEpNj8Tw0HhpmHHazKaUW+x9GLzK5Mc8ZRXgiBCx7RNGtWkhrFcepk2V7WeibrAmklJli0TgSkZJla4ShSUOMeqkQzyEB76cPLQ25hpjRE8xZ/RoVqOHgrjEmtmjHj8bQdO76oWAtFSQo2jUv0hrRMMjso09uF1J7sISmiIcUdCp9CBtneVYp3h1PxBLTh1cQKg9m1Vz1eQRvGyL6stLWUiPm/rcOCuq+iliolcUFXWU9SALsg2G0btpp78tk1lbGMSPHVNoxcvFFYJRBoeDeyG2zroWjCei+XS2GbjQcWj5YV8E/boKYxbUNf37KWcOwncE9et1BAw8xHIYZMwDSM6LA0xXegGgFkYXMNN5aOzmg/RpKtoLisJbXlhz7HpJr8q1fQHWCCx5LoxWcD/RiimOfo4GUQ3lqfG3U0NQlPY85a/P0G3agkd1FbdUa/p4PKKnE2TKjg2qoBjKccQDfutV4QBStv7uJ2gHsuRWW/A8RjW9fADEnJv/l7UgsY5vaVs7QRGkYpi2hmp48Te+FfUzMmId2ERw5lpNtgVeOQU7O9S9CHGhTsSHrVkfof2j5FCIMRRIOB4rQxGMrLW7CAdivB/NW0rmPmpxbU/Xf5vut8uL2dOW1BExhJCz5SU0n+kcrV9Cf9/1TFdTkvaT5aTYWjfmjfeVV2XI9P50c8Cic/zTo4pVi+w034Z1+VNbA9IIFY2oL88jH6kf+R3N3h+wcOyIhNHMsCaUIV+4XtqzeenlqIXKTKZhKQicWNasGXibextrfw7QtOlDg2EiyLl18MIRfjG8G1s44N8wU7K/Z4u+3y6aM31wdtfUTi7bQkJQGopcKz1esYBJUp3r1EhNBB6vZbeiVz2O2W5LOgC5qXaqvp9p22ztP8INltL8yDkZiBb7LbT/b64wVuwRI+teYCldEpzMh7PdjqZem2ZI7zmitLBNRlJVg0ToksNC5FgluDMjawgi1HfgMmq7PpA6X5+zxpzuKwEDDo5j+A5crkDWFcBF7RyAVikC6HA/G2YqPbYL2+4KpeqzroJi4hmq5RXmmkAj5tFlP0jw1mHPr3+VseE5NnPPwH/20qyCVh+1fWgbRTJetO5nqmrsPbqSJv9tetr3tuVMel0FBV12ErF2F2lhgEbfoYll6clWHOAwEoVCWnKYae711kG8N79sVSGtkJa+xU4jzI7mWVeqtT21TrhV747vLXQ4tATzgqTN6b9sKqL7DYU4jOw9gDZpJjtqFqftHPXW4OGATBGqArKJspCTEJEDXpR8MhVam0OAFXmvLRwHaLlLcrJ9EQMFkWKJO7T1LaEagty6pe9rNFev/GCLkKXA1jw0itQowgSVS/JjgoDXaAzxJw2LeuHaROdJrBT0jFJ67TGBK+2YEFGhDomTLm0E0C7HWXAY0AQvhz/hVbq0YWsOYZcjQ/X73F3ElJNVVdW4q3UPa/s/ezy4NKLunHkdbEsg90hj4fgNgWXUYL/1Ir4I4a9SC0FyPzuTk+R9O9U8ireMbqPU7I6C65XGFWrnjz/fgmuqqXgkRHjZKnaw+XIr+eNqxyEjYzlDD/i9oVfi8o11+jhLW+s6U4PgMtI5u63Dl2dvgU04tT1M/pQUuFP1e4KHeO/AT/UHcMSqXgDJqUJKMTTXVGCzduV8mDG64Q0YAQ==.eyJlbmRwb2ludF9zbHVnIjoiYW50aHJvcGljL2NsYXVkZS1oYWlrdS01LjUtMjAyNjEwMDd8Y2xhdWRlLW9uLWF3cyJ9\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\",\"citations\":[]}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"Nothing is in progress. The only request so far was to reply \\\"Ready.\\\", and I did. I haven't changed any files in this session. The repo at the start was clean, and nothing has been committed or pushed. I'm waiting for the task you want me to work on.\\n\\n```paseo-status\\n{\\\"state\\\": \\\"waiting_on_you\\\", \\\"tldr\\\": \\\"No task is underway. The session was set up and I replied Ready, with no files changed. The repo was clean at start and nothing is committed or pushed.\\\", \\\"now\\\": \\\"Waiting for you to say what to work on in __E2E_ROOT__/project.\\\", \\\"done\\\": [\\\"Replied 'Ready.' as requested. No files edited, no commits, no pushes.\\\"], \\\"next\\\": [\\\"Human: describe the task you want done in this repo.\\\", \\\"Then I will make the changes, verify them, and report back. Commit or push only if you ask.\\\"]}\\n```\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":1}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"container\":null,\"stop_details\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":2,\"output_tokens\":551,\"output_tokens_details\":{\"thinking_tokens\":235},\"cache_creation_input_tokens\":3455,\"cache_read_input_tokens\":14987,\"cache_creation\":{\"ephemeral_5m_input_tokens\":3455,\"ephemeral_1h_input_tokens\":0},\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\",\"cost\":0.000857445,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.000857445,\"upstream_inference_prompt_cost\":0.000581945,\"upstream_inference_completions_cost\":0.0002755}},\"context_management\":{\"applied_edits\":[]}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\nevent: data\ndata: [DONE]\n\n"
+    }
+  ]
+}
