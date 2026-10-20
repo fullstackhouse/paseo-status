@@ -4,12 +4,14 @@ import type {
   PluginClientContext,
   PluginScreenProps,
   PluginSidebarItemProps,
+  PluginTimelineItemProps,
   PluginWorkspacePanelProps,
 } from "@getpaseo/plugin/client";
 import { SidebarRow } from "@getpaseo/plugin/client/ui";
 import { Text } from "react-native";
-import { age, AgentStatus, ANSWERED_LABEL, POLL_MS, STATE_LABELS, StatusView, useStatuses } from "./client/StatusView";
+import { age, AgentStatus, ANSWERED_LABEL, InlineStatus, POLL_MS, STATE_LABELS, StatusView, useStatuses } from "./client/StatusView";
 import { listStatuses, needsYou, refreshStatus, STALE_TURNS, type Status } from "./shared/status";
+import { STATUS_CARD, StatusCardSchema, statusCardFor, type StatusCard } from "./shared/timeline";
 
 const STATE_ICONS: Record<Status["state"], string> = {
   working: "LoaderCircle",
@@ -53,6 +55,10 @@ function SidebarItem({ theme, currentScreen, openScreen }: PluginSidebarItemProp
       }
     />
   );
+}
+
+function TimelineCard({ theme, layout, agentId, item }: PluginTimelineItemProps<StatusCard>) {
+  return <InlineStatus theme={theme} compact={layout.compact} agentId={agentId} {...item.data} />;
 }
 
 function PillPopover({ theme, layout, workspaceId, ...context }: PluginButtonContentProps) {
@@ -167,5 +173,15 @@ export default function contribute(client: PluginClientContext) {
       openPanel("status");
     },
   });
+  // A status_set call in the chat becomes the status it published, so it can be read in place.
+  client.addTimelineTransformer({
+    id: "status-cards",
+    query: { itemType: "tool_call" },
+    transform: ({ item }) => {
+      const data = statusCardFor(item);
+      return data && { items: [{ type: "plugin", ...STATUS_CARD, data }] };
+    },
+  });
+  client.addTimelineRenderer({ ...STATUS_CARD, schema: StatusCardSchema, Component: TimelineCard });
   return contributePills(client);
 }

@@ -17,3 +17,7 @@ export function useRpc(contract: Contract) {
     return { sent: true };
   };
 }
+
+export function useAgent<T>(_agentId: string, selector: (agent: { workspaceId: string }) => T): T {
+  return selector({ workspaceId: "api" });
+}

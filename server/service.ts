@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { AgentTimelineItem } from "@getpaseo/protocol/agent-types";
 import { z } from "zod";
-import { STALE_TURNS, STATES, type Status, type Waiting } from "../shared/status";
+import { STALE_TURNS, StatusInputSchema, type Status, type Waiting } from "../shared/status";
 import type { StatusStore } from "./store";
 
 export const INSTRUCTIONS = `status_set publishes where your work stands to a status card the human reads in Paseo instead of asking you "where are we?".
@@ -16,13 +16,7 @@ export const INSTRUCTIONS = `status_set publishes where your work stands to a st
   - state: working, waiting_on_you, blocked or done.
 - Messages starting with [status] are the human asking for an update: call status_set.`;
 
-const SetInput = z.object({
-  state: z.enum(STATES),
-  tldr: z.string().min(1).max(600),
-  now: z.string().max(400).optional(),
-  done: z.array(z.string().min(1).max(300)).max(12).default([]),
-  next: z.array(z.string().min(1).max(300)).max(12).default([]),
-});
+const SetInput = StatusInputSchema;
 
 export const TOOLS = [
   {

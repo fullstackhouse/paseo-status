@@ -1,4 +1,4 @@
-import type { SilentAgent, Status, Waiting } from "../shared/status";
+import type { SilentAgent, Status, StatusInput, Waiting } from "../shared/status";
 
 export const workspaces: Record<string, string> = {
   api: "shop-api",
@@ -57,3 +57,12 @@ export const waiting: Waiting[] = [
 ];
 
 export const silent: SilentAgent[] = [{ agentId: "agent-legacy", title: "Coupon code cleanup" }];
+
+/** An earlier status_set from the gift-card agent, replaced since by the live one above. */
+export const earlierGiftcards: StatusInput = {
+  state: "working",
+  tldr: "Adding gift cards to checkout. The model and endpoints are in; redeeming at checkout is next.",
+  now: "Writing the redeem endpoint.",
+  done: ["Gift card model and issue endpoint"],
+  next: ["Redeem at checkout", "Tests", "Open the PR"],
+};
