@@ -2,11 +2,12 @@ import { dirname, join } from "node:path";
 import type { PaseoApi } from "@getpaseo/client";
 import type { PluginServerContext } from "@getpaseo/plugin/server";
 import { listStatuses, refreshAll, refreshStatus, type SilentAgent } from "./shared/status";
-import { AgentDirectory } from "./server/agents";
+import { AgentDirectory, pickCaller } from "./server/agents";
 import { installBridge } from "./server/bridge";
 import { Equipped } from "./server/equipped";
 import { listen } from "./server/listener";
 import { dataDir } from "./server/paths";
+import { isStatusPermission } from "./server/permissions";
 import { INSTRUCTIONS, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
 import { StatusStore } from "./server/store";
 
@@ -30,6 +31,15 @@ export default function contribute(server: PluginServerContext) {
     await handle.refresh();
     return handle.workspaceId;
   });
+  const callerIn = async (cwd: string) => {
+    // The caller is mid-turn during its own tool call; background workspaces are left out unless asked for.
+    const { entries } = await requirePaseo().agents.list({
+      includeBackground: true,
+      filter: { statuses: ["running"], includeBackground: true },
+      page: { limit: 200 },
+    });
+    return pickCaller(entries.map((entry) => entry.agent), cwd);
+  };
   const store = new StatusStore(dir);
   const courier: Courier = {
     async state(agentId) {
@@ -71,10 +81,10 @@ export default function contribute(server: PluginServerContext) {
     capture(api);
     void service.turnEnded(agent.id, timeline).catch((error) => console.error("[status] turn bookkeeping failed", error));
   });
-  // Plan mode prompts even for preapproved MCP tools. status_set only writes this plugin's card.
+  // Plan mode and Codex prompt even for preapproved MCP tools. status_set only writes this plugin's card.
   server.on("agent.permission_requested", async ({ agent, request }, { paseo: api }) => {
     capture(api);
-    if (request.kind !== "tool" || !request.name.startsWith("mcp__status__")) return;
+    if (!isStatusPermission(request)) return;
     await api.agents.ref(agent.id).respondToPermission({ requestId: request.id, response: { behavior: "allow" } });
   });
   server.on("agent.archived", ({ agent }, { paseo: api }) => {
@@ -108,7 +118,7 @@ export default function contribute(server: PluginServerContext) {
   const listening = listen(dir, {
     "/instructions": async () => ({ instructions: INSTRUCTIONS }),
     "/tools": async () => ({ tools: TOOLS }),
-    "/call": async ({ agentId, name, arguments: args }) => service.callTool(agentId ?? null, name, args),
+    "/call": async ({ agentId, cwd, name, arguments: args }) => service.callTool(agentId ?? (cwd ? await callerIn(cwd) : null), name, args),
     // The same Refresh the UI does, for scripts and terminal use.
     "/refresh": async (input) => service.refresh(refreshStatus.input.parse(input).agentId),
   });
