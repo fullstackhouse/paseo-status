@@ -8,7 +8,7 @@ import { listStatuses, refreshAll, refreshStatus, STALE_TURNS, type SilentAgent,
 
 export const POLL_MS = 4000;
 
-const STATE_LABELS: Record<Status["state"], string> = {
+export const STATE_LABELS: Record<Status["state"], string> = {
   working: "working",
   waiting_on_you: "waiting on you",
   blocked: "blocked",
@@ -256,6 +256,30 @@ function Button(props: { styles: Styles; label: string; onPress(): void; disable
   );
 }
 
+/** One agent's card on its own, for the composer pill's popover. */
+export function AgentStatus(props: { theme: PluginTheme; compact: boolean; workspaceId: string; agentId: string }) {
+  const { theme, compact, workspaceId, agentId } = props;
+  const styles = useMemo(() => makeStyles(theme, compact), [theme, compact]);
+  const query = useStatuses(workspaceId);
+  if (query.isPending) return <Message styles={styles} text="Loading status…" />;
+  if (query.isError) return <Message styles={styles} text={`Could not load status: ${query.error.message}`} danger />;
+  const status = query.data.statuses.find((candidate) => candidate.agentId === agentId);
+  return (
+    <ScrollView style={styles.popover} contentContainerStyle={styles.popoverContent}>
+      {status ? (
+        <StatusCard
+          status={status}
+          waiting={query.data.waiting.filter((ask) => ask.agentId === agentId)}
+          styles={styles}
+          theme={theme}
+        />
+      ) : (
+        <SilentCard agent={{ agentId, title: null }} styles={styles} theme={theme} />
+      )}
+    </ScrollView>
+  );
+}
+
 function Message({ styles, text, danger }: { styles: Styles; text: string; danger?: boolean }) {
   return (
     <View style={[styles.screen, styles.content]}>
@@ -270,7 +294,7 @@ function groupBy<T>(items: readonly T[], key: (item: T) => string): Map<string, 
   return groups;
 }
 
-function age(iso: string): string {
+export function age(iso: string): string {
   const minutes = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60_000));
   if (minutes < 60) return `${minutes}m`;
   if (minutes < 48 * 60) return `${Math.round(minutes / 60)}h`;
@@ -303,6 +327,8 @@ function makeStyles(theme: PluginTheme, compact: boolean) {
     item: { flexDirection: "row" as const, gap: 6 },
     mark: { color: colors.foregroundMuted, fontSize: 13, lineHeight: 19 },
     itemText: { color: colors.foreground, fontSize: 13, lineHeight: 19, flex: 1 },
+    popover: { maxHeight: 520, width: compact ? undefined : 420, backgroundColor: colors.surface0 },
+    popoverContent: { padding: 8 },
     toolbar: { flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const, gap: 8 },
     silent: { paddingVertical: compact ? 10 : 8 },
     footer: {

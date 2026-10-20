@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 import { Text, View } from "react-native";
-import { StatusView } from "../client/StatusView";
+import { AgentStatus, StatusView } from "../client/StatusView";
 
 const theme = {
   colors: {
@@ -37,6 +37,9 @@ createRoot(document.getElementById("root")!).render(
     </Frame>
     <Frame id="phone" title="Status" width={390} height={790}>
       <StatusView theme={theme as any} compact openAgent={() => {}} />
+    </Frame>
+    <Frame id="popover" title="Pill popover" width={440} height={560}>
+      <AgentStatus theme={theme as any} compact={false} workspaceId="api" agentId="agent-giftcards" />
     </Frame>
   </QueryClientProvider>,
 );
