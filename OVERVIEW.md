@@ -6,6 +6,7 @@ Every agent created after the plugin is installed gets a `status` MCP server wit
 
 ## Where you see it
 
+- Inline in the agent's chat, where it called `status_set`: the latest one is the live card, earlier ones show what they said then, collapsed.
 - A pill in each agent's composer with the card's state and age. Pressing it shows the card in a popover.
 - A **Status** row in the sidebar with how many agents are waiting on you or blocked, opening a screen with every workspace's cards.
 - A **Status** panel in each workspace, with one card per agent, as a tab or in the Explorer.

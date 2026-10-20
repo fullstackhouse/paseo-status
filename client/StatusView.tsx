@@ -1,10 +1,11 @@
 import type { PluginTheme } from "@getpaseo/plugin";
-import { useRpc } from "@getpaseo/plugin/client";
+import { useAgent, useRpc } from "@getpaseo/plugin/client";
 import { Icon, ScrollView, useToast } from "@getpaseo/plugin/client/react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { listStatuses, needsYou, refreshAll, refreshStatus, STALE_TURNS, type SilentAgent, type Status, type Waiting } from "../shared/status";
+import { isCurrent, type StatusCard as StatusCardData } from "../shared/timeline";
 
 export const POLL_MS = 4000;
 
@@ -163,8 +164,10 @@ function StatusCard(props: {
   styles: Styles;
   theme: PluginTheme;
   openAgent?: (agentId: string) => void;
+  /** Replaces the agent's title, e.g. in the agent's own chat where the title is redundant. */
+  heading?: string;
 }) {
-  const { status, agent, waiting, styles, theme, openAgent } = props;
+  const { status, agent, waiting, styles, theme, openAgent, heading } = props;
   const refresh = useRpc(refreshStatus);
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -193,7 +196,7 @@ function StatusCard(props: {
       <View style={styles.header}>
         <Icon name="Bot" size={16} color={theme.colors.foregroundMuted} />
         <Text style={styles.agent} numberOfLines={1}>
-          {agent?.title ?? status.agentId}
+          {heading ?? agent?.title ?? status.agentId}
         </Text>
         <Text style={[styles.badge, stateTone]}>{answered ? ANSWERED_LABEL : STATE_LABELS[status.state]}</Text>
       </View>
@@ -288,6 +291,60 @@ export function AgentStatus(props: { theme: PluginTheme; compact: boolean; works
   );
 }
 
+/**
+ * A status shown in the agent chat where the agent published it. The latest one is the live card;
+ * older ones show what that call said, collapsed, since a newer status has replaced them.
+ */
+export function InlineStatus(props: { theme: PluginTheme; compact: boolean; agentId: string } & StatusCardData) {
+  const { theme, compact, agentId, ...card } = props;
+  const styles = useMemo(() => makeStyles(theme, compact), [theme, compact]);
+  const workspaceId = useAgent(agentId, (agent) => agent.workspaceId);
+  // Same query as the panel and the pill popover, so every card in a chat shares one poll.
+  const query = useStatuses(workspaceId ?? undefined);
+  const live = query.data?.statuses.find((status) => status.agentId === agentId);
+  if (live && isCurrent(card, live)) {
+    return (
+      <StatusCard
+        status={live}
+        agent={query.data?.agents[agentId]}
+        waiting={query.data?.waiting.filter((ask) => ask.agentId === agentId) ?? []}
+        styles={styles}
+        theme={theme}
+        heading="Status"
+      />
+    );
+  }
+  // Until the list loads, the card cannot tell whether it is the latest: show it open, unlabelled.
+  return <EarlierStatus card={card} styles={styles} theme={theme} earlier={query.isSuccess} />;
+}
+
+function EarlierStatus(props: { card: StatusCardData; styles: Styles; theme: PluginTheme; earlier: boolean }) {
+  const { card, styles, theme, earlier } = props;
+  const [toggled, setToggled] = useState<boolean | null>(null);
+  const expanded = toggled ?? !earlier;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ expanded }}
+      onPress={() => setToggled(!expanded)}
+      style={[styles.card, earlier && styles.earlier]}
+    >
+      <View style={styles.header}>
+        <Icon name="History" size={16} color={theme.colors.foregroundMuted} />
+        <Text style={styles.agent} numberOfLines={1}>
+          {earlier ? "Earlier status" : "Status"}
+        </Text>
+        <Text style={[styles.badge, styles.muted]}>{STATE_LABELS[card.state]}</Text>
+        <Icon name={expanded ? "ChevronUp" : "ChevronDown"} size={14} color={theme.colors.foregroundMuted} />
+      </View>
+      <Text style={[styles.tldr, earlier && styles.muted]}>{card.tldr}</Text>
+      {expanded && card.now ? <Line styles={styles} label="Now" text={card.now} /> : null}
+      {expanded && card.done.length > 0 && <List styles={styles} title="DONE" mark="✓" items={card.done} />}
+      {expanded && card.next.length > 0 && <List styles={styles} title="NEXT" mark="→" items={card.next} />}
+    </Pressable>
+  );
+}
+
 function Message({ styles, text, danger }: { styles: Styles; text: string; danger?: boolean }) {
   return (
     <View style={[styles.screen, styles.content]}>
@@ -339,6 +396,7 @@ function makeStyles(theme: PluginTheme, compact: boolean) {
     popoverContent: { padding: 8 },
     toolbar: { flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const, gap: 8 },
     silent: { paddingVertical: compact ? 10 : 8 },
+    earlier: { backgroundColor: colors.surface0 },
     footer: {
       flexDirection: compact ? ("column" as const) : ("row" as const),
       alignItems: compact ? ("flex-start" as const) : ("center" as const),

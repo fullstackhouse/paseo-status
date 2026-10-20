@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 import { Text, View } from "react-native";
-import { AgentStatus, StatusView } from "../client/StatusView";
+import { AgentStatus, InlineStatus, StatusView } from "../client/StatusView";
+import { earlierGiftcards, statuses } from "./fixtures";
 
 const theme = {
   colors: {
@@ -40,6 +41,12 @@ createRoot(document.getElementById("root")!).render(
     </Frame>
     <Frame id="popover" title="Pill popover" width={440} height={560}>
       <AgentStatus theme={theme as any} compact={false} workspaceId="api" agentId="agent-giftcards" />
+    </Frame>
+    <Frame id="chat" title="Agent chat" width={620} height={700}>
+      <View style={{ padding: 16, gap: 12, backgroundColor: theme.colors.surface0, flex: 1 }}>
+        <InlineStatus theme={theme as any} compact={false} agentId="agent-giftcards" {...earlierGiftcards} />
+        <InlineStatus theme={theme as any} compact={false} agentId="agent-giftcards" {...statuses[0]!} />
+      </View>
     </Frame>
   </QueryClientProvider>,
 );

@@ -5,6 +5,16 @@ export const STATES = ["working", "waiting_on_you", "blocked", "done"] as const;
 /** Turns without an update after which a card counts as stale: flagged, and refreshed when the panel opens. */
 export const STALE_TURNS = 2;
 
+/** What an agent sends with status_set (or in a paseo-status reply block). */
+export const StatusInputSchema = z.object({
+  state: z.enum(STATES),
+  tldr: z.string().min(1).max(600),
+  now: z.string().max(400).optional(),
+  done: z.array(z.string().min(1).max(300)).max(12).default([]),
+  next: z.array(z.string().min(1).max(300)).max(12).default([]),
+});
+export type StatusInput = z.infer<typeof StatusInputSchema>;
+
 export const StatusSchema = z.object({
   agentId: z.string(),
   workspaceId: z.string(),

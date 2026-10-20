@@ -6,6 +6,8 @@ Status is a [Paseo](https://paseo.sh) plugin. Each agent keeps a short, plain-la
 |---|---|
 | ![Status panel in a workspace](docs/panel.png) | ![Status across workspaces on a phone](docs/phone.png) |
 
+![Statuses shown inline in the agent chat](docs/chat.png)
+
 <sub>The screenshots render the plugin's own React Native components with sample data, using react-native-web (`preview/`). Inside Paseo they sit in its panel and screen chrome.</sub>
 
 ## What a card shows
@@ -28,6 +30,7 @@ Status is a [Paseo](https://paseo.sh) plugin. Each agent keeps a short, plain-la
 
 ## Where cards show up
 
+- **inline in the agent's chat**, where it called `status_set`: the latest call is the live card (labels, age, Refresh); earlier calls show what they said then, collapsed as "Earlier status". A status sent as a `paseo-status` reply block stays a code block in the reply;
 - a **pill in each agent's composer**, next to Tasks and Subagents, showing the card's state and age (`waiting on you · 6m`, `working · 52m · stale`). Pressing it shows that agent's card in a popover. Agents without a card show `No status`, and the popover offers **Ask for status**;
 - a **Status** row in the sidebar, with how many agents are waiting on you or blocked across every workspace. It opens the Status screen;
 - a **Status** panel in each workspace (⌘K: "Open status for this workspace"), which can also sit in the Explorer next to files and changes;
