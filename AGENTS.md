@@ -4,7 +4,7 @@ Paseo plugin: agents publish where their work stands via one MCP tool (`status_s
 
 ## Layout
 
-- `index.server.ts` wires everything. `server/`: `store` (one JSON per workspace, keyed by agent; counts turns since the last update), `service` (the MCP tool, agent instructions, refresh held until the turn ends, read-only view of the asks plugin's open asks), `bridge` (stdio MCP script written to the data dir), `listener` (localhost HTTP the bridge calls), `agents` (agentId → workspaceId).
+- `index.server.ts` wires everything. `server/`: `store` (one JSON per workspace, keyed by agent; counts turns since the last update), `service` (the MCP tool, agent instructions, refresh held until the turn ends, automatic refresh of stale cards on panel open, `paseo-status` reply-block fallback for agents created before install, read-only view of the asks plugin's open asks), `equipped` (agents created while installed, so they have the tool), `bridge` (stdio MCP script written to the data dir), `listener` (localhost HTTP the bridge calls), `agents` (agentId → workspaceId).
 - `client/` + `index.client.tsx`: React Native only (runs on mobile). Colors from `theme.colors`.
 - `shared/status.ts`: Zod schemas and RPC contracts.
 - `preview/`: own package.json; renders `client/` with react-native-web and mocked host modules for the README screenshots (`docs/*.png`). Not shipped.
@@ -16,6 +16,8 @@ Paseo plugin: agents publish where their work stands via one MCP tool (`status_s
 - `agents.ref(id).send()` interrupts a running turn, so Refresh waits for `agent.turn_ended` when the agent is running.
 - Plugin server code cannot write settings, so clients poll (`POLL_MS`).
 - Claude plan mode prompts even for preapproved MCP tools; the server auto-allows `mcp__status__*`.
+- `before("agent.session_open")` can change env only, not MCP servers: agents created before install never get the tool, hence the reply-block fallback.
+- Plugin RPC names must match `/^[a-z][a-z0-9._-]*$/` (no camelCase).
 - Reads `~/.paseo/plugin-data/asks/workspaces/*.json` for open asks; never writes there.
 
 ## Commands

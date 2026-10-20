@@ -2,6 +2,8 @@ import { defineRpc } from "@getpaseo/plugin";
 import { z } from "zod";
 
 export const STATES = ["working", "waiting_on_you", "blocked", "done"] as const;
+/** Turns without an update after which a card counts as stale: flagged, and refreshed when the panel opens. */
+export const STALE_TURNS = 2;
 
 export const StatusSchema = z.object({
   agentId: z.string(),
@@ -22,6 +24,8 @@ export const StatusSchema = z.object({
   setThisTurn: z.boolean().optional(),
   /** The human pressed Refresh while the agent was mid-turn; the request goes out when it ends. */
   refreshPending: z.boolean().optional(),
+  /** When an update was requested and not yet answered (status_set clears it); auto refresh skips these. */
+  refreshRequestedAt: z.string().optional(),
   archived: z.boolean().optional(),
 });
 export type Status = z.infer<typeof StatusSchema>;
@@ -30,10 +34,14 @@ export type Status = z.infer<typeof StatusSchema>;
 export const WaitingSchema = z.object({ id: z.string(), title: z.string(), agentId: z.string() });
 export type Waiting = z.infer<typeof WaitingSchema>;
 
+/** A live agent in the workspace that has not published a status. */
+export const SilentAgentSchema = z.object({ agentId: z.string(), title: z.string().nullable() });
+export type SilentAgent = z.infer<typeof SilentAgentSchema>;
+
 export const listStatuses = defineRpc({
   name: "status.list",
   input: z.object({ workspaceId: z.string().optional() }),
-  output: z.object({ statuses: z.array(StatusSchema), waiting: z.array(WaitingSchema) }),
+  output: z.object({ statuses: z.array(StatusSchema), waiting: z.array(WaitingSchema), silent: z.array(SilentAgentSchema) }),
 });
 
 /** Ask an agent to update its status. Sent now if it is idle, otherwise when its turn ends. */
@@ -41,4 +49,15 @@ export const refreshStatus = defineRpc({
   name: "status.refresh",
   input: z.object({ agentId: z.string() }),
   output: z.object({ sent: z.boolean() }),
+});
+
+/**
+ * Bring a workspace (or every workspace) up to date: ask each agent whose card is out of date.
+ * `auto` is the panel opening: only stale cards, at most once per update. Otherwise the Refresh
+ * button: every card that missed a turn, plus agents with no card yet.
+ */
+export const refreshAll = defineRpc({
+  name: "status.refresh-all",
+  input: z.object({ workspaceId: z.string().optional(), auto: z.boolean().optional() }),
+  output: z.object({ asked: z.number() }),
 });

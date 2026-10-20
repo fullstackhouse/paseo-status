@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { readWaiting, REFRESH_PROMPT, StatusService, type AgentState, type Courier } from "../server/service";
+import { FALLBACK_PROMPT, readWaiting, REFRESH_PROMPT, StatusService, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
 
 class FakeCourier implements Courier {
@@ -101,6 +101,49 @@ describe("status", () => {
     await expect(service.refresh(AGENT)).rejects.toThrow(/archived/);
     store.patch(AGENT, { archived: true });
     expect(store.list(WS)).toHaveLength(0);
+  });
+
+  it("the panel opening asks stale cards only, and only once per update", async () => {
+    await service.callTool(AGENT, "status_set", status);
+    await service.turnEnded(AGENT);
+    await service.turnEnded(AGENT); // 1 turn behind: not stale yet
+    expect(await service.refreshAll(WS, { auto: true })).toEqual({ asked: 0 });
+    await service.turnEnded(AGENT); // 2 behind: stale
+    expect(await service.refreshAll(WS, { auto: true })).toEqual({ asked: 1 });
+    // The agent ignored it and did more turns: reopening the panel does not nag again.
+    await service.turnEnded(AGENT);
+    expect(await service.refreshAll(WS, { auto: true })).toEqual({ asked: 0 });
+    // Once it updates and falls behind again, the next opening asks again.
+    await service.callTool(AGENT, "status_set", status);
+    for (let turn = 0; turn < 3; turn++) await service.turnEnded(AGENT);
+    expect(await service.refreshAll(WS, { auto: true })).toEqual({ asked: 1 });
+    expect(courier.sent).toHaveLength(2);
+  });
+
+  it("the Refresh button asks every card that missed a turn, plus agents with no card", async () => {
+    await service.callTool(AGENT, "status_set", status);
+    await service.turnEnded(AGENT);
+    expect(await service.refreshAll(WS, { silent: ["agent-2"] })).toEqual({ asked: 1 });
+    await service.turnEnded(AGENT);
+    expect(await service.refreshAll(WS, { silent: ["agent-2"] })).toEqual({ asked: 2 });
+  });
+
+  it("asks agents without the tool for a paseo-status block, and reads it from their reply", async () => {
+    const legacy = new StatusService(store, courier, async () => WS, (agentId) => agentId !== "old-agent");
+    await legacy.refresh("old-agent");
+    expect(courier.sent[0]).toEqual({ agentId: "old-agent", text: FALLBACK_PROMPT });
+    const block = JSON.stringify({ state: "blocked", tldr: "Waiting on API keys.", done: [], next: ["Get keys"] });
+    await legacy.turnEnded("old-agent", [
+      { type: "user_message", text: FALLBACK_PROMPT },
+      { type: "assistant_message", text: "Here you go.\n```paseo-status\n" },
+      { type: "assistant_message", text: `${block}\n\`\`\`` },
+    ] as any);
+    expect(store.get("old-agent")).toMatchObject({ state: "blocked", tldr: "Waiting on API keys.", turnsSince: 0 });
+  });
+
+  it("ignores an unreadable paseo-status block", async () => {
+    await service.turnEnded(AGENT, [{ type: "assistant_message", text: "```paseo-status\n{nope\n```" }] as any);
+    expect(store.get(AGENT)).toBeUndefined();
   });
 
   it("reads open asks from the asks plugin's store, when present", () => {

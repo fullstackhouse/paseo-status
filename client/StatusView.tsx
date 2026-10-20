@@ -2,13 +2,11 @@ import type { PluginTheme } from "@getpaseo/plugin";
 import { useAgent, useRpc, useWorkspace } from "@getpaseo/plugin/client";
 import { Icon, ScrollView, useToast } from "@getpaseo/plugin/client/react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Pressable, Text, View } from "react-native";
-import { listStatuses, refreshStatus, type Status, type Waiting } from "../shared/status";
+import { listStatuses, refreshAll, refreshStatus, STALE_TURNS, type SilentAgent, type Status, type Waiting } from "../shared/status";
 
 export const POLL_MS = 4000;
-/** Turns without an update after which the card says so loudly. */
-const STALE_TURNS = 2;
 
 const STATE_LABELS: Record<Status["state"], string> = {
   working: "working",
@@ -39,22 +37,25 @@ export function useStatuses(workspaceId?: string) {
 export function StatusView({ theme, compact, workspaceId, openAgent }: ViewProps) {
   const styles = useMemo(() => makeStyles(theme, compact), [theme, compact]);
   const query = useStatuses(workspaceId);
+  useAutoRefresh(workspaceId, query.isSuccess);
 
   if (query.isPending) return <Message styles={styles} text="Loading status…" />;
   if (query.isError) return <Message styles={styles} text={`Could not load status: ${query.error.message}`} danger />;
-  const { statuses, waiting } = query.data;
-  if (statuses.length === 0) {
+  const { statuses, waiting, silent } = query.data;
+  const toolbar = <Toolbar styles={styles} workspaceId={workspaceId} statuses={statuses} silent={silent} />;
+  if (statuses.length === 0 && silent.length === 0) {
     return (
-      <Message
-        styles={styles}
-        text={`No agent has published a status ${workspaceId ? "here" : "yet"}. Agents created after this plugin was installed publish one as they work; type /paseo-status in a chat to ask.`}
-      />
+      <View style={[styles.screen, styles.content]}>
+        {toolbar}
+        <Text style={styles.muted}>{workspaceId ? "No agents in this workspace." : "No agent has published a status yet."}</Text>
+      </View>
     );
   }
 
   const groups = workspaceId ? [[workspaceId, statuses] as const] : [...groupBy(statuses, (status) => status.workspaceId)];
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      {toolbar}
       {groups.map(([groupId, items]) => (
         <View key={groupId} style={styles.group}>
           {!workspaceId && <WorkspaceHeading workspaceId={groupId} styles={styles} />}
@@ -70,7 +71,84 @@ export function StatusView({ theme, compact, workspaceId, openAgent }: ViewProps
           ))}
         </View>
       ))}
+      {silent.map((agent) => (
+        <SilentCard key={agent.agentId} agent={agent} styles={styles} theme={theme} />
+      ))}
     </ScrollView>
+  );
+}
+
+/** Opening the view asks agents with stale cards for an update, once per update (the server keeps the count). */
+function useAutoRefresh(workspaceId: string | undefined, ready: boolean) {
+  const refresh = useRpc(refreshAll);
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const done = useRef(false);
+  useEffect(() => {
+    if (!ready || done.current) return;
+    done.current = true;
+    refresh({ workspaceId, auto: true })
+      .then(({ asked }) => {
+        if (asked === 0) return;
+        toast.show(`Asked ${asked} agent${asked === 1 ? "" : "s"} with a stale card for an update.`);
+        void queryClient.invalidateQueries({ queryKey: ["status"] });
+      })
+      .catch((error) => console.error("[status] auto refresh failed", error));
+  }, [ready, workspaceId, refresh, toast, queryClient]);
+}
+
+function Toolbar(props: { styles: Styles; workspaceId?: string; statuses: Status[]; silent: SilentAgent[] }) {
+  const { styles, workspaceId, statuses, silent } = props;
+  const refresh = useRpc(refreshAll);
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const behind = statuses.filter((status) => status.turnsSince > 0 && !status.refreshPending).length + silent.length;
+  const mutation = useMutation({
+    mutationFn: () => refresh({ workspaceId }),
+    onSuccess: ({ asked }) => {
+      toast.show(asked ? `Asked ${asked} agent${asked === 1 ? "" : "s"} for an update.` : "Every card is up to date.");
+      void queryClient.invalidateQueries({ queryKey: ["status"] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : String(error)),
+  });
+  const summary = behind ? `${behind} out of date` : "All up to date";
+  return (
+    <View style={styles.toolbar}>
+      <Text style={styles.meta}>{summary}</Text>
+      <Button
+        styles={styles}
+        label={mutation.isPending ? "Asking…" : "Refresh"}
+        disabled={mutation.isPending || behind === 0}
+        onPress={() => mutation.mutate()}
+      />
+    </View>
+  );
+}
+
+function SilentCard({ agent, styles, theme }: { agent: SilentAgent; styles: Styles; theme: PluginTheme }) {
+  const refresh = useRpc(refreshStatus);
+  const toast = useToast();
+  const mutation = useMutation({
+    mutationFn: () => refresh({ agentId: agent.agentId }),
+    onSuccess: ({ sent }) => toast.show(sent ? "Asked the agent for a status." : "The agent is mid-turn; it will be asked when the turn ends."),
+    onError: (error) => toast.error(error instanceof Error ? error.message : String(error)),
+  });
+  return (
+    <View style={[styles.card, styles.silent]}>
+      <View style={styles.header}>
+        <Icon name="Bot" size={16} color={theme.colors.foregroundMuted} />
+        <Text style={styles.agent} numberOfLines={1}>
+          {agent.title ?? agent.agentId}
+        </Text>
+        <Text style={[styles.badge, styles.muted]}>no status yet</Text>
+        <Button
+          styles={styles}
+          label={mutation.isPending ? "Asking…" : mutation.isSuccess ? "Asked" : "Ask for status"}
+          disabled={mutation.isPending || mutation.isSuccess}
+          onPress={() => mutation.mutate()}
+        />
+      </View>
+    </View>
   );
 }
 
@@ -225,6 +303,8 @@ function makeStyles(theme: PluginTheme, compact: boolean) {
     item: { flexDirection: "row" as const, gap: 6 },
     mark: { color: colors.foregroundMuted, fontSize: 13, lineHeight: 19 },
     itemText: { color: colors.foreground, fontSize: 13, lineHeight: 19, flex: 1 },
+    toolbar: { flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const, gap: 8 },
+    silent: { paddingVertical: compact ? 10 : 8 },
     footer: {
       flexDirection: compact ? ("column" as const) : ("row" as const),
       alignItems: compact ? ("flex-start" as const) : ("center" as const),

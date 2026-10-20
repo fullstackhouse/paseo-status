@@ -1,9 +1,10 @@
 import { dirname, join } from "node:path";
 import type { PaseoApi } from "@getpaseo/client";
 import type { PluginServerContext } from "@getpaseo/plugin/server";
-import { listStatuses, refreshStatus } from "./shared/status";
+import { listStatuses, refreshAll, refreshStatus, type SilentAgent } from "./shared/status";
 import { AgentDirectory } from "./server/agents";
 import { installBridge } from "./server/bridge";
+import { Equipped } from "./server/equipped";
 import { listen } from "./server/listener";
 import { dataDir } from "./server/paths";
 import { INSTRUCTIONS, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
@@ -41,7 +42,17 @@ export default function contribute(server: PluginServerContext) {
       await requirePaseo().agents.ref(agentId).send(text, { activeTurnBehavior: "steer" });
     },
   };
-  const service = new StatusService(store, courier, (agentId) => agents.workspaceOf(agentId));
+  const equipped = new Equipped(dir);
+  const service = new StatusService(store, courier, (agentId) => agents.workspaceOf(agentId), (agentId) => equipped.has(agentId));
+
+  /** Live agents in a workspace that have never published a status. */
+  const silentAgents = async (api: PaseoApi, workspaceId: string): Promise<SilentAgent[]> => {
+    const { entries } = await api.agents.list();
+    return entries
+      .map(({ agent }) => agent)
+      .filter((agent) => agent.workspaceId === workspaceId && !agent.archivedAt && !agent.internal && !store.get(agent.id))
+      .map((agent) => ({ agentId: agent.id, title: agent.title ?? null }));
+  };
 
   server.before("agent.create", ({ request }, { paseo: api }) => {
     capture(api);
@@ -53,11 +64,12 @@ export default function contribute(server: PluginServerContext) {
   });
   server.on("agent.created", ({ agent }, { paseo: api }) => {
     capture(api);
+    equipped.add(agent.id);
     if (agent.workspaceId) agents.remember(agent.id, agent.workspaceId);
   });
-  server.on("agent.turn_ended", ({ agent }, { paseo: api }) => {
+  server.on("agent.turn_ended", ({ agent, timeline }, { paseo: api }) => {
     capture(api);
-    void service.turnEnded(agent.id).catch((error) => console.error("[status] turn bookkeeping failed", error));
+    void service.turnEnded(agent.id, timeline).catch((error) => console.error("[status] turn bookkeeping failed", error));
   });
   // Plan mode prompts even for preapproved MCP tools. status_set only writes this plugin's card.
   server.on("agent.permission_requested", async ({ agent, request }, { paseo: api }) => {
@@ -70,10 +82,16 @@ export default function contribute(server: PluginServerContext) {
     store.patch(agent.id, { archived: true });
   });
 
-  server.handle(listStatuses, ({ workspaceId }, { paseo: api }) => {
+  server.handle(listStatuses, async ({ workspaceId }, { paseo: api }) => {
     capture(api);
     const statuses = store.list(workspaceId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-    return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)) };
+    const silent = workspaceId ? await silentAgents(api, workspaceId) : [];
+    return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent };
+  });
+  server.handle(refreshAll, async ({ workspaceId, auto }, { paseo: api }) => {
+    capture(api);
+    const silent = workspaceId && !auto ? (await silentAgents(api, workspaceId)).map((agent) => agent.agentId) : [];
+    return service.refreshAll(workspaceId, { auto, silent });
   });
   server.handle(refreshStatus, ({ agentId }, { paseo: api }) => {
     capture(api);

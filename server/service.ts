@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { AgentTimelineItem } from "@getpaseo/protocol/agent-types";
 import { z } from "zod";
-import { STATES, type Status, type Waiting } from "../shared/status";
+import { STALE_TURNS, STATES, type Status, type Waiting } from "../shared/status";
 import type { StatusStore } from "./store";
 
 export const INSTRUCTIONS = `status_set publishes where your work stands to a status card the human reads in Paseo instead of asking you "where are we?".
@@ -34,6 +35,15 @@ export const TOOLS = [
 export const REFRESH_PROMPT =
   "[status] The human asked where things stand. Call status_set with your current status, then carry on with what you were doing, if anything.";
 
+/** For agents created before the plugin was installed: they have no tool, so the status rides in their reply. */
+export const FALLBACK_PROMPT = `[status] The human asked where things stand, for a status card shown outside this chat. End your reply with a fenced code block tagged paseo-status holding one JSON object:
+\`\`\`paseo-status
+{"state": "working | waiting_on_you | blocked | done", "tldr": "one or two plain sentences: what this work is and where it stands", "now": "what you are doing or waiting on", "done": ["finished step, with its proof"], "next": ["what is left, in order; mark what needs the human"]}
+\`\`\`
+Write for someone who skipped the transcript. Say "not committed" or "not pushed" when that is true. Then carry on with what you were doing, if anything.`;
+
+const FENCED = /```paseo-status[^\n]*\n([\s\S]*?)```/g;
+
 export type AgentState = "idle" | "running" | "gone";
 
 export interface Courier {
@@ -51,6 +61,9 @@ export class StatusService {
     private readonly store: StatusStore,
     private readonly courier: Courier,
     private readonly workspaceOf: (agentId: string) => Promise<string | null>,
+    /** Created while the plugin was installed, so it has the status_set tool. */
+    private readonly isEquipped: (agentId: string) => boolean = () => true,
+    private readonly now: () => Date = () => new Date(),
   ) {}
 
   async callTool(agentId: string | null, name: string, args: unknown): Promise<ToolResult> {
@@ -67,27 +80,77 @@ export class StatusService {
     }
   }
 
-  /** The human pressed Refresh. A send mid-turn would interrupt the agent, so that case waits for the turn to end. */
-  async refresh(agentId: string): Promise<{ sent: boolean }> {
+  /**
+   * Ask one agent for an update. A send mid-turn would interrupt the agent, so that case waits
+   * for the turn to end. `auto` asks at most once per update, so reopening the panel never nags.
+   */
+  async refresh(agentId: string, { auto = false } = {}): Promise<{ sent: boolean; skipped?: boolean }> {
+    const status = this.store.get(agentId);
+    // An update clears refreshRequestedAt, so a set value means the last request is still unanswered.
+    if (auto && status?.refreshRequestedAt) return { sent: false, skipped: true };
     const state = await this.courier.state(agentId);
     if (state === "gone") throw new Error("That agent is archived");
+    if (status) this.store.patch(agentId, { refreshRequestedAt: this.now().toISOString() });
     if (state === "running") {
-      if (this.store.get(agentId)) this.store.patch(agentId, { refreshPending: true });
+      if (status) this.store.patch(agentId, { refreshPending: true });
       else this.pendingWithoutStatus.add(agentId);
       return { sent: false };
     }
-    await this.courier.send(agentId, REFRESH_PROMPT);
+    await this.courier.send(agentId, this.prompt(agentId));
     return { sent: true };
   }
 
-  async turnEnded(agentId: string): Promise<void> {
+  /**
+   * The panel opening (`auto`: stale cards only) or the Refresh button (every card that missed a
+   * turn, plus `silent` agents that never published one). Returns how many agents were asked.
+   */
+  async refreshAll(workspaceId: string | undefined, { auto = false, silent = [] as string[] } = {}): Promise<{ asked: number }> {
+    const threshold = auto ? STALE_TURNS : 1;
+    const targets = [
+      ...this.store
+        .list(workspaceId)
+        .filter((status) => status.turnsSince >= threshold && !status.refreshPending)
+        .map((status) => status.agentId),
+      ...(auto ? [] : silent),
+    ];
+    let asked = 0;
+    for (const agentId of targets) {
+      try {
+        if (!(await this.refresh(agentId, { auto })).skipped) asked += 1;
+      } catch (error) {
+        console.error(`[status] could not refresh ${agentId}`, error);
+      }
+    }
+    return { asked };
+  }
+
+  async turnEnded(agentId: string, timeline: readonly AgentTimelineItem[] = []): Promise<void> {
+    await this.captureFromReply(agentId, timeline);
     const status = this.store.turnEnded(agentId);
     const pending = status?.refreshPending || this.pendingWithoutStatus.delete(agentId);
     if (!pending) return;
     if (status) this.store.patch(agentId, { refreshPending: false });
     // The turn that just ended already answered the request.
     if (status && status.turnsSince === 0) return;
-    await this.courier.send(agentId, REFRESH_PROMPT);
+    await this.courier.send(agentId, this.prompt(agentId));
+  }
+
+  private prompt(agentId: string): string {
+    return this.isEquipped(agentId) ? REFRESH_PROMPT : FALLBACK_PROMPT;
+  }
+
+  /** A paseo-status block at the end of the reply counts as status_set (the fallback for tool-less agents). */
+  private async captureFromReply(agentId: string, timeline: readonly AgentTimelineItem[]): Promise<void> {
+    const blocks = [...latestReply(timeline).matchAll(FENCED)];
+    const raw = blocks.at(-1)?.[1];
+    if (!raw) return;
+    try {
+      const workspaceId = await this.workspaceOf(agentId);
+      if (!workspaceId) return;
+      this.store.set(workspaceId, agentId, SetInput.parse(JSON.parse(raw)));
+    } catch (error) {
+      console.error(`[status] unreadable paseo-status block from ${agentId}`, error);
+    }
   }
 
   /** Refresh requests for agents that have never published a status; in memory only. */
@@ -114,4 +177,15 @@ export function readWaiting(asksDir: string, workspaceIds: readonly string[]): W
 
 export function workspacesOf(statuses: readonly Status[]): string[] {
   return [...new Set(statuses.map((status) => status.workspaceId))];
+}
+
+/** The assistant text after the last user message; streamed replies arrive as several items. */
+export function latestReply(timeline: readonly AgentTimelineItem[]): string {
+  const parts: string[] = [];
+  for (let index = timeline.length - 1; index >= 0; index--) {
+    const item = timeline[index]!;
+    if (item.type === "user_message") break;
+    if (item.type === "assistant_message") parts.unshift(item.text);
+  }
+  return parts.join("");
 }

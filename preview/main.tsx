@@ -32,7 +32,7 @@ function Frame(props: { id: string; title: string; width: number; height: number
 
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={new QueryClient()}>
-    <Frame id="panel" title="Status · shop-api" width={620} height={790}>
+    <Frame id="panel" title="Status · shop-api" width={620} height={880}>
       <StatusView theme={theme as any} compact={false} workspaceId="api" openAgent={() => {}} />
     </Frame>
     <Frame id="phone" title="Status" width={390} height={790}>

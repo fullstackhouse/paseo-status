@@ -43,7 +43,7 @@ export class StatusStore {
   }
 
   /** Bookkeeping that does not count as the agent updating its status. */
-  patch(agentId: string, patch: Partial<Pick<Status, "turnsSince" | "setThisTurn" | "refreshPending" | "archived">>): Status | undefined {
+  patch(agentId: string, patch: Partial<Pick<Status, "turnsSince" | "setThisTurn" | "refreshPending" | "refreshRequestedAt" | "archived">>): Status | undefined {
     const current = this.get(agentId);
     if (!current) return undefined;
     return this.write(current.workspaceId, agentId, { ...current, ...patch });
