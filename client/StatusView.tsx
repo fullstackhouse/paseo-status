@@ -4,7 +4,7 @@ import { Icon, ScrollView, useToast } from "@getpaseo/plugin/client/react-native
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import { Pressable, Text, View } from "react-native";
-import { listStatuses, refreshAll, refreshStatus, STALE_TURNS, type SilentAgent, type Status, type Waiting } from "../shared/status";
+import { listStatuses, needsYou, refreshAll, refreshStatus, STALE_TURNS, type SilentAgent, type Status, type Waiting } from "../shared/status";
 
 export const POLL_MS = 4000;
 
@@ -14,6 +14,8 @@ export const STATE_LABELS: Record<Status["state"], string> = {
   blocked: "blocked",
   done: "done",
 };
+/** Shown instead of "waiting on you" / "blocked" once a turn has started since: the human replied. */
+export const ANSWERED_LABEL = "answered";
 
 type Styles = ReturnType<typeof makeStyles>;
 type AgentInfo = { title: string | null; running: boolean };
@@ -175,8 +177,16 @@ function StatusCard(props: {
     onError: (error) => toast.error(error instanceof Error ? error.message : String(error)),
   });
   const stale = status.turnsSince >= STALE_TURNS;
-  const stateTone =
-    status.state === "blocked" ? styles.bad : status.state === "waiting_on_you" ? styles.warn : status.state === "done" ? styles.good : styles.muted;
+  const answered = status.state !== "working" && status.state !== "done" && !needsYou(status, agent?.running ?? false);
+  const stateTone = answered
+    ? styles.muted
+    : status.state === "blocked"
+      ? styles.bad
+      : status.state === "waiting_on_you"
+        ? styles.warn
+        : status.state === "done"
+          ? styles.good
+          : styles.muted;
 
   return (
     <View style={styles.card}>
@@ -185,7 +195,7 @@ function StatusCard(props: {
         <Text style={styles.agent} numberOfLines={1}>
           {agent?.title ?? status.agentId}
         </Text>
-        <Text style={[styles.badge, stateTone]}>{STATE_LABELS[status.state]}</Text>
+        <Text style={[styles.badge, stateTone]}>{answered ? ANSWERED_LABEL : STATE_LABELS[status.state]}</Text>
       </View>
       <Text style={styles.tldr}>{status.tldr}</Text>
       {status.now ? <Line styles={styles} label="Now" text={status.now} /> : null}

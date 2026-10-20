@@ -30,6 +30,15 @@ export const StatusSchema = z.object({
 });
 export type Status = z.infer<typeof StatusSchema>;
 
+/**
+ * The card asks for the human and no turn has started since: a reply (or any other prompt) starts
+ * a turn, which answers it even before the agent publishes again.
+ */
+export function needsYou(status: Status, running: boolean): boolean {
+  if (status.state !== "waiting_on_you" && status.state !== "blocked") return false;
+  return status.turnsSince === 0 && !(running && !status.setThisTurn);
+}
+
 /** An open ask from the asks plugin, when it is installed. Read-only. */
 export const WaitingSchema = z.object({ id: z.string(), title: z.string(), agentId: z.string() });
 export type Waiting = z.infer<typeof WaitingSchema>;

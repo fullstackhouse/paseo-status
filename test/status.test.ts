@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { FALLBACK_PROMPT, readWaiting, REFRESH_PROMPT, StatusService, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
+import { needsYou } from "../shared/status";
 
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
@@ -160,5 +161,17 @@ describe("status", () => {
       }),
     );
     expect(readWaiting(asksDir, [WS, "wks_missing"])).toEqual([{ id: "A1", title: "Merge PR #7?", agentId: AGENT }]);
+  });
+
+  it("a card waiting on the human stops needing them once a turn starts after it", async () => {
+    await service.callTool(AGENT, "status_set", { ...status, state: "waiting_on_you" });
+    expect(needsYou(store.get(AGENT)!, true)).toBe(true); // set during the turn still running
+    await service.turnEnded(AGENT);
+    expect(needsYou(store.get(AGENT)!, false)).toBe(true);
+    expect(needsYou(store.get(AGENT)!, true)).toBe(false); // the human replied; the agent is running
+    await service.turnEnded(AGENT);
+    expect(needsYou(store.get(AGENT)!, false)).toBe(false); // that turn ended without a new status
+    await service.callTool(AGENT, "status_set", { ...status, state: "blocked" });
+    expect(needsYou(store.get(AGENT)!, false)).toBe(true);
   });
 });

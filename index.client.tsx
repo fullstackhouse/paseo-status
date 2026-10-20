@@ -8,8 +8,8 @@ import type {
 } from "@getpaseo/plugin/client";
 import { SidebarRow } from "@getpaseo/plugin/client/ui";
 import { Text } from "react-native";
-import { age, AgentStatus, POLL_MS, STATE_LABELS, StatusView, useStatuses } from "./client/StatusView";
-import { listStatuses, refreshStatus, STALE_TURNS, type Status } from "./shared/status";
+import { age, AgentStatus, ANSWERED_LABEL, POLL_MS, STATE_LABELS, StatusView, useStatuses } from "./client/StatusView";
+import { listStatuses, needsYou, refreshStatus, STALE_TURNS, type Status } from "./shared/status";
 
 const STATE_ICONS: Record<Status["state"], string> = {
   working: "LoaderCircle",
@@ -41,14 +41,15 @@ function GlobalScreen({ theme, layout, navigation }: PluginScreenProps) {
 
 function SidebarItem({ theme, currentScreen, openScreen }: PluginSidebarItemProps) {
   const query = useStatuses();
-  const needsYou = query.data?.statuses.filter((status) => status.state === "waiting_on_you" || status.state === "blocked").length ?? 0;
+  const data = query.data;
+  const count = data?.statuses.filter((status) => needsYou(status, data.agents[status.agentId]?.running ?? false)).length ?? 0;
   return (
     <SidebarRow
       icon="Gauge"
       active={currentScreen?.screenId === "status"}
       onPress={() => openScreen({ screenId: "status" })}
       trailing={
-        needsYou > 0 ? <Text style={{ color: theme.colors.statusWarning, fontSize: 12 }}>{`${needsYou} need you`}</Text> : undefined
+        count > 0 ? <Text style={{ color: theme.colors.statusWarning, fontSize: 12 }}>{`${count} need you`}</Text> : undefined
       }
     />
   );
@@ -60,10 +61,14 @@ function PillPopover({ theme, layout, workspaceId, ...context }: PluginButtonCon
 }
 
 /** The pill's face: the card's state and age, or a nudge when there is no card. */
-function pillFace(status: Status | undefined): { label: string; icon: string } {
+function pillFace(status: Status | undefined, running: boolean): { label: string; icon: string } {
   if (!status) return { label: "No status", icon: "Gauge" };
   const stale = status.turnsSince >= STALE_TURNS ? " · stale" : "";
-  return { label: `${STATE_LABELS[status.state]} · ${age(status.updatedAt)}${stale}`, icon: STATE_ICONS[status.state] };
+  const answered = status.state !== "working" && status.state !== "done" && !needsYou(status, running);
+  return {
+    label: `${answered ? ANSWERED_LABEL : STATE_LABELS[status.state]} · ${age(status.updatedAt)}${stale}`,
+    icon: answered ? "MessageCircleReply" : STATE_ICONS[status.state],
+  };
 }
 
 /** A composer pill per agent showing its status; pressing it shows the card in a popover. */
@@ -79,7 +84,7 @@ function contributePills(client: PluginClientContext): () => void {
         id: "status",
         workspaceId: agent.workspaceId,
         agentId: agent.id,
-        button: { title: "Status", ...pillFace(undefined), behavior: { kind: "popover", Content: PillPopover } },
+        button: { title: "Status", ...pillFace(undefined, false), behavior: { kind: "popover", Content: PillPopover } },
       }),
     );
   };
@@ -89,9 +94,9 @@ function contributePills(client: PluginClientContext): () => void {
   };
 
   const refreshFaces = async () => {
-    const { statuses } = await client.rpc(listStatuses, {});
+    const { statuses, agents } = await client.rpc(listStatuses, {});
     const byAgent = new Map(statuses.map((status) => [status.agentId, status]));
-    for (const [agentId, pill] of pills) pill.update(pillFace(byAgent.get(agentId)));
+    for (const [agentId, pill] of pills) pill.update(pillFace(byAgent.get(agentId), agents[agentId]?.running ?? false));
   };
   const timer = setInterval(() => void refreshFaces().catch(() => undefined), POLL_MS * 2);
 
