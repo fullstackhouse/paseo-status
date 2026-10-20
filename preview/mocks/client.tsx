@@ -9,17 +9,11 @@ export function useRpc(contract: Contract) {
         statuses: statuses.filter((status) => !input.workspaceId || status.workspaceId === input.workspaceId),
         waiting,
         silent: input.workspaceId === "api" ? silent : [],
+        agents: Object.fromEntries(Object.entries(agents).map(([id, title]) => [id, { title, running: id === "agent-search" }])),
+        workspaces,
       };
     }
     if (contract.name === "status.refresh-all") return { asked: 0 };
     return { sent: true };
   };
-}
-
-export function useWorkspace<T>(id: string, select: (workspace: { name: string; title: string | null }) => T): T {
-  return select({ name: workspaces[id] ?? id, title: workspaces[id] ?? null });
-}
-
-export function useAgent<T>(id: string, select: (agent: { title: string | null; status: string }) => T): T {
-  return select({ title: agents[id] ?? null, status: id === "agent-search" ? "running" : "idle" });
 }

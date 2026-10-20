@@ -17,6 +17,7 @@ Paseo plugin: agents publish where their work stands via one MCP tool (`status_s
 - Plugin server code cannot write settings, so clients poll (`POLL_MS`).
 - Claude plan mode prompts even for preapproved MCP tools; the server auto-allows `mcp__status__*`.
 - `before("agent.session_open")` can change env only, not MCP servers: agents created before install never get the tool, hence the reply-block fallback.
+- `useAgent`/`useWorkspace` throw outside a workspace panel (screens, popovers): names come from the server in `status.list`. The preview mocks don't provide them, so a regression fails there too.
 - Plugin RPC names must match `/^[a-z][a-z0-9._-]*$/` (no camelCase).
 - Reads `~/.paseo/plugin-data/asks/workspaces/*.json` for open asks; never writes there.
 

@@ -1,5 +1,5 @@
 import type { PluginTheme } from "@getpaseo/plugin";
-import { useAgent, useRpc, useWorkspace } from "@getpaseo/plugin/client";
+import { useRpc } from "@getpaseo/plugin/client";
 import { Icon, ScrollView, useToast } from "@getpaseo/plugin/client/react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
@@ -16,6 +16,7 @@ export const STATE_LABELS: Record<Status["state"], string> = {
 };
 
 type Styles = ReturnType<typeof makeStyles>;
+type AgentInfo = { title: string | null; running: boolean };
 
 interface ViewProps {
   theme: PluginTheme;
@@ -41,7 +42,7 @@ export function StatusView({ theme, compact, workspaceId, openAgent }: ViewProps
 
   if (query.isPending) return <Message styles={styles} text="Loading status…" />;
   if (query.isError) return <Message styles={styles} text={`Could not load status: ${query.error.message}`} danger />;
-  const { statuses, waiting, silent } = query.data;
+  const { statuses, waiting, silent, agents, workspaces } = query.data;
   const toolbar = <Toolbar styles={styles} workspaceId={workspaceId} statuses={statuses} silent={silent} />;
   if (statuses.length === 0 && silent.length === 0) {
     return (
@@ -58,11 +59,12 @@ export function StatusView({ theme, compact, workspaceId, openAgent }: ViewProps
       {toolbar}
       {groups.map(([groupId, items]) => (
         <View key={groupId} style={styles.group}>
-          {!workspaceId && <WorkspaceHeading workspaceId={groupId} styles={styles} />}
+          {!workspaceId && <Text style={styles.workspace}>{workspaces[groupId] ?? groupId}</Text>}
           {items.map((status) => (
             <StatusCard
               key={status.agentId}
               status={status}
+              agent={agents[status.agentId]}
               waiting={waiting.filter((ask) => ask.agentId === status.agentId)}
               styles={styles}
               theme={theme}
@@ -152,20 +154,15 @@ function SilentCard({ agent, styles, theme }: { agent: SilentAgent; styles: Styl
   );
 }
 
-function WorkspaceHeading({ workspaceId, styles }: { workspaceId: string; styles: Styles }) {
-  const name = useWorkspace(workspaceId, (workspace) => workspace?.title ?? workspace?.name ?? null);
-  return <Text style={styles.workspace}>{name ?? workspaceId}</Text>;
-}
-
 function StatusCard(props: {
   status: Status;
+  agent?: AgentInfo;
   waiting: Waiting[];
   styles: Styles;
   theme: PluginTheme;
   openAgent?: (agentId: string) => void;
 }) {
-  const { status, waiting, styles, theme, openAgent } = props;
-  const agent = useAgent(status.agentId, (snapshot) => ({ title: snapshot.title, running: snapshot.status === "running" }));
+  const { status, agent, waiting, styles, theme, openAgent } = props;
   const refresh = useRpc(refreshStatus);
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -269,12 +266,13 @@ export function AgentStatus(props: { theme: PluginTheme; compact: boolean; works
       {status ? (
         <StatusCard
           status={status}
+          agent={query.data.agents[agentId]}
           waiting={query.data.waiting.filter((ask) => ask.agentId === agentId)}
           styles={styles}
           theme={theme}
         />
       ) : (
-        <SilentCard agent={{ agentId, title: null }} styles={styles} theme={theme} />
+        <SilentCard agent={{ agentId, title: query.data.agents[agentId]?.title ?? null }} styles={styles} theme={theme} />
       )}
     </ScrollView>
   );

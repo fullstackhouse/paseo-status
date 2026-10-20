@@ -45,14 +45,14 @@ export default function contribute(server: PluginServerContext) {
   const equipped = new Equipped(dir);
   const service = new StatusService(store, courier, (agentId) => agents.workspaceOf(agentId), (agentId) => equipped.has(agentId));
 
+  type AgentPayload = Awaited<ReturnType<PaseoApi["agents"]["list"]>>["entries"][number]["agent"];
   /** Live agents in a workspace that have never published a status. */
-  const silentAgents = async (api: PaseoApi, workspaceId: string): Promise<SilentAgent[]> => {
-    const { entries } = await api.agents.list();
-    return entries
-      .map(({ agent }) => agent)
-      .filter((agent) => agent.workspaceId === workspaceId && !agent.archivedAt && !agent.internal && !store.get(agent.id))
+  const silentAgents = (live: AgentPayload[], workspaceId: string): SilentAgent[] =>
+    live
+      .filter((agent) => agent.workspaceId === workspaceId && !store.get(agent.id))
       .map((agent) => ({ agentId: agent.id, title: agent.title ?? null }));
-  };
+  const liveAgents = async (api: PaseoApi): Promise<AgentPayload[]> =>
+    (await api.agents.list()).entries.map(({ agent }) => agent).filter((agent) => !agent.archivedAt && !agent.internal);
 
   server.before("agent.create", ({ request }, { paseo: api }) => {
     capture(api);
@@ -85,12 +85,19 @@ export default function contribute(server: PluginServerContext) {
   server.handle(listStatuses, async ({ workspaceId }, { paseo: api }) => {
     capture(api);
     const statuses = store.list(workspaceId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-    const silent = workspaceId ? await silentAgents(api, workspaceId) : [];
-    return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent };
+    const live = await liveAgents(api);
+    const agents = Object.fromEntries(
+      live.map((agent) => [agent.id, { title: agent.title ?? null, running: agent.status === "running" || agent.status === "initializing" }]),
+    );
+    const workspaces = workspaceId
+      ? {}
+      : Object.fromEntries((await api.workspaces.list()).entries.map((workspace) => [workspace.id, workspace.title || workspace.name]));
+    const silent = workspaceId ? silentAgents(live, workspaceId) : [];
+    return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent, agents, workspaces };
   });
   server.handle(refreshAll, async ({ workspaceId, auto }, { paseo: api }) => {
     capture(api);
-    const silent = workspaceId && !auto ? (await silentAgents(api, workspaceId)).map((agent) => agent.agentId) : [];
+    const silent = workspaceId && !auto ? silentAgents(await liveAgents(api), workspaceId).map((agent) => agent.agentId) : [];
     return service.refreshAll(workspaceId, { auto, silent });
   });
   server.handle(refreshStatus, ({ agentId }, { paseo: api }) => {

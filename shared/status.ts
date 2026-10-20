@@ -41,7 +41,14 @@ export type SilentAgent = z.infer<typeof SilentAgentSchema>;
 export const listStatuses = defineRpc({
   name: "status.list",
   input: z.object({ workspaceId: z.string().optional() }),
-  output: z.object({ statuses: z.array(StatusSchema), waiting: z.array(WaitingSchema), silent: z.array(SilentAgentSchema) }),
+  output: z.object({
+    statuses: z.array(StatusSchema),
+    waiting: z.array(WaitingSchema),
+    silent: z.array(SilentAgentSchema),
+    /** Looked up on the server: Paseo's state hooks only work inside a workspace panel, not on screens or popovers. */
+    agents: z.record(z.string(), z.object({ title: z.string().nullable(), running: z.boolean() })),
+    workspaces: z.record(z.string(), z.string()),
+  }),
 });
 
 /** Ask an agent to update its status. Sent now if it is idle, otherwise when its turn ends. */
