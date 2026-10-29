@@ -3,7 +3,7 @@ import { useRpc } from "@getpaseo/plugin/client";
 import * as ui from "@getpaseo/plugin/client/ui";
 import { useQuery } from "@tanstack/react-query";
 import type { ComponentType } from "react";
-import { summarizeWorkspaces, type WorkspaceState } from "../shared/status";
+import { rowBadgeLabel, summarizeWorkspaces } from "../shared/status";
 import { POLL_MS } from "./StatusView";
 
 // The workspace row API arrived after @getpaseo/plugin 0.12; typed here until the SDK ships it.
@@ -27,12 +27,6 @@ type RowItemClient = PluginClientContext & {
   }) => () => void;
 };
 
-const BADGES: Record<WorkspaceState, { icon: string; label: string; tone: BadgeTone }> = {
-  needs_you: { icon: "Hand", label: "needs you", tone: "warning" },
-  working: { icon: "LoaderCircle", label: "working", tone: "info" },
-  done: { icon: "CircleCheck", label: "done", tone: "success" },
-};
-
 /** One query for every row on the host: the plugin's query client is shared by all its components. */
 function useWorkspaceSummaries() {
   const summarize = useRpc(summarizeWorkspaces);
@@ -44,12 +38,10 @@ function useWorkspaceSummaries() {
 }
 
 function WorkspaceStatusBadge({ workspaceId }: WorkspaceRowItemProps) {
-  const summary = useWorkspaceSummaries().data?.workspaces[workspaceId];
+  const label = rowBadgeLabel(useWorkspaceSummaries().data?.workspaces[workspaceId]);
   const Badge = (ui as { WorkspaceRowBadge?: ComponentType<WorkspaceRowBadgeProps> }).WorkspaceRowBadge;
-  if (!summary || !Badge) return null;
-  const badge = BADGES[summary.state];
-  const label = summary.state === "needs_you" && summary.waiting > 1 ? `${badge.label} (${summary.waiting})` : badge.label;
-  return <Badge icon={badge.icon} label={label} tone={badge.tone} accessibilityLabel={`Status: ${label}`} />;
+  if (!label || !Badge) return null;
+  return <Badge icon="Hand" label={label} tone="warning" accessibilityLabel={`Status: ${label}`} />;
 }
 
 export function contributeRowBadge(client: PluginClientContext): () => void {

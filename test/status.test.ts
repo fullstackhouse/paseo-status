@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { FALLBACK_PROMPT, readOpenAskCounts, readWaiting, REFRESH_PROMPT, StatusService, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
-import { needsYou, summarize, type Status } from "../shared/status";
+import { needsYou, rowBadgeLabel, summarize, type Status } from "../shared/status";
 
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
@@ -215,6 +215,16 @@ describe("summarize", () => {
       running: () => true,
     });
     expect(result).toEqual({ "ws-a": { state: "working", waiting: 0 }, "ws-b": { state: "done", waiting: 0 } });
+  });
+});
+
+describe("rowBadgeLabel", () => {
+  it("shows a badge only when the workspace needs you", () => {
+    expect(rowBadgeLabel(undefined)).toBeNull();
+    expect(rowBadgeLabel({ state: "working", waiting: 0 })).toBeNull();
+    expect(rowBadgeLabel({ state: "done", waiting: 0 })).toBeNull();
+    expect(rowBadgeLabel({ state: "needs_you", waiting: 1 })).toBe("needs you");
+    expect(rowBadgeLabel({ state: "needs_you", waiting: 6 })).toBe("needs you (6)");
   });
 });
 

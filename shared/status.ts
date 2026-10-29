@@ -88,7 +88,7 @@ export const refreshAll = defineRpc({
   output: z.object({ asked: z.number() }),
 });
 
-/** Where a workspace stands at a glance: the badge on its sidebar row. */
+/** Where a workspace stands at a glance. */
 export const WORKSPACE_STATES = ["needs_you", "working", "done"] as const;
 export type WorkspaceState = (typeof WORKSPACE_STATES)[number];
 
@@ -141,4 +141,13 @@ export function summarize(input: {
     raise(summary, "needs_you");
   }
   return result;
+}
+
+/**
+ * The sidebar row badge: only "needs you". Paseo's own sections already show working and done,
+ * so repeating them added noise; open asks and cards waiting on the human are what Paseo can't see.
+ */
+export function rowBadgeLabel(summary: WorkspaceSummary | undefined): string | null {
+  if (summary?.state !== "needs_you") return null;
+  return summary.waiting > 1 ? `needs you (${summary.waiting})` : "needs you";
 }
