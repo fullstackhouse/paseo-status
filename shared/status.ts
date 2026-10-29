@@ -87,3 +87,67 @@ export const refreshAll = defineRpc({
   input: z.object({ workspaceId: z.string().optional(), auto: z.boolean().optional() }),
   output: z.object({ asked: z.number() }),
 });
+
+/** Where a workspace stands at a glance. */
+export const WORKSPACE_STATES = ["needs_you", "working", "done"] as const;
+export type WorkspaceState = (typeof WORKSPACE_STATES)[number];
+
+export const WorkspaceSummarySchema = z.object({
+  state: z.enum(WORKSPACE_STATES),
+  /** Open asks plus cards that need the human. */
+  waiting: z.number(),
+});
+export type WorkspaceSummary = z.infer<typeof WorkspaceSummarySchema>;
+
+/** One summary per workspace on this host that has a card, an open ask, or a live agent. */
+export const summarizeWorkspaces = defineRpc({
+  name: "status.summary",
+  input: z.object({}),
+  output: z.object({ workspaces: z.record(z.string(), WorkspaceSummarySchema) }),
+});
+
+/**
+ * Needs you beats working beats done. An open ask or a card asking for the human needs you; a running
+ * agent or a card that says work goes on is working, even between turns. Paseo's own status only
+ * sees the agent stop, so it calls a workspace done while its agents still have work queued.
+ */
+export function summarize(input: {
+  statuses: readonly Status[];
+  openAsks: Readonly<Record<string, number>>;
+  /** Live agents with the workspace they are in. */
+  agents: readonly { workspaceId: string; running: boolean }[];
+  running: (agentId: string) => boolean;
+}): Record<string, WorkspaceSummary> {
+  const result: Record<string, WorkspaceSummary> = {};
+  const at = (workspaceId: string) => (result[workspaceId] ??= { state: "done", waiting: 0 });
+  const raise = (summary: WorkspaceSummary, state: WorkspaceState) => {
+    if (WORKSPACE_STATES.indexOf(state) < WORKSPACE_STATES.indexOf(summary.state)) summary.state = state;
+  };
+  for (const agent of input.agents) {
+    const summary = at(agent.workspaceId);
+    if (agent.running) raise(summary, "working");
+  }
+  for (const status of input.statuses) {
+    const summary = at(status.workspaceId);
+    if (needsYou(status, input.running(status.agentId))) {
+      summary.waiting += 1;
+      raise(summary, "needs_you");
+    } else if (status.state === "working") raise(summary, "working");
+  }
+  for (const [workspaceId, count] of Object.entries(input.openAsks)) {
+    if (count === 0) continue;
+    const summary = at(workspaceId);
+    summary.waiting += count;
+    raise(summary, "needs_you");
+  }
+  return result;
+}
+
+/**
+ * The sidebar row badge: only "needs you". Paseo's own sections already show working and done,
+ * so repeating them added noise; open asks and cards waiting on the human are what Paseo can't see.
+ */
+export function rowBadgeLabel(summary: WorkspaceSummary | undefined): string | null {
+  if (summary?.state !== "needs_you") return null;
+  return summary.waiting > 1 ? `needs you (${summary.waiting})` : "needs you";
+}

@@ -2,9 +2,9 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { FALLBACK_PROMPT, readWaiting, REFRESH_PROMPT, StatusService, type AgentState, type Courier } from "../server/service";
+import { FALLBACK_PROMPT, readOpenAskCounts, readWaiting, REFRESH_PROMPT, StatusService, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
-import { needsYou } from "../shared/status";
+import { needsYou, rowBadgeLabel, summarize, type Status } from "../shared/status";
 
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
@@ -173,5 +173,71 @@ describe("status", () => {
     expect(needsYou(store.get(AGENT)!, false)).toBe(false); // that turn ended without a new status
     await service.callTool(AGENT, "status_set", { ...status, state: "blocked" });
     expect(needsYou(store.get(AGENT)!, false)).toBe(true);
+  });
+});
+
+describe("summarize", () => {
+  const card = (workspaceId: string, agentId: string, state: Status["state"], turnsSince = 0): Status => ({
+    agentId,
+    workspaceId,
+    state,
+    tldr: "t",
+    done: [],
+    next: [],
+    updatedAt: "2026-10-22T00:00:00Z",
+    turnsSince,
+  });
+
+  it("ranks needs you over working over done", () => {
+    const result = summarize({
+      statuses: [card("ws-a", "a1", "done"), card("ws-b", "b1", "working"), card("ws-c", "c1", "waiting_on_you"), card("ws-c", "c2", "working")],
+      openAsks: {},
+      agents: [],
+      running: () => false,
+    });
+    expect(result).toEqual({
+      "ws-a": { state: "done", waiting: 0 },
+      "ws-b": { state: "working", waiting: 0 },
+      "ws-c": { state: "needs_you", waiting: 1 },
+    });
+  });
+
+  it("counts open asks as needing you, even when every card says done", () => {
+    const result = summarize({ statuses: [card("ws-a", "a1", "done")], openAsks: { "ws-a": 2, "ws-b": 0 }, agents: [], running: () => false });
+    expect(result).toEqual({ "ws-a": { state: "needs_you", waiting: 2 } });
+  });
+
+  it("treats a running agent as working and an answered card as no longer waiting", () => {
+    const result = summarize({
+      statuses: [card("ws-a", "a1", "waiting_on_you", 1)],
+      openAsks: {},
+      agents: [{ workspaceId: "ws-a", running: true }, { workspaceId: "ws-b", running: false }],
+      running: () => true,
+    });
+    expect(result).toEqual({ "ws-a": { state: "working", waiting: 0 }, "ws-b": { state: "done", waiting: 0 } });
+  });
+});
+
+describe("rowBadgeLabel", () => {
+  it("shows a badge only when the workspace needs you", () => {
+    expect(rowBadgeLabel(undefined)).toBeNull();
+    expect(rowBadgeLabel({ state: "working", waiting: 0 })).toBeNull();
+    expect(rowBadgeLabel({ state: "done", waiting: 0 })).toBeNull();
+    expect(rowBadgeLabel({ state: "needs_you", waiting: 1 })).toBe("needs you");
+    expect(rowBadgeLabel({ state: "needs_you", waiting: 6 })).toBe("needs you (6)");
+  });
+});
+
+describe("readOpenAskCounts", () => {
+  it("counts open asks per workspace file and ignores closed ones", () => {
+    const asksDir = mkdtempSync(join(tmpdir(), "asks-"));
+    mkdirSync(join(asksDir, "workspaces"));
+    writeFileSync(
+      join(asksDir, "workspaces", `${encodeURIComponent("wks/1")}.json`),
+      JSON.stringify({ asks: [{ status: "open" }, { status: "done" }, { status: "open" }, { status: "in_progress" }] }),
+    );
+    writeFileSync(join(asksDir, "workspaces", "wks_2.json"), JSON.stringify({ asks: [{ status: "dropped" }] }));
+    expect(readOpenAskCounts(asksDir)).toEqual({ "wks/1": 2 });
+    expect(readOpenAskCounts(join(asksDir, "missing"))).toEqual({});
   });
 });

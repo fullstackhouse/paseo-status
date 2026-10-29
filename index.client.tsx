@@ -9,6 +9,7 @@ import type {
 } from "@getpaseo/plugin/client";
 import { SidebarRow } from "@getpaseo/plugin/client/ui";
 import { Text } from "react-native";
+import { contributeRowBadge } from "./client/RowBadge";
 import { age, AgentStatus, ANSWERED_LABEL, InlineStatus, POLL_MS, STATE_LABELS, StatusView, useStatuses } from "./client/StatusView";
 import { listStatuses, needsYou, refreshStatus, STALE_TURNS, type Status } from "./shared/status";
 import { STATUS_CARD, StatusCardSchema, statusCardFor, type StatusCard } from "./shared/timeline";
@@ -183,5 +184,11 @@ export default function contribute(client: PluginClientContext) {
     },
   });
   client.addTimelineRenderer({ ...STATUS_CARD, schema: StatusCardSchema, Component: TimelineCard });
-  return contributePills(client);
+  // Where each workspace stands, on its sidebar row; Paseo's own status only sees agents stop.
+  const removeRowBadge = contributeRowBadge(client);
+  const removePills = contributePills(client);
+  return () => {
+    removeRowBadge();
+    removePills();
+  };
 }

@@ -1,14 +1,14 @@
 import { dirname, join } from "node:path";
 import type { PaseoApi } from "@getpaseo/client";
 import type { PluginServerContext } from "@getpaseo/plugin/server";
-import { listStatuses, refreshAll, refreshStatus, type SilentAgent } from "./shared/status";
+import { listStatuses, refreshAll, refreshStatus, summarize, summarizeWorkspaces, type SilentAgent } from "./shared/status";
 import { AgentDirectory, pickCaller } from "./server/agents";
 import { installBridge } from "./server/bridge";
 import { Equipped } from "./server/equipped";
 import { listen } from "./server/listener";
 import { dataDir } from "./server/paths";
 import { isStatusPermission } from "./server/permissions";
-import { INSTRUCTIONS, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
+import { INSTRUCTIONS, readOpenAskCounts, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
 import { StatusStore } from "./server/store";
 
 export default function contribute(server: PluginServerContext) {
@@ -61,6 +61,7 @@ export default function contribute(server: PluginServerContext) {
     live
       .filter((agent) => agent.workspaceId === workspaceId && !store.get(agent.id))
       .map((agent) => ({ agentId: agent.id, title: agent.title ?? null }));
+  const isRunning = (agent: AgentPayload) => agent.status === "running" || agent.status === "initializing";
   const liveAgents = async (api: PaseoApi): Promise<AgentPayload[]> =>
     (await api.agents.list()).entries.map(({ agent }) => agent).filter((agent) => !agent.archivedAt && !agent.internal);
 
@@ -97,13 +98,25 @@ export default function contribute(server: PluginServerContext) {
     const statuses = store.list(workspaceId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     const live = await liveAgents(api);
     const agents = Object.fromEntries(
-      live.map((agent) => [agent.id, { title: agent.title ?? null, running: agent.status === "running" || agent.status === "initializing" }]),
+      live.map((agent) => [agent.id, { title: agent.title ?? null, running: isRunning(agent) }]),
     );
     const workspaces = workspaceId
       ? {}
       : Object.fromEntries((await api.workspaces.list()).entries.map((workspace) => [workspace.id, workspace.title || workspace.name]));
     const silent = workspaceId ? silentAgents(live, workspaceId) : [];
     return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent, agents, workspaces };
+  });
+  server.handle(summarizeWorkspaces, async (_input, { paseo: api }) => {
+    capture(api);
+    const live = await liveAgents(api);
+    const running = new Set(live.filter(isRunning).map((agent) => agent.id));
+    const workspaces = summarize({
+      statuses: store.list(),
+      openAsks: readOpenAskCounts(asksDir),
+      agents: live.flatMap((agent) => (agent.workspaceId ? [{ workspaceId: agent.workspaceId, running: running.has(agent.id) }] : [])),
+      running: (agentId) => running.has(agentId),
+    });
+    return { workspaces };
   });
   server.handle(refreshAll, async ({ workspaceId, auto }, { paseo: api }) => {
     capture(api);

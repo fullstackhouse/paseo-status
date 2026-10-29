@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { AgentTimelineItem } from "@getpaseo/protocol/agent-types";
 import { z } from "zod";
@@ -167,6 +167,25 @@ export function readWaiting(asksDir: string, workspaceIds: readonly string[]): W
     }
   }
   return waiting;
+}
+
+/** Open asks per workspace, across every workspace the asks plugin has a file for. Never written to. */
+export function readOpenAskCounts(asksDir: string): Record<string, number> {
+  const dir = join(asksDir, "workspaces");
+  if (!existsSync(dir)) return {};
+  const counts: Record<string, number> = {};
+  for (const file of readdirSync(dir)) {
+    if (!file.endsWith(".json")) continue;
+    const workspaceId = decodeURIComponent(file.slice(0, -".json".length));
+    try {
+      const parsed = JSON.parse(readFileSync(join(dir, file), "utf8")) as { asks?: { status: string }[] };
+      const open = (parsed.asks ?? []).filter((ask) => ask.status === "open").length;
+      if (open > 0) counts[workspaceId] = open;
+    } catch (error) {
+      console.error(`[status] could not read asks for ${workspaceId}`, error);
+    }
+  }
+  return counts;
 }
 
 export function workspacesOf(statuses: readonly Status[]): string[] {
