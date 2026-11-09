@@ -3,14 +3,11 @@ import type {
   PluginButtonRegistration,
   PluginClientContext,
   PluginScreenProps,
-  PluginSidebarItemProps,
   PluginTimelineItemProps,
   PluginWorkspacePanelProps,
 } from "@getpaseo/plugin/client";
-import { SidebarRow } from "@getpaseo/plugin/client/ui";
-import { Text } from "react-native";
 import { contributeRowBadge } from "./client/RowBadge";
-import { age, AgentStatus, ANSWERED_LABEL, InlineStatus, POLL_MS, STATE_LABELS, StatusView, useStatuses } from "./client/StatusView";
+import { age, AgentStatus, ANSWERED_LABEL, InlineStatus, POLL_MS, STATE_LABELS, StatusView } from "./client/StatusView";
 import { listStatuses, needsYou, refreshStatus, STALE_TURNS, type Status } from "./shared/status";
 import { STATUS_CARD, StatusCardSchema, statusCardFor, type StatusCard } from "./shared/timeline";
 
@@ -38,22 +35,6 @@ function GlobalScreen({ theme, layout, navigation }: PluginScreenProps) {
       theme={theme}
       compact={layout.compact}
       openAgent={navigation ? (agentId) => navigation.openAgent({ agentId }) : undefined}
-    />
-  );
-}
-
-function SidebarItem({ theme, currentScreen, openScreen }: PluginSidebarItemProps) {
-  const query = useStatuses();
-  const data = query.data;
-  const count = data?.statuses.filter((status) => needsYou(status, data.agents[status.agentId]?.running ?? false)).length ?? 0;
-  return (
-    <SidebarRow
-      icon="Gauge"
-      active={currentScreen?.screenId === "status"}
-      onPress={() => openScreen({ screenId: "status" })}
-      trailing={
-        count > 0 ? <Text style={{ color: theme.colors.statusWarning, fontSize: 12 }}>{`${count} need you`}</Text> : undefined
-      }
     />
   );
 }
@@ -146,7 +127,6 @@ export default function contribute(client: PluginClientContext) {
     Component: WorkspacePanel,
   });
   client.addScreen({ id: "status", title: "Status", Component: GlobalScreen });
-  client.addSidebarHeaderItem({ id: "status", title: "Status", Component: SidebarItem });
   client.addCommandCenterItem({
     id: "open-status",
     title: "Open status for this workspace",
