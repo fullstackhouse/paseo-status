@@ -29,7 +29,7 @@ interface ViewProps {
   openAgent?: (agentId: string) => void;
 }
 
-export function useStatuses(workspaceId?: string) {
+function useStatuses(workspaceId?: string) {
   const list = useRpc(listStatuses);
   return useQuery({
     queryKey: ["status", workspaceId ?? "*"],
