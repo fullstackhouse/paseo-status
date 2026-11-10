@@ -54,7 +54,16 @@ export default function contribute(server: PluginServerContext) {
     },
   };
   const equipped = new Equipped(dir);
-  const service = new StatusService(store, courier, (agentId) => agents.workspaceOf(agentId), (agentId) => equipped.has(agentId));
+  const isBackground = async (workspaceId: string) =>
+    (await requirePaseo().workspaces.ref(workspaceId).refresh())?.background === true;
+  const service = new StatusService(
+    store,
+    courier,
+    (agentId) => agents.workspaceOf(agentId),
+    (agentId) => equipped.has(agentId),
+    undefined,
+    isBackground,
+  );
 
   type AgentPayload = Awaited<ReturnType<PaseoApi["agents"]["list"]>>["entries"][number]["agent"];
   /** Live agents in a workspace that have never published a status. */

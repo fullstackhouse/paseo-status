@@ -58,6 +58,11 @@ export class StatusService {
     /** Created while the plugin was installed, so it has the status_set tool. */
     private readonly isEquipped: (agentId: string) => boolean = () => true,
     private readonly now: () => Date = () => new Date(),
+    /**
+     * Background workspaces (hidden from the sidebar, e.g. Inbox review runs) are left out of Refresh all: nobody
+     * reads their cards, and the prompt starts a turn that a plugin like paseo-inbox takes for the human stepping in.
+     */
+    private readonly isBackground: (workspaceId: string) => Promise<boolean> = async () => false,
   ) {}
 
   async callTool(agentId: string | null, name: string, args: unknown): Promise<ToolResult> {
@@ -104,11 +109,17 @@ export class StatusService {
       ...this.store
         .list(workspaceId)
         .filter((status) => status.turnsSince >= threshold && !status.refreshPending)
-        .map((status) => status.agentId),
-      ...(auto ? [] : silent),
+        .map((status) => ({ agentId: status.agentId, workspaceId: status.workspaceId })),
+      ...(auto || !workspaceId ? [] : silent.map((agentId) => ({ agentId, workspaceId }))),
     ];
+    const background = new Map<string, Promise<boolean>>();
+    const hidden = (id: string) => {
+      if (!background.has(id)) background.set(id, this.isBackground(id).catch(() => false));
+      return background.get(id)!;
+    };
     let asked = 0;
-    for (const agentId of targets) {
+    for (const { agentId, workspaceId: targetWorkspace } of targets) {
+      if (await hidden(targetWorkspace)) continue;
       try {
         if (!(await this.refresh(agentId, { auto })).skipped) asked += 1;
       } catch (error) {
