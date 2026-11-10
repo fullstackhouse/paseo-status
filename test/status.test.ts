@@ -129,6 +129,30 @@ describe("status", () => {
     expect(await service.refreshAll(WS, { silent: ["agent-2"] })).toEqual({ asked: 2 });
   });
 
+  it("Refresh all leaves out agents in background workspaces", async () => {
+    const hiddenWs = "wks_hidden";
+    const scoped = new StatusService(
+      store,
+      courier,
+      async (agentId) => (agentId === "bg-agent" ? hiddenWs : WS),
+      () => true,
+      undefined,
+      async (workspaceId) => workspaceId === hiddenWs,
+    );
+    await scoped.callTool(AGENT, "status_set", status);
+    await scoped.callTool("bg-agent", "status_set", status);
+    for (let turn = 0; turn < 3; turn++) {
+      await scoped.turnEnded(AGENT);
+      await scoped.turnEnded("bg-agent");
+    }
+    expect(await scoped.refreshAll(undefined, { auto: true })).toEqual({ asked: 1 });
+    expect(await scoped.refreshAll(hiddenWs, { silent: ["agent-3"] })).toEqual({ asked: 0 });
+    expect(courier.sent.map((sent) => sent.agentId)).toEqual([AGENT]);
+    // Asking one agent directly is the human's own request, so it still goes through.
+    await scoped.refresh("bg-agent");
+    expect(courier.sent.map((sent) => sent.agentId)).toEqual([AGENT, "bg-agent"]);
+  });
+
   it("asks agents without the tool for a paseo-status block, and reads it from their reply", async () => {
     const legacy = new StatusService(store, courier, async () => WS, (agentId) => agentId !== "old-agent");
     await legacy.refresh("old-agent");
