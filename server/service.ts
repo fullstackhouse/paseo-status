@@ -7,6 +7,7 @@ import type { StatusStore } from "./store";
 
 export const INSTRUCTIONS = `status_set publishes where your work stands to a status card the human reads in Paseo instead of asking you "where are we?".
 - Call it at the end of every turn that changed where things stand: started, finished or abandoned a step, got a result, became blocked, or started waiting on the human. Skip it for turns that changed nothing.
+- Call it before your final reply, and add no closing line after it: a collapsed turn shows only its last message, so a short line after the status card would hide your answer.
 - Each call replaces the whole status, so send all fields every time.
 - Write for someone who skipped the transcript: plain words, no internal jargon, no file paths unless they matter.
   - tldr: one or two sentences. What this work is and where it stands.
