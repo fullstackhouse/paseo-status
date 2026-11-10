@@ -10,6 +10,7 @@ import { dataDir } from "./server/paths";
 import { isStatusPermission } from "./server/permissions";
 import { INSTRUCTIONS, readOpenAskCounts, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
 import { StatusStore } from "./server/store";
+import { latestTurn } from "./server/turn";
 
 export default function contribute(server: PluginServerContext) {
   const dir = dataDir();
@@ -78,9 +79,11 @@ export default function contribute(server: PluginServerContext) {
     equipped.add(agent.id);
     if (agent.workspaceId) agents.remember(agent.id, agent.workspaceId);
   });
-  server.on("agent.turn_ended", ({ agent, timeline }, { paseo: api }) => {
+  server.on("agent.turn_ended", ({ agent }, { paseo: api }) => {
     capture(api);
-    void service.turnEnded(agent.id, timeline).catch((error) => console.error("[status] turn bookkeeping failed", error));
+    void latestTurn(api.agents.ref(agent.id).timeline)
+      .then((timeline) => service.turnEnded(agent.id, timeline))
+      .catch((error) => console.error("[status] turn bookkeeping failed", error));
   });
   // Plan mode and Codex prompt even for preapproved MCP tools. status_set only writes this plugin's card.
   server.on("agent.permission_requested", async ({ agent, request }, { paseo: api }) => {
