@@ -1,6 +1,6 @@
 import { dirname, join } from "node:path";
 import type { PaseoApi } from "@getpaseo/client";
-import type { PluginServerContext } from "@getpaseo/plugin/server";
+import { latestTurn, type PluginServerContext } from "@getpaseo/plugin/server";
 import { listStatuses, refreshAll, refreshStatus, summarize, summarizeWorkspaces, type SilentAgent } from "./shared/status";
 import { AgentDirectory, pickCaller } from "./server/agents";
 import { installBridge } from "./server/bridge";
@@ -10,7 +10,6 @@ import { dataDir } from "./server/paths";
 import { isStatusPermission } from "./server/permissions";
 import { INSTRUCTIONS, readOpenAskCounts, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
 import { StatusStore } from "./server/store";
-import { latestTurn } from "./server/turn";
 
 export default function contribute(server: PluginServerContext) {
   const dir = dataDir();
