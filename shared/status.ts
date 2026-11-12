@@ -52,17 +52,22 @@ export function needsYou(status: Status, running: boolean): boolean {
 /** How long a `working` card keeps an idle workspace in Paseo's Working group without an update. */
 export const WORKING_HOLD_MS = 24 * 60 * 60 * 1000;
 
-export type WorkState = "working" | "done";
+export type WorkState = "waiting" | "working" | "done";
 
 /**
  * Where one workspace's work stands for Paseo's experimental agent-reported sidebar grouping, from
- * the cards of its agents. `null` leaves the workspace to Paseo's own turn state: a card waiting on
- * the human (Paseo and the asks plugin surface those), a `working` card silent for a day, or a
- * `done` card a later turn may have overtaken.
+ * the cards of its agents: `waiting` while a card still waits on the human (see `needsYou`). `null`
+ * leaves the workspace to Paseo's own turn state: an answered question, a `working` card silent for
+ * a day, or a `done` card a later turn may have overtaken.
  */
-export function workspaceWorkState(statuses: readonly Status[], now: number): WorkState | null {
+export function workspaceWorkState(
+  statuses: readonly Status[],
+  now: number,
+  running: (agentId: string) => boolean = () => false,
+): WorkState | null {
   const cards = statuses.filter((status) => !status.archived);
   if (cards.length === 0) return null;
+  if (cards.some((status) => needsYou(status, running(status.agentId)))) return "waiting";
   if (cards.some((status) => status.state === "waiting_on_you" || status.state === "blocked")) return null;
   const freshWorking = cards.some(
     (status) => status.state === "working" && now - Date.parse(status.updatedAt) < WORKING_HOLD_MS,

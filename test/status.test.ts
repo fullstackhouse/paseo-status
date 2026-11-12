@@ -293,9 +293,13 @@ describe("workspaceWorkState", () => {
     expect(workspaceWorkState([card({ state: "done", turnsSince: 1 })], now)).toBeNull();
   });
 
-  it("leaves cards waiting on the human, archived cards and empty workspaces to Paseo", () => {
-    expect(workspaceWorkState([card({}), card({ agentId: "b", state: "waiting_on_you" })], now)).toBeNull();
-    expect(workspaceWorkState([card({ state: "blocked" })], now)).toBeNull();
+  it("reports waiting while a card waits on the human, over another agent's working card", () => {
+    expect(workspaceWorkState([card({}), card({ agentId: "b", state: "waiting_on_you" })], now)).toBe("waiting");
+    expect(workspaceWorkState([card({ state: "blocked" })], now)).toBe("waiting");
+  });
+
+  it("leaves answered questions, archived cards and empty workspaces to Paseo", () => {
+    expect(workspaceWorkState([card({ state: "waiting_on_you", turnsSince: 1 })], now)).toBeNull();
     expect(workspaceWorkState([card({ archived: true })], now)).toBeNull();
     expect(workspaceWorkState([], now)).toBeNull();
   });

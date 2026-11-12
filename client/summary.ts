@@ -31,7 +31,7 @@ function newest(statuses: readonly Status[]): Status | undefined {
 /**
  * One summary item per workspace with a card: its newest state for the Overview tab, and the
  * work state Paseo's agent-reported grouping reads. Never sets `needsYou`, so it doesn't open
- * Explorer; cards waiting on the human are left to Paseo's turn state and the asks plugin.
+ * Explorer; a card waiting on the human reports `waiting` instead.
  */
 export function contributeWorkspaceSummaries(client: PluginClientContext): () => void {
   const host = client as PluginClientContext & SummaryHost;
@@ -41,7 +41,7 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
   let stopped = false;
 
   const refresh = async () => {
-    const { statuses } = await client.rpc(listStatuses, {});
+    const { statuses, agents } = await client.rpc(listStatuses, {});
     if (stopped) return;
     const byWorkspace = new Map<string, Status[]>();
     for (const status of statuses) {
@@ -56,7 +56,7 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
       const state: SummaryState = {
         label: latest ? `${STATE_LABELS[latest.state]} · ${age(latest.updatedAt)}` : undefined,
         panelId: "status",
-        workState: workspaceWorkState(cards, now),
+        workState: workspaceWorkState(cards, now, (agentId) => agents[agentId]?.running ?? false),
       };
       const item = items.get(workspaceId);
       if (item) item.update(state);
