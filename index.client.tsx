@@ -7,6 +7,7 @@ import type {
   PluginWorkspacePanelProps,
 } from "@getpaseo/plugin/client";
 import { contributeRowBadge } from "./client/RowBadge";
+import { contributeWorkspaceSummaries } from "./client/summary";
 import { age, AgentStatus, ANSWERED_LABEL, InlineStatus, POLL_MS, STATE_LABELS, StatusView } from "./client/StatusView";
 import { listStatuses, needsYou, refreshStatus, STALE_TURNS, type Status } from "./shared/status";
 import { STATUS_CARD, StatusCardSchema, statusCardFor, type StatusCard } from "./shared/timeline";
@@ -167,8 +168,11 @@ export default function contribute(client: PluginClientContext) {
   // Where each workspace stands, on its sidebar row; Paseo's own status only sees agents stop.
   const removeRowBadge = contributeRowBadge(client);
   const removePills = contributePills(client);
+  // What each card says, for Paseo's Overview tab and its agent-reported sidebar grouping (beta).
+  const removeSummaries = contributeWorkspaceSummaries(client);
   return () => {
     removeRowBadge();
     removePills();
+    removeSummaries();
   };
 }

@@ -9,6 +9,7 @@ Every agent created after the plugin is installed gets a `status` MCP server wit
 - Inline in the agent's chat, where it called `status_set`: the latest one is the live card, earlier ones show what they said then, collapsed.
 - A pill in each agent's composer with the card's state and age. Pressing it shows the card in a popover.
 - A **Status** row in the sidebar with how many agents are waiting on you or blocked, opening a screen with every workspace's cards.
+- A **Status** row in each workspace's Overview tab. Paseo's experimental agent-reported grouping (sidebar display menu, Grouping) uses it to keep a workspace in Working while its card says working, and in Done once the card says done with no turn since.
 - A **Status** panel in each workspace, with one card per agent, as a tab or in the Explorer.
 - `/paseo-status` in an agent's composer asks that agent to update its card and opens the panel.
 
