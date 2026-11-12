@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { FALLBACK_PROMPT, readOpenAskCounts, readWaiting, REFRESH_PROMPT, StatusService, type AgentState, type Courier } from "../server/service";
+import { BACKGROUND_SKIP, FALLBACK_PROMPT, readOpenAskCounts, readWaiting, REFRESH_PROMPT, StatusService, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
 import { needsYou, rowBadgeLabel, summarize, workspaceWorkState, type Status } from "../shared/status";
 
@@ -129,6 +129,16 @@ describe("status", () => {
     expect(await service.refreshAll(WS, { silent: ["agent-2"] })).toEqual({ asked: 2 });
   });
 
+  it("publishes no card for an agent in a background workspace, and tells it so", async () => {
+    let background = true;
+    const scoped = new StatusService(store, courier, async () => WS, () => true, undefined, async () => background);
+    expect(await scoped.callTool(AGENT, "status_set", status)).toEqual({ text: BACKGROUND_SKIP });
+    expect(store.get(AGENT)).toBeFalsy();
+    // The human opened the run's chat, so it isn't background any more.
+    background = false;
+    expect((await scoped.callTool(AGENT, "status_set", status)).text).toBe("Status published (working).");
+  });
+
   it("Refresh all leaves out agents in background workspaces", async () => {
     const hiddenWs = "wks_hidden";
     const scoped = new StatusService(
@@ -140,7 +150,8 @@ describe("status", () => {
       async (workspaceId) => workspaceId === hiddenWs,
     );
     await scoped.callTool(AGENT, "status_set", status);
-    await scoped.callTool("bg-agent", "status_set", status);
+    // A card left from before background workspaces stopped getting them.
+    store.set(hiddenWs, "bg-agent", { ...status, state: "working" });
     for (let turn = 0; turn < 3; turn++) {
       await scoped.turnEnded(AGENT);
       await scoped.turnEnded("bg-agent");

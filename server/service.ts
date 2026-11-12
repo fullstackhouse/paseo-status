@@ -19,6 +19,10 @@ export const INSTRUCTIONS = `status_set publishes where your work stands to a st
 
 const SetInput = StatusInputSchema;
 
+/** What an agent in a background workspace gets back instead of a status card. */
+export const BACKGROUND_SKIP =
+  "Skipped: this workspace runs in the background (an automated run hidden from the sidebar), so nobody reads its status. Put what you have in your final reply. status_set works again once the human opens this chat.";
+
 export const TOOLS = [
   {
     name: "status_set",
@@ -60,8 +64,10 @@ export class StatusService {
     private readonly isEquipped: (agentId: string) => boolean = () => true,
     private readonly now: () => Date = () => new Date(),
     /**
-     * Background workspaces (hidden from the sidebar, e.g. Inbox review runs) are left out of Refresh all: nobody
-     * reads their cards, and the prompt starts a turn that a plugin like paseo-inbox takes for the human stepping in.
+     * Background workspaces (hidden from the sidebar, e.g. Inbox review runs) get no status cards and are left out of
+     * Refresh all: nobody reads their cards, and the prompt starts a turn that a plugin like paseo-inbox takes for the
+     * human stepping in. status_set stays, since an agent's tools are fixed when it is created and the human may take
+     * the run over later.
      */
     private readonly isBackground: (workspaceId: string) => Promise<boolean> = async () => false,
   ) {}
@@ -72,6 +78,7 @@ export class StatusService {
       if (!agentId) throw new Error("PASEO_AGENT_ID is not set for this agent, so the status has no owner");
       const workspaceId = await this.workspaceOf(agentId);
       if (!workspaceId) throw new Error(`Agent ${agentId} has no workspace`);
+      if (await this.isBackground(workspaceId).catch(() => false)) return { text: BACKGROUND_SKIP };
       const status = this.store.set(workspaceId, agentId, SetInput.parse(args));
       return { text: `Status published (${status.state}).` };
     } catch (error) {
