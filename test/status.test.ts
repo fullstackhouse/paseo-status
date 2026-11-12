@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { FALLBACK_PROMPT, readOpenAskCounts, readWaiting, REFRESH_PROMPT, StatusService, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
-import { needsYou, rowBadgeLabel, summarize, type Status } from "../shared/status";
+import { needsYou, rowBadgeLabel, summarize, workspaceWorkState, type Status } from "../shared/status";
 
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
@@ -263,5 +263,44 @@ describe("readOpenAskCounts", () => {
     writeFileSync(join(asksDir, "workspaces", "wks_2.json"), JSON.stringify({ asks: [{ status: "dropped" }] }));
     expect(readOpenAskCounts(asksDir)).toEqual({ "wks/1": 2 });
     expect(readOpenAskCounts(join(asksDir, "missing"))).toEqual({});
+  });
+});
+
+describe("workspaceWorkState", () => {
+  const now = Date.parse("2026-11-12T12:00:00Z");
+  const card = (fields: Partial<Status>): Status => ({
+    agentId: AGENT,
+    workspaceId: WS,
+    state: "working",
+    tldr: "t",
+    done: [],
+    next: [],
+    updatedAt: "2026-11-12T10:00:00Z",
+    turnsSince: 0,
+    ...fields,
+  });
+
+  it("keeps a workspace working while a card says so, even after quiet heartbeat turns", () => {
+    expect(workspaceWorkState([card({ turnsSince: 5 })], now)).toBe("working");
+  });
+
+  it("lets a working card lapse after a day without an update", () => {
+    expect(workspaceWorkState([card({ updatedAt: "2026-11-11T11:00:00Z" })], now)).toBeNull();
+  });
+
+  it("reports done only while no turn has ended since", () => {
+    expect(workspaceWorkState([card({ state: "done" })], now)).toBe("done");
+    expect(workspaceWorkState([card({ state: "done", turnsSince: 1 })], now)).toBeNull();
+  });
+
+  it("reports waiting while a card waits on the human, over another agent's working card", () => {
+    expect(workspaceWorkState([card({}), card({ agentId: "b", state: "waiting_on_you" })], now)).toBe("waiting");
+    expect(workspaceWorkState([card({ state: "blocked" })], now)).toBe("waiting");
+  });
+
+  it("leaves answered questions, archived cards and empty workspaces to Paseo", () => {
+    expect(workspaceWorkState([card({ state: "waiting_on_you", turnsSince: 1 })], now)).toBeNull();
+    expect(workspaceWorkState([card({ archived: true })], now)).toBeNull();
+    expect(workspaceWorkState([], now)).toBeNull();
   });
 });
