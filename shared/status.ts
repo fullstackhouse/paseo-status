@@ -57,8 +57,9 @@ export type WorkState = "waiting" | "working" | "done";
 /**
  * Where one workspace's work stands for Paseo's experimental agent-reported sidebar grouping, from
  * the cards of its agents: `waiting` while a card still waits on the human (see `needsYou`). `null`
- * leaves the workspace to Paseo's own turn state: an answered question, a `working` card silent for
- * a day, or a `done` card a later turn may have overtaken.
+ * leaves the workspace to Paseo's own turn state: an answered question or a `working` card silent for
+ * a day. A `done` card counts even when stale: agents skip status_set on turns that change nothing
+ * (answering an ask, a reminder), and those turns must not drop the workspace back to Ready to review.
  */
 export function workspaceWorkState(
   statuses: readonly Status[],
@@ -73,7 +74,7 @@ export function workspaceWorkState(
     (status) => status.state === "working" && now - Date.parse(status.updatedAt) < WORKING_HOLD_MS,
   );
   if (freshWorking) return "working";
-  if (cards.every((status) => status.state === "done" && status.turnsSince === 0)) return "done";
+  if (cards.every((status) => status.state === "done")) return "done";
   return null;
 }
 
