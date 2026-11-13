@@ -16,7 +16,15 @@ const PASEO = join(BIN, "paseo");
 // Recording reads its key from e2e/.env (gitignored) when it is not in the environment.
 if (existsSync(join(E2E, ".env"))) process.loadEnvFile(join(E2E, ".env"));
 
+/** The Paseo host fsh-host.mjs installed: its release tag, or `src:<checkout>` with PASEO_HOST_SRC. */
+export const HOST = existsSync(join(E2E, "node_modules", ".fsh-host")) ? readFileSync(join(E2E, "node_modules", ".fsh-host"), "utf8") : "";
+
 export const MODE: Mode = process.env.E2E_MODE === "record" ? "record" : "replay";
+
+export type Provider = "claude" | "codex";
+
+/** The model each provider's agents run. Codex's is a cheap OpenAI model in Codex 0.166's catalog, so Codex defers MCP tools behind its tool search as it does in production. */
+const MODELS: Record<Provider, string> = { claude: "haiku", codex: "gpt-5.6-luna" };
 
 export type Card = { agentId: string; workspaceId: string; state: string; tldr: string; done: string[]; next: string[]; updatedAt: string; turnsSince: number };
 
@@ -39,11 +47,13 @@ export class Sandbox {
     const home = join(root, "home");
     const paseoHome = join(root, "paseo");
     const project = join(root, "project");
-    for (const dir of [home, paseoHome, project]) mkdirSync(dir, { recursive: true });
-    await exec("git", ["init", "-q"], { cwd: project });
+    for (const dir of [home, paseoHome, project, join(home, ".codex")]) mkdirSync(dir, { recursive: true });
+    // The branch name reaches the model in git output: pin it, whatever init.defaultBranch the machine has.
+    await exec("git", ["init", "-q", "-b", "main"], { cwd: project });
 
     const upstream = MODE === "record" ? upstreamFromEnv(process.env) : undefined;
     const proxy = await startProxy({ mode: MODE, cassette: join(E2E, "cassettes", `${name}.json`), root, upstream });
+    writeFileSync(join(home, ".codex", "config.toml"), codexConfig(proxy.url));
     const port = await freePort();
     writeFileSync(
       join(paseoHome, "config.json"),
@@ -84,11 +94,12 @@ export class Sandbox {
     return stdout;
   }
 
-  /** Starts a Haiku agent in the sandbox project and, unless `wait: false`, waits for its first turn to end. */
-  async run(prompt: string, { wait = true } = {}): Promise<string> {
+  /** Starts an agent (Haiku unless `provider: "codex"`) in the sandbox project and, unless `wait: false`, waits for its first turn to end. */
+  async run(prompt: string, { wait = true, provider = "claude" as Provider } = {}): Promise<string> {
+    const mode = provider === "claude" ? "bypassPermissions" : "full-access";
     const out = await this.paseo(
-      "run", "--cwd", this.project, "--provider", "claude", "--model", "haiku",
-      "--mode", "bypassPermissions", ...(wait ? ["--wait-timeout", "3m"] : ["--no-wait"]), "--json", prompt,
+      "run", "--cwd", this.project, "--provider", provider, "--model", MODELS[provider],
+      "--mode", mode, ...(wait ? ["--wait-timeout", "3m"] : ["--no-wait"]), "--json", prompt,
     );
     return JSON.parse(out.slice(out.indexOf("{"))).agentId;
   }
@@ -165,12 +176,47 @@ function daemonEnv({ home, proxy }: { home: string; proxy: string }): NodeJS.Pro
     ANTHROPIC_BASE_URL: proxy,
     // The proxy holds the real credentials; agents get the same dummy key in record and replay.
     ANTHROPIC_API_KEY: "e2e-dummy",
+    OPENAI_API_KEY: "e2e-dummy",
+    // Agents commit: a fixed identity and date keep commit hashes, which the model reads, the same on every run.
+    GIT_AUTHOR_NAME: "e2e",
+    GIT_AUTHOR_EMAIL: "e2e@example.com",
+    GIT_COMMITTER_NAME: "e2e",
+    GIT_COMMITTER_EMAIL: "e2e@example.com",
+    GIT_AUTHOR_DATE: "2026-01-01T00:00:00Z",
+    GIT_COMMITTER_DATE: "2026-01-01T00:00:00Z",
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1",
     DISABLE_AUTOUPDATER: "1",
     PASEO_DICTATION_ENABLED: "false",
     PASEO_VOICE_MODE_ENABLED: "false",
   });
   return env;
+}
+
+/**
+ * Codex reads its provider from ~/.codex/config.toml: the proxy's Responses API, over HTTP (no websockets).
+ * Plugins and apps are off: Codex would clone its plugin marketplace from GitHub and list what it found to the model.
+ */
+function codexConfig(proxy: string): string {
+  return [
+    `model_provider = "e2e"`,
+    `model = "${MODELS.codex}"`,
+    `check_for_update_on_startup = false`,
+    ``,
+    `[model_providers.e2e]`,
+    `name = "e2e proxy"`,
+    `base_url = "${proxy}/v1"`,
+    `wire_api = "responses"`,
+    `env_key = "OPENAI_API_KEY"`,
+    `requires_openai_auth = false`,
+    `supports_websockets = false`,
+    ``,
+    `[features]`,
+    `plugins = false`,
+    `remote_plugin = false`,
+    `plugin_discovery_prefetch = false`,
+    `apps = false`,
+    ``,
+  ].join("\n");
 }
 
 export async function waitFor(what: string, check: () => Promise<boolean> | boolean, timeoutMs: number): Promise<void> {

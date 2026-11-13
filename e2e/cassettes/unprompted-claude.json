@@ -1,0 +1,142 @@
+{
+  "entries": [
+    {
+      "key": "a224a9c980b4707e",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "system": "You are a Claude agent, built on Anthropic's Claude Agent SDK.\n\nYou are an agent working with the user toward their goal",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Create a file hello.txt containing \"hello\" and commit it with the message \"Add hello.txt\"."
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011Cgzvk9a7fvJxR9VWsJDy9\",\"type\":\"message\",\"role\":\"assistant\",\"container\":null,\"content\":[],\"model\":\"anthropic/claude-haiku-5.5\",\"stop_reason\":null,\"stop_details\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":17,\"output_tokens_details\":null,\"cache_creation_input_tokens\":6884,\"cache_read_input_tokens\":12087,\"cache_creation\":{\"ephemeral_5m_input_tokens\":6884,\"ephemeral_1h_input_tokens\":0},\"inference_geo\":\"global\",\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\"},\"provider\":\"Claude Platform on AWS\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_01E32NMxSqSR4thBkWUmMJY7\",\"caller\":{\"type\":\"direct\"},\"name\":\"Bash\",\"input\":{}}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"command\\\": \\\"cd __E2E_ROOT__/project && printf 'hello' > hello.txt && git add hello.txt && git commit -q -m \\\\\\\"Add hello.txt\\\\n\\\\nCo-Authored-By: Claude Haiku 5.5 <noreply@anthropic.com>\\\\\\\" && git log --oneline -1 && git show --stat HEAD | tail -3 && git status --short\\\", \\\"description\\\": \\\"Create hello.txt, commit it, and verify\\\"}\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"container\":null,\"stop_details\":null,\"stop_reason\":\"tool_use\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":2,\"output_tokens\":241,\"output_tokens_details\":{\"thinking_tokens\":0},\"cache_creation_input_tokens\":6884,\"cache_read_input_tokens\":12087,\"cache_creation\":{\"ephemeral_5m_input_tokens\":6884,\"ephemeral_1h_input_tokens\":0},\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\",\"cost\":0.00110207,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.00110207,\"upstream_inference_prompt_cost\":0.00098157,\"upstream_inference_completions_cost\":0.0001205}},\"context_management\":{\"applied_edits\":[]}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+    },
+    {
+      "key": "e8799b1681c05e02",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "system": "You are a Claude agent, built on Anthropic's Claude Agent SDK.\n\nYou are an agent working with the user toward their goal",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Create a file hello.txt containing \"hello\" and commit it with the message \"Add hello.txt\"."
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "Bash",
+                "input": {
+                  "command": "printf 'hello' > hello.txt && git add hello.txt && git commit -q -m \"Add hello.txt\n\nCo-Authored-By: Claude Haiku 5.5 <noreply@anthropic.com>\" && git log --oneline -1 && git show --stat HEAD | tail -3 && git status --short",
+                  "description": "Create hello.txt, commit it, and verify"
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": "e22164e Add hello.txt\n\n hello.txt | 1 +\n 1 file changed, 1 insertion(+)"
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011CgzvkGJvuiPq8kxq8VYm9\",\"type\":\"message\",\"role\":\"assistant\",\"container\":null,\"content\":[],\"model\":\"anthropic/claude-haiku-5.5\",\"stop_reason\":null,\"stop_details\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":7,\"output_tokens_details\":null,\"cache_creation_input_tokens\":253,\"cache_read_input_tokens\":18971,\"cache_creation\":{\"ephemeral_5m_input_tokens\":253,\"ephemeral_1h_input_tokens\":0},\"inference_geo\":\"global\",\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\"},\"provider\":\"Claude Platform on AWS\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"CAQSswcKEAgTGAI4AUIIdGhpbmtpbmcSDJ4OmF/Mnx5K+VgGdBoMNzwBPGAXczLW1gH7IjCvjIC6E81r8Tf00NqH0Whu2MIwrqiV3zbuXM3dQpokFof8EDkQ1gc2z5g+9bRm9Ysq0AbhOsiOKCzs9xeIjbwkbXw8a258IQmzb0qqUvGG6HB6AVS6Cz1YFzQwicDjr51iKdQEt51AdZDe9+4NgOzTb1+Qh4CI1Po3MbyIFsQIkXyqpLwmrNK2RNHlNDxNRB0rzC2mSdob0w06S/l8OW1UMSTwO7Zm8gzE/RSI4dFrbTJRhjTzF/LH1UYv+akWl2jpwI0IguyjgLkJDARo4aqzWrFp1CWwzavagbCYO27GTfVabHtmnD+9wSHLRZNHge9MXubxrquhzHwjInF9Ug9tJMbPZHgV86oAA77NxkU4sJteCqvH0JWaCnR+Ssu99l+O2KjtuTv5n3J5qo5+CL4o9uq7z5szRUwIYG+ouftIBH36IKbT/mevaYHkas5A9Vr8fO0JvK5iM9Rs+WH5Th2GzhVUAynYya8kihP+UOiyLz3k0wAqtm1rcUV4ghJAAOts0VnOnlvXOXGnWxlGo83pHHaY3J2zv4nLmsxYMVc/W1L2P6IygdcxaebGhND9S8lRJpPBRKam1nSurwmABkGCrA90+TajtvNCY40yoLkzvbL3bgzLJ1l+IxagGM8FmCBIrw9/MtD4l7Ml4uIPxjZNIzJa3IK+OCUMah+rsKwAB2o6a0/K8fF1wd7zH27ijHKc8wNEjZOF7n0K6xDwXfTTAjED4SpdEJaH5P/zbFA5MPPhvCUAS8x9+DdXFll+wl3N/1r7LtwiCKpmOpjPTAS/mAapZ0fhhYOJFr/WliLzTYMa4X60pHT6ZM7c8ALvFWzHjEdpUllpoy9w8OAJuJ4tiC62yRxfVOAS+wJtDsYGekIEYhVSVHRODom53LSOxTSOgWYTDw7aZJ5yIHPiS6vAXKb5NYtrlPc+rdo32riLl44sM/2ARd2kHLngAdAjv3ImDNsPOyIgxwThxz07dro0z5t22Y9on1hos0Gnz/bsyAik29pxwmFUd2XOlkMt4ee2LW0Qbz7Se+XAgUf3LxmCttrUpri8M132jWQ74+l0ss7KQXkuxb67qj8Vra9o8Pq5ag2l4exO7B+UWClJj93+9C9n0w7gs8FGSbh2Cfv4Ktm9atLdNAHTQvI/yX0ukDfiOMNJ4Gr+gT2FHLW+EIoPqtQ3P0rAWPkJjb87VM06vsm7UhgB.eyJlbmRwb2ludF9zbHVnIjoiYW50aHJvcGljL2NsYXVkZS1oYWlrdS01LjUtMjAyNjEwMDd8Y2xhdWRlLW9uLWF3cyJ9\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_01My6Gezrr1hFGuzGVWY8oUN\",\"caller\":{\"type\":\"direct\"},\"name\":\"mcp__status__status_set\",\"input\":{}}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"state\\\": \\\"done\\\", \\\"tldr\\\": \\\"Created hello.txt containing \\\\\\\"hello\\\\\\\" and committed it on main as e22164e.\\\", \\\"done\\\": [\\\"hello.txt created with the content \\\\\\\"hello\\\\\\\" (no trailing newline)\\\", \\\"Committed as e22164e \\\\\\\"Add hello.txt\\\\\\\", 1 file changed; working tree clean\\\"]}\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":1}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"container\":null,\"stop_details\":null,\"stop_reason\":\"tool_use\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":2,\"output_tokens\":275,\"output_tokens_details\":{\"thinking_tokens\":95},\"cache_creation_input_tokens\":253,\"cache_read_input_tokens\":18971,\"cache_creation\":{\"ephemeral_5m_input_tokens\":253,\"ephemeral_1h_input_tokens\":0},\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\",\"cost\":0.000359035,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.000359035,\"upstream_inference_prompt_cost\":0.000221535,\"upstream_inference_completions_cost\":0.0001375}},\"context_management\":{\"applied_edits\":[]}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+    },
+    {
+      "key": "c0f06d0ae93b01df",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "system": "You are a Claude agent, built on Anthropic's Claude Agent SDK.\n\nYou are an agent working with the user toward their goal",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Create a file hello.txt containing \"hello\" and commit it with the message \"Add hello.txt\"."
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "Bash",
+                "input": {
+                  "command": "printf 'hello' > hello.txt && git add hello.txt && git commit -q -m \"Add hello.txt\n\nCo-Authored-By: Claude Haiku 5.5 <noreply@anthropic.com>\" && git log --oneline -1 && git show --stat HEAD | tail -3 && git status --short",
+                  "description": "Create hello.txt, commit it, and verify"
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": "e22164e Add hello.txt\n\n hello.txt | 1 +\n 1 file changed, 1 insertion(+)"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "name": "mcp__status__status_set",
+                "input": {
+                  "state": "done",
+                  "tldr": "Created hello.txt containing \"hello\" and committed it on main as e22164e.",
+                  "done": [
+                    "hello.txt created with the content \"hello\" (no trailing newline)",
+                    "Committed as e22164e \"Add hello.txt\", 1 file changed; working tree clean"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Status published (done)."
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011CgzvkPCQi38vhubnKqjgT\",\"type\":\"message\",\"role\":\"assistant\",\"container\":null,\"content\":[],\"model\":\"anthropic/claude-haiku-5.5\",\"stop_reason\":null,\"stop_details\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":8,\"output_tokens_details\":null,\"cache_creation_input_tokens\":310,\"cache_read_input_tokens\":19224,\"cache_creation\":{\"ephemeral_5m_input_tokens\":310,\"ephemeral_1h_input_tokens\":0},\"inference_geo\":\"global\",\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\"},\"provider\":\"Claude Platform on AWS\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\",\"citations\":[]}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"I created `hello.txt` containing `hello` and committed it as `e22164e` with the message \\\"Add hello.txt\\\". The working tree is clean.\\n\\nI wrote the file without a trailing newline. I also added the `Co-Authored-By: Claude Haiku 5.5` trailer to the commit message, as the attribution reminder asked.\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"container\":null,\"stop_details\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":2,\"output_tokens\":109,\"output_tokens_details\":{\"thinking_tokens\":0},\"cache_creation_input_tokens\":310,\"cache_read_input_tokens\":19224,\"cache_creation\":{\"ephemeral_5m_input_tokens\":310,\"ephemeral_1h_input_tokens\":0},\"server_tool_use\":null,\"service_tier\":\"standard\",\"speed\":\"standard\",\"cost\":0.00028569,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.00028569,\"upstream_inference_prompt_cost\":0.00023119,\"upstream_inference_completions_cost\":0.0000545}},\"context_management\":{\"applied_edits\":[]}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+    }
+  ]
+}
