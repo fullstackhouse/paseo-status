@@ -299,9 +299,10 @@ describe("workspaceWorkState", () => {
     expect(workspaceWorkState([card({ updatedAt: "2026-11-11T11:00:00Z" })], now)).toBeNull();
   });
 
-  it("reports done only while no turn has ended since", () => {
+  it("reports done while every card says done, even after quiet turns made it stale", () => {
     expect(workspaceWorkState([card({ state: "done" })], now)).toBe("done");
-    expect(workspaceWorkState([card({ state: "done", turnsSince: 1 })], now)).toBeNull();
+    expect(workspaceWorkState([card({ state: "done", turnsSince: 3 })], now)).toBe("done");
+    expect(workspaceWorkState([card({ state: "done" }), card({ agentId: "b", state: "working", updatedAt: "2026-11-11T11:00:00Z" })], now)).toBeNull();
   });
 
   it("reports waiting while a card waits on the human, over another agent's working card", () => {
