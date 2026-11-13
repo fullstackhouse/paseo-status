@@ -48,7 +48,8 @@ export class Sandbox {
     const paseoHome = join(root, "paseo");
     const project = join(root, "project");
     for (const dir of [home, paseoHome, project, join(home, ".codex")]) mkdirSync(dir, { recursive: true });
-    await exec("git", ["init", "-q"], { cwd: project });
+    // The branch name reaches the model in git output: pin it, whatever init.defaultBranch the machine has.
+    await exec("git", ["init", "-q", "-b", "main"], { cwd: project });
 
     const upstream = MODE === "record" ? upstreamFromEnv(process.env) : undefined;
     const proxy = await startProxy({ mode: MODE, cassette: join(E2E, "cassettes", `${name}.json`), root, upstream });
