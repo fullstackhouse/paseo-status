@@ -5,9 +5,10 @@ import type { AddressInfo } from "node:net";
 import { dirname } from "node:path";
 
 /**
- * Stands in for api.anthropic.com. `record` forwards every request (to OpenRouter,
- * adding the credentials itself) and keeps the response; `replay` answers from the cassette and
- * never touches the network. Either way the sandbox only ever holds a dummy key.
+ * Stands in for the model API: api.anthropic.com's Messages API for Claude Code (`/v1/messages`)
+ * and OpenAI's Responses API for Codex (`/v1/responses`, over HTTP with SSE). `record` forwards every
+ * request (to OpenRouter, adding the credentials itself) and keeps the response; `replay` answers
+ * from the cassette and never touches the network. Either way the sandbox only ever holds a dummy key.
  *
  * Requests are matched by a key over what the model saw, with the parts that change between
  * machines and runs taken out (paths, ids, dates, the environment block in the system prompt).
@@ -33,8 +34,10 @@ export function upstreamFromEnv(env: NodeJS.ProcessEnv): Upstream {
   return {
     url: "https://openrouter.ai/api",
     headers: { authorization: `Bearer ${env.OPENROUTER_API_KEY}` },
-    // Claude Code asks for Anthropic ids (claude-haiku-5-5); OpenRouter routes by its own names.
-    model: (model) => `~anthropic/claude-${model.match(/haiku|sonnet|opus/)?.[0] ?? "haiku"}-latest`,
+    // Claude Code asks for Anthropic ids (claude-haiku-5-5), Codex for OpenAI ones (gpt-5.6-luna);
+    // OpenRouter routes by its own names.
+    model: (model) =>
+      model.startsWith("claude-") ? `~anthropic/claude-${model.match(/haiku|sonnet|opus/)?.[0] ?? "haiku"}-latest` : `openai/${model}`,
   };
 }
 
@@ -59,12 +62,13 @@ export async function startProxy(options: { mode: Mode; cassette: string; root: 
     const chunks: Buffer[] = [];
     for await (const chunk of req) chunks.push(chunk as Buffer);
     const raw = Buffer.concat(chunks);
-    if (!req.url?.startsWith("/v1/messages")) {
+    const api = req.method === "POST" ? apiOf(req.url ?? "") : undefined;
+    if (!api) {
       res.writeHead(404, { "content-type": "application/json" });
-      return res.end(JSON.stringify({ type: "error", error: { type: "not_found_error", message: `e2e proxy: ${req.url}` } }));
+      return res.end(JSON.stringify({ type: "error", error: { type: "not_found_error", message: `e2e proxy: ${req.method} ${req.url}` } }));
     }
     const parsed = JSON.parse(raw.toString("utf8"));
-    const request = canonical(parsed, options.root);
+    const request = api === "messages" ? canonical(parsed, options.root) : canonicalResponses(parsed, options.root);
     const key = createHash("sha256").update(JSON.stringify(request)).digest("hex").slice(0, 16);
 
     if (mode === "replay") {
@@ -103,7 +107,7 @@ export async function startProxy(options: { mode: Mode; cassette: string; root: 
     res.writeHead(upstream.status, out);
     res.end(answer);
     answered.push(request);
-    const stored = contentType.includes("event-stream") ? coalesce(answer) : answer;
+    const stored = !contentType.includes("event-stream") ? answer : api === "messages" ? coalesce(answer) : coalesceResponses(answer);
     kept.push({ key, request, status: upstream.status, contentType, body: stored.split(options.root).join(ROOT) });
   };
 
@@ -129,6 +133,13 @@ export async function startProxy(options: { mode: Mode; cassette: string; root: 
       writeFileSync(cassette, JSON.stringify({ entries: kept }, null, 2) + "\n");
     },
   };
+}
+
+function apiOf(url: string): "messages" | "responses" | undefined {
+  const path = url.split("?")[0];
+  if (path === "/v1/messages") return "messages";
+  if (path === "/v1/responses") return "responses";
+  return undefined;
 }
 
 /**
@@ -165,6 +176,37 @@ export function coalesce(sse: string): string {
 }
 
 /**
+ * The Responses API counterpart of coalesce: merges each run of `*.delta` events for the same part
+ * (`response.output_text.delta`, `response.function_call_arguments.delta`, ...) into one event.
+ */
+export function coalesceResponses(sse: string): string {
+  const events = sse.split(/\n\n+/).filter((event) => event.trim());
+  const out: string[] = [];
+  let run: { id: string; event: Record<string, any> } | undefined;
+  const flush = () => {
+    if (run) out.push(`event: ${run.event.type}\ndata: ${JSON.stringify(run.event)}`);
+    run = undefined;
+  };
+  for (const event of events) {
+    const data = /^data: (.*)$/m.exec(event)?.[1];
+    const parsed = data?.startsWith("{") ? JSON.parse(data) : null;
+    if (typeof parsed?.type === "string" && parsed.type.endsWith(".delta") && typeof parsed.delta === "string") {
+      const id = [parsed.type, parsed.item_id, parsed.output_index, parsed.content_index, parsed.summary_index].join("|");
+      if (run?.id === id) run.event.delta += parsed.delta;
+      else {
+        flush();
+        run = { id, event: parsed };
+      }
+      continue;
+    }
+    flush();
+    out.push(event);
+  }
+  flush();
+  return out.join("\n\n") + "\n\n";
+}
+
+/**
  * What identifies a request: the model, which system prompt (by its opening, since the rest
  * describes the machine), and the conversation. Tool definitions, metadata, the per-session
  * billing line, and `system`-role context messages (environment, token counters) are left out.
@@ -182,6 +224,38 @@ export function canonical(body: any, root: string): Canonical {
       content: typeof message.content === "string" ? scrubText(message.content, root) : message.content.map((block: any) => scrubBlock(block, root)).filter(Boolean),
     })),
   };
+}
+
+/**
+ * canonical for the Responses API. Codex sends its prompt as input items, not `instructions`: developer
+ * messages (Codex's base prompt, Paseo's instructions, permissions) and the tools it lists stay in the
+ * key, as the model reads them, but as their opening plus a hash, so cassettes stay readable. The
+ * `<environment_context>` message (date, timezone), reasoning (encrypted, differs per run) and ids are left out.
+ */
+export function canonicalResponses(body: any, root: string): Canonical {
+  const messages: Canonical["messages"] = [];
+  for (const item of body.input ?? []) {
+    if (item.type === "reasoning") continue;
+    if (item.type === "message" || (!item.type && item.role)) {
+      const parts = typeof item.content === "string" ? [{ type: "input_text", text: item.content }] : (item.content ?? []);
+      const content = parts
+        .map((part: any) => (typeof part.text === "string" ? scrubText(part.text, root) : scrubValue(part, root)))
+        .filter((part: unknown) => part && !(typeof part === "string" && part.startsWith("<environment_context>")))
+        .map((part: unknown) => (item.role === "developer" ? digest(part) : part));
+      if (content.length) messages.push({ role: item.role, content });
+      continue;
+    }
+    const value = scrubValue(item, root);
+    messages.push({ role: item.type, content: item.type === "additional_tools" ? digest(value) : value });
+  }
+  if (body.tools?.length) messages.unshift({ role: "tools", content: digest(scrubValue(body.tools, root)) });
+  return { model: body.model, system: scrubText(body.instructions ?? "", root).slice(0, 120), messages };
+}
+
+/** A long value as its opening and a hash of the whole: any change still changes the key. */
+function digest(value: unknown): string {
+  const text = typeof value === "string" ? value : JSON.stringify(value);
+  return `${text.slice(0, 120)}… [${text.length} chars, sha256 ${createHash("sha256").update(text).digest("hex").slice(0, 16)}]`;
 }
 
 function scrubBlock(block: any, root: string): unknown {
@@ -203,13 +277,16 @@ function scrubBlock(block: any, root: string): unknown {
   }
 }
 
+// Ids that differ on every run: Anthropic's tool_use ids, the Responses API's item and call ids.
+const VOLATILE_FIELDS = new Set(["cache_control", "id", "tool_use_id", "call_id"]);
+
 function scrubValue(value: unknown, root: string): unknown {
   if (typeof value === "string") return scrubText(value, root);
   if (Array.isArray(value)) return value.map((item) => scrubValue(item, root));
   if (value && typeof value === "object") {
     return Object.fromEntries(
       Object.entries(value)
-        .filter(([name]) => name !== "cache_control" && name !== "id" && name !== "tool_use_id")
+        .filter(([name]) => !VOLATILE_FIELDS.has(name))
         .map(([name, item]) => [name, scrubValue(item, root)]),
     );
   }
@@ -224,5 +301,8 @@ function scrubText(text: string, root: string): string {
     .replace(/\bwks_[0-9a-f]+/g, "<workspace>")
     .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z/g, "<time>")
     .replace(/\d{4}-\d{2}-\d{2}/g, "<date>")
+    // Codex's shell output header: a random chunk id and the command's run time.
+    .replace(/^Chunk ID: \w+$/gm, "Chunk ID: <id>")
+    .replace(/^Wall time:? [\d.]+ seconds$/gm, "Wall time <time>")
     .trim();
 }

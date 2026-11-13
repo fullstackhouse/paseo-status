@@ -1,0 +1,658 @@
+{
+  "entries": [
+    {
+      "key": "a618c9a776784e2a",
+      "request": {
+        "model": "gpt-5.6-luna",
+        "system": "",
+        "messages": [
+          {
+            "role": "additional_tools",
+            "content": "{\"type\":\"additional_tools\",\"role\":\"developer\",\"tools\":[{\"type\":\"namespace\",\"name\":\"functions\",\"description\":\"\",\"tools\":[… [17134 chars, sha256 587d93261dd8a25c]"
+          },
+          {
+            "role": "developer",
+            "content": [
+              "You are Codex, an agent based on GPT-5. You and the user share one workspace, and your job is to collaborate with them u… [17729 chars, sha256 0972574f9d43b6c3]"
+            ]
+          },
+          {
+            "role": "developer",
+            "content": [
+              "These MCP servers are part of your normal workflow in every turn, but their tools are loaded on demand, so they are not … [413 chars, sha256 3e5bf84167673db7]",
+              "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Be… [1956 chars, sha256 a24fb2a6b26fac5c]",
+              "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `danger-f… [362 chars, sha256 681b5ba580483b28]",
+              "<collaboration_mode>These MCP servers are part of your normal workflow in every turn, but their tools are loaded on dema… [454 chars, sha256 5d7ec63cb60fadaf]"
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              "Create a file hello.txt containing \"hello\" and commit it with the message \"Add hello.txt\"."
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": ": \n\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"gen-1794572809-apLrCEaOZO7bJivc8TbH\",\"object\":\"response\",\"created_at\":1794572809,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"in_progress\",\"completed_at\":null,\"output\":[],\"error\":null,\"incomplete_details\":null,\"access_programs\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\"},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":null},\"sequence_number\":0}\n\ndata: {\"type\":\"response.in_progress\",\"response\":{\"id\":\"gen-1794572809-apLrCEaOZO7bJivc8TbH\",\"object\":\"response\",\"created_at\":1794572809,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"in_progress\",\"completed_at\":null,\"output\":[],\"error\":null,\"incomplete_details\":null,\"access_programs\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\"},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":null},\"sequence_number\":1}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"rs_04ad34e7db74dbdf016af70209e42c87d1afb3eadf76521a24\",\"type\":\"reasoning\",\"status\":\"in_progress\",\"summary\":[]},\"sequence_number\":2}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"rs_04ad34e7db74dbdf016af70209e42c87d1afb3eadf76521a24\",\"type\":\"reasoning\",\"status\":\"completed\",\"summary\":[],\"encrypted_content\":\"gAAAAABq9wIKMl0IRDF-P1NpBeQuASGZHSgrkrGlekDM6wK1_p_GQ_EO-3Vs1HfuS3CWCLAVAY-WXMFDcRsjOS96vWkih-M2gsb6nvP3SBm3yeQ4TWO7I1DPmuqlwnCPc-EWswOEKJO5bV0dUF5w16x2b3muDBtNWHsM40A3S7DpUw8tkSlhKdpbiuxZF8hqKxAtbt_dltH-m9FuwWGRfNGJrjZhArEgLciEqOCWUCXPs9LjYN3g4gua1YL0acmYjjFWlP28MOuyfrPb-Akkdz7RKa-zKqtMvgVLQdk-qg4hABDQYPCwoclrdAWcDpA6naA0kFap-T58NKNm0-d-9uOXQqQq_xLwXj8Qzpc_TEYoNdv-Akp0kf6klnidSpJNEpbS3wlNbcKbHZBWx8zSd3KSOooV0C-4Q0sBT-IDskZGSXko3LeWVzrN9QM4a1I8eHl0saXi1C0NEfv_KAHkfKcfNAH6FxrslmfxXAayKadTEk0DrUbQL-H1ldYADm3eZVxhSAnBaPlObKCQt_4ugKwwcn3nYJvzHBN_PoX4CAOHK7qtAX0dQaEFRCfqa-O6FPlmCUusRUiayZKY3Bg0N9h3WERY4Q-9CsxuVJ7nVqyNDIv9O0CG7EFfg4fvykrVRZzDdvMtN6s7ATShkvkjGMYhnU47ZEQfQRVKDSCnNYjp6ennoE8EUqyYAq4SlBylDfFJp9umS_Fu7-hzanNX9BgaUe0IHEkjfpOmujoIBLKbLH4b5n2tXvtuNozlCYDcUvdRMYrw0PzVWAnhSvs5ZgpUGhsejwLXKK0mo92z7IHeZg77lzAJ_29Q3bhleIekHVV1y-BqUSvZls7JRaYHsE6dBCTxPVEbZhILpK8JUCLBsbJ67bOpH9sWZmWtU6_MLDR6SXqTH0egCY8U79pi5nUSvUkStohDbHsua9u2JryIWbVWL1CvYGs7dhnPtQuUby0gHyB6ew4NFkF2JFu48HJetP27pl7co0k3ymrGeknFPBYr2rq1BRdlNvB7sVOsMgSnGkuMz_wznH-xKOW94YuvUcSoAXAX9UUiyXJ5Z8CTUGE7gEAcz3bObGTcZVa7mhZ9jLDHZmFJvYLhehkKAdQI2pwEP44q5yinkesIDGk5_YIYcbSDKuDXnIyB-p0JJhKaoGMAiOptVcmNJIObkPZ2tv7zoyKfUx6-1kmyb-xH8-6KhFTSFFaLwEPcvJR8aOFI3uTRqjqRus4FR7Nx2xiDreafqlpe8hPHN7jBjrAr3hL2ge_YBkws-h8flzdVhU8Fdszlph3EF69467B8yfNk6p5gy33lsSdY2OY-1G055AYB9caezwKdahMNomMcyhVgHdVvUoOP4O5YWvzcbK8RkevkuTpW26ZVrJWGSS_xKoFpOEy1o1L8h8oQOHecIL8l2VFgRfr4GNmz9iHnwnFt_4b8a0bVwWTtdXkKc1UsrmOHlacfYYl0e0_v91x5sQBbqrU-9WCsp5LC7LzDfVR8tOJnBmmR6mDOSW7RngACMOQHo4SDV1Dtdg-5oxGmbW12Fv9fXDX8n1DphRSf6grie02wImKLbIgzIkQUaUHPZycONvUThhYIoXEoW5kerKJ-thLQLMAEoYjWuxGbvX6crPb3oLmITOweG-ymFDxdvtGAAKAeSRgvxWduzpk2tdD1rGs4E7GjkXc_LiobxikyNv455mPSRFE_TkN2qv8sBNs1pILzmK5S7MFasFYaBsVA4TCyqlbw0tdXF-Fj_J_MLdB4ENF2SL7ENeY1Gsj7FCNugGESA3lARcEPDpWA_gvfFupFHIgkNzL6G_djAEHN2j_IsZbjNdd_rmwJUmqaSAkzT1I_Pl6EUKpaMiWrWO02tFz0cEwdl7etwps3ECYlhCxbhJXKEjzdA7Chr4BcjKvwj6gO79qO2E92OHSNQeULlACC9WKVHOlZ6bgFBkHmpYXYj3JhAHkguIG5qVLeypttSEsNgvhaxLNy9vEgN6I99gT3oGNqKtkhKzAMRf8S4jpIE75l-HtXGOqSluolLNSD5LNI3iMLpXVHiM98wg0cb_4TGqWTcQbtmnElrKt7DjFMGv4uOcP1DZHCIfwIX0-JOI8R-cBygcxQbKyKLiB9K-1Ag3kQgcSq0B6OpEu0CFKA4z1cGV3U0N4ApI0AP0PcUWccnHiwV9KLply-2mgiO8f4KcJ--5JjYR_NGNrc8gWHEBL6f5aq90xSgY7g2SgY9VS6ausxtSXzKG6W6tNSmYBrukBZEOzOyksqpLaxyLpdYuOlD_OQTrUjCSaT2P_IEXHIEpKbmZ_t1Lk8ZTxxsyU3YGDVlEtuhmhXJu-FsnOKnIMYAQ==.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC01LjYtbHVuYS0yMDI2MDcwOXxvcGVuYWkifQ\",\"format\":\"openai-responses-v1\"},\"sequence_number\":3}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":1,\"item\":{\"id\":\"msg_tmp_0ggfmesezxzj\",\"type\":\"message\",\"status\":\"in_progress\",\"role\":\"assistant\",\"content\":[],\"phase\":\"commentary\"},\"sequence_number\":4}\n\ndata: {\"type\":\"response.content_part.added\",\"output_index\":1,\"item_id\":\"msg_tmp_0ggfmesezxzj\",\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"\",\"annotations\":[],\"logprobs\":[]},\"sequence_number\":5}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"output_index\":1,\"item_id\":\"msg_tmp_0ggfmesezxzj\",\"content_index\":0,\"delta\":\"I’ll create `hello.txt`, verify the repository state, and commit it with the requested message.\",\"logprobs\":[],\"sequence_number\":6}\n\ndata: {\"type\":\"response.output_text.done\",\"output_index\":1,\"item_id\":\"msg_tmp_0ggfmesezxzj\",\"content_index\":0,\"text\":\"I’ll create `hello.txt`, verify the repository state, and commit it with the requested message.\",\"logprobs\":[],\"sequence_number\":26}\n\ndata: {\"type\":\"response.content_part.done\",\"output_index\":1,\"item_id\":\"msg_tmp_0ggfmesezxzj\",\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"I’ll create `hello.txt`, verify the repository state, and commit it with the requested message.\",\"annotations\":[],\"logprobs\":[]},\"sequence_number\":27}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":1,\"item\":{\"id\":\"msg_tmp_0ggfmesezxzj\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"I’ll create `hello.txt`, verify the repository state, and commit it with the requested message.\",\"annotations\":[],\"logprobs\":[]}],\"phase\":\"commentary\"},\"sequence_number\":28}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":2,\"item\":{\"id\":\"ctc_tmp_cqcu4pwggf5\",\"type\":\"custom_tool_call\",\"status\":\"in_progress\",\"call_id\":\"call_2tUQhyp0gHwzbhxYzUP351B6\",\"name\":\"exec\",\"input\":\"\",\"namespace\":\"functions\"},\"sequence_number\":29}\n\nevent: response.custom_tool_call_input.delta\ndata: {\"type\":\"response.custom_tool_call_input.delta\",\"output_index\":2,\"item_id\":\"ctc_tmp_cqcu4pwggf5\",\"delta\":\"const matches = ALL_TOOLS.filter(x => x.name.includes(\\\"mcp__status__\\\") || x.name.includes(\\\"status\\\"));\\ntext(matches);\\n\",\"sequence_number\":30}\n\ndata: {\"type\":\"response.custom_tool_call_input.done\",\"output_index\":2,\"item_id\":\"ctc_tmp_cqcu4pwggf5\",\"input\":\"const matches = ALL_TOOLS.filter(x => x.name.includes(\\\"mcp__status__\\\") || x.name.includes(\\\"status\\\"));\\ntext(matches);\\n\",\"sequence_number\":59}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":2,\"item\":{\"id\":\"ctc_tmp_cqcu4pwggf5\",\"type\":\"custom_tool_call\",\"status\":\"completed\",\"call_id\":\"call_2tUQhyp0gHwzbhxYzUP351B6\",\"name\":\"exec\",\"input\":\"const matches = ALL_TOOLS.filter(x => x.name.includes(\\\"mcp__status__\\\") || x.name.includes(\\\"status\\\"));\\ntext(matches);\\n\",\"namespace\":\"functions\"},\"sequence_number\":60}\n\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"gen-1794572809-apLrCEaOZO7bJivc8TbH\",\"object\":\"response\",\"created_at\":1794572809,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"completed\",\"completed_at\":1794572810,\"output\":[{\"id\":\"rs_04ad34e7db74dbdf016af70209e42c87d1afb3eadf76521a24\",\"type\":\"reasoning\",\"status\":\"completed\",\"summary\":[],\"encrypted_content\":\"gAAAAABq9wIKMl0IRDF-P1NpBeQuASGZHSgrkrGlekDM6wK1_p_GQ_EO-3Vs1HfuS3CWCLAVAY-WXMFDcRsjOS96vWkih-M2gsb6nvP3SBm3yeQ4TWO7I1DPmuqlwnCPc-EWswOEKJO5bV0dUF5w16x2b3muDBtNWHsM40A3S7DpUw8tkSlhKdpbiuxZF8hqKxAtbt_dltH-m9FuwWGRfNGJrjZhArEgLciEqOCWUCXPs9LjYN3g4gua1YL0acmYjjFWlP28MOuyfrPb-Akkdz7RKa-zKqtMvgVLQdk-qg4hABDQYPCwoclrdAWcDpA6naA0kFap-T58NKNm0-d-9uOXQqQq_xLwXj8Qzpc_TEYoNdv-Akp0kf6klnidSpJNEpbS3wlNbcKbHZBWx8zSd3KSOooV0C-4Q0sBT-IDskZGSXko3LeWVzrN9QM4a1I8eHl0saXi1C0NEfv_KAHkfKcfNAH6FxrslmfxXAayKadTEk0DrUbQL-H1ldYADm3eZVxhSAnBaPlObKCQt_4ugKwwcn3nYJvzHBN_PoX4CAOHK7qtAX0dQaEFRCfqa-O6FPlmCUusRUiayZKY3Bg0N9h3WERY4Q-9CsxuVJ7nVqyNDIv9O0CG7EFfg4fvykrVRZzDdvMtN6s7ATShkvkjGMYhnU47ZEQfQRVKDSCnNYjp6ennoE8EUqyYAq4SlBylDfFJp9umS_Fu7-hzanNX9BgaUe0IHEkjfpOmujoIBLKbLH4b5n2tXvtuNozlCYDcUvdRMYrw0PzVWAnhSvs5ZgpUGhsejwLXKK0mo92z7IHeZg77lzAJ_29Q3bhleIekHVV1y-BqUSvZls7JRaYHsE6dBCTxPVEbZhILpK8JUCLBsbJ67bOpH9sWZmWtU6_MLDR6SXqTH0egCY8U79pi5nUSvUkStohDbHsua9u2JryIWbVWL1CvYGs7dhnPtQuUby0gHyB6ew4NFkF2JFu48HJetP27pl7co0k3ymrGeknFPBYr2rq1BRdlNvB7sVOsMgSnGkuMz_wznH-xKOW94YuvUcSoAXAX9UUiyXJ5Z8CTUGE7gEAcz3bObGTcZVa7mhZ9jLDHZmFJvYLhehkKAdQI2pwEP44q5yinkesIDGk5_YIYcbSDKuDXnIyB-p0JJhKaoGMAiOptVcmNJIObkPZ2tv7zoyKfUx6-1kmyb-xH8-6KhFTSFFaLwEPcvJR8aOFI3uTRqjqRus4FR7Nx2xiDreafqlpe8hPHN7jBjrAr3hL2ge_YBkws-h8flzdVhU8Fdszlph3EF69467B8yfNk6p5gy33lsSdY2OY-1G055AYB9caezwKdahMNomMcyhVgHdVvUoOP4O5YWvzcbK8RkevkuTpW26ZVrJWGSS_xKoFpOEy1o1L8h8oQOHecIL8l2VFgRfr4GNmz9iHnwnFt_4b8a0bVwWTtdXkKc1UsrmOHlacfYYl0e0_v91x5sQBbqrU-9WCsp5LC7LzDfVR8tOJnBmmR6mDOSW7RngACMOQHo4SDV1Dtdg-5oxGmbW12Fv9fXDX8n1DphRSf6grie02wImKLbIgzIkQUaUHPZycONvUThhYIoXEoW5kerKJ-thLQLMAEoYjWuxGbvX6crPb3oLmITOweG-ymFDxdvtGAAKAeSRgvxWduzpk2tdD1rGs4E7GjkXc_LiobxikyNv455mPSRFE_TkN2qv8sBNs1pILzmK5S7MFasFYaBsVA4TCyqlbw0tdXF-Fj_J_MLdB4ENF2SL7ENeY1Gsj7FCNugGESA3lARcEPDpWA_gvfFupFHIgkNzL6G_djAEHN2j_IsZbjNdd_rmwJUmqaSAkzT1I_Pl6EUKpaMiWrWO02tFz0cEwdl7etwps3ECYlhCxbhJXKEjzdA7Chr4BcjKvwj6gO79qO2E92OHSNQeULlACC9WKVHOlZ6bgFBkHmpYXYj3JhAHkguIG5qVLeypttSEsNgvhaxLNy9vEgN6I99gT3oGNqKtkhKzAMRf8S4jpIE75l-HtXGOqSluolLNSD5LNI3iMLpXVHiM98wg0cb_4TGqWTcQbtmnElrKt7DjFMGv4uOcP1DZHCIfwIX0-JOI8R-cBygcxQbKyKLiB9K-1Ag3kQgcSq0B6OpEu0CFKA4z1cGV3U0N4ApI0AP0PcUWccnHiwV9KLply-2mgiO8f4KcJ--5JjYR_NGNrc8gWHEBL6f5aq90xSgY7g2SgY9VS6ausxtSXzKG6W6tNSmYBrukBZEOzOyksqpLaxyLpdYuOlD_OQTrUjCSaT2P_IEXHIEpKbmZ_t1Lk8ZTxxsyU3YGDVlEtuhmhXJu-FsnOKnIMYAQ==.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC01LjYtbHVuYS0yMDI2MDcwOXxvcGVuYWkifQ\",\"format\":\"openai-responses-v1\"},{\"id\":\"msg_tmp_0ggfmesezxzj\",\"type\":\"message\",\"role\":\"assistant\",\"status\":\"completed\",\"content\":[{\"type\":\"output_text\",\"text\":\"I’ll create `hello.txt`, verify the repository state, and commit it with the requested message.\",\"annotations\":[],\"logprobs\":[]}],\"phase\":\"commentary\"},{\"id\":\"ctc_tmp_cqcu4pwggf5\",\"type\":\"custom_tool_call\",\"status\":\"completed\",\"call_id\":\"call_2tUQhyp0gHwzbhxYzUP351B6\",\"name\":\"exec\",\"input\":\"const matches = ALL_TOOLS.filter(x => x.name.includes(\\\"mcp__status__\\\") || x.name.includes(\\\"status\\\"));\\ntext(matches);\\n\",\"namespace\":\"functions\"}],\"error\":null,\"incomplete_details\":null,\"access_programs\":{\"cyber\":\"standard\"},\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"default\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":{\"input_tokens\":8217,\"input_tokens_details\":{\"cached_tokens\":0,\"cache_write_tokens\":8214},\"output_tokens\":102,\"output_tokens_details\":{\"reasoning_tokens\":34},\"total_tokens\":8319,\"cost\":0.0021765,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.0021765,\"upstream_inference_input_cost\":0.0020541,\"upstream_inference_output_cost\":0.0001224}}},\"sequence_number\":61}\n\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "44dc66fc61d89e17",
+      "request": {
+        "model": "gpt-5.6-luna",
+        "system": "",
+        "messages": [
+          {
+            "role": "additional_tools",
+            "content": "{\"type\":\"additional_tools\",\"role\":\"developer\",\"tools\":[{\"type\":\"namespace\",\"name\":\"functions\",\"description\":\"\",\"tools\":[… [17134 chars, sha256 587d93261dd8a25c]"
+          },
+          {
+            "role": "developer",
+            "content": [
+              "You are Codex, an agent based on GPT-5. You and the user share one workspace, and your job is to collaborate with them u… [17729 chars, sha256 0972574f9d43b6c3]"
+            ]
+          },
+          {
+            "role": "developer",
+            "content": [
+              "These MCP servers are part of your normal workflow in every turn, but their tools are loaded on demand, so they are not … [413 chars, sha256 3e5bf84167673db7]",
+              "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Be… [1956 chars, sha256 a24fb2a6b26fac5c]",
+              "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `danger-f… [362 chars, sha256 681b5ba580483b28]",
+              "<collaboration_mode>These MCP servers are part of your normal workflow in every turn, but their tools are loaded on dema… [454 chars, sha256 5d7ec63cb60fadaf]"
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              "Create a file hello.txt containing \"hello\" and commit it with the message \"Add hello.txt\"."
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              "I’ll create `hello.txt`, verify the repository state, and commit it with the requested message."
+            ]
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const matches = ALL_TOOLS.filter(x => x.name.includes(\"mcp__status__\") || x.name.includes(\"status\"));\ntext(matches);"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "[{\"name\":\"mcp__status__status_set\",\"description\":\"Publish where your work stands (replaces your previous status). See the server instructions for when and how.\\n\\nstatus_set publishes where your work stands to a status card the human reads in Paseo instead of asking you \\\"where are we?\\\".\\n- Call it at the end of every turn that changed where things stand: started, finished or abandoned a step, got a result, became blocked, or started waiting on the human. Skip it for turns that changed nothing.\\n- Call it before your final reply, and add no closing line after it: a collapsed turn shows only its last message, so a short line after the status card would hide your answer.\\n- Each call replaces the whole status, so send all fields every time.\\n- Write for someone who skipped the transcript: plain words, no internal jargon, no file paths unless they matter.\\n  - tldr: one or two sentences. What this work is and where it stands.\\n  - now: what you are doing or waiting on this moment.\\n  - done: finished steps, each with its proof (\\\"tests pass: 105/105\\\", \\\"PR #22 open, CI green\\\"). Say \\\"not committed\\\" or \\\"not pushed\\\" when that is true.\\n  - next: what is left, in order. Mark what needs the human.\\n  - state: working, waiting_on_you, blocked or done. Use working while you, a heartbeat or a background job still own the next step; done once nothing is left.\\n- Messages starting with [status] are the human asking for an update: call status_set.\\n\\nexec tool declaration:\\n```ts\\ndeclare const tools: { mcp__status__status_set(args: { done?: Array<string>; next?: Array<string>; now?: string; state: \\\"working\\\" | \\\"waiting_on_you\\\" | \\\"blocked\\\" | \\\"done\\\"; tldr: string; }): Promise<CallToolResult>; };\\n```\"}]"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": ": \n\n: \n\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"gen-1794572811-KSpuTJmigKG3oArh2i1g\",\"object\":\"response\",\"created_at\":1794572811,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"in_progress\",\"completed_at\":null,\"output\":[],\"error\":null,\"incomplete_details\":null,\"access_programs\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\"},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":null},\"sequence_number\":0}\n\ndata: {\"type\":\"response.in_progress\",\"response\":{\"id\":\"gen-1794572811-KSpuTJmigKG3oArh2i1g\",\"object\":\"response\",\"created_at\":1794572811,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"in_progress\",\"completed_at\":null,\"output\":[],\"error\":null,\"incomplete_details\":null,\"access_programs\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\"},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":null},\"sequence_number\":1}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"rs_04ad34e7db74dbdf016af7020befe087d1b6a5648ff661e96d\",\"type\":\"reasoning\",\"status\":\"in_progress\",\"summary\":[]},\"sequence_number\":2}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"rs_04ad34e7db74dbdf016af7020befe087d1b6a5648ff661e96d\",\"type\":\"reasoning\",\"status\":\"completed\",\"summary\":[],\"encrypted_content\":\"gAAAAABq9wIMGhhTvNChaVnl0iIIz7vOrCTpmZqzezH8xnG3E6LWTA6_YTWZfg4mnpFhfIpDqRMRTu8-3XnuiG_I1JMEgmg-ClQObYYEXheAL12tXWmBiN8SBRVgttW-kxo4Ohyl1qs0Mo2vUPUxkp2dPQ9ZXwfF8GoRu-5idiRhZpxk2QxdN6J3eN31KRIFv3M7Bxdfk0VVUXru1rxP8MdYGK4wFpexNm6iStMHWrN_71LEdYPmpxsFRI5szEJOwQFfcgXuWW7xUTyqV9C9Ox7hA_VD9fLkjRXeOaWwtdkBZRI_dYXFLflKjtwnWBGXi8ZAHUzbQO7L_jBsDK__QwLSnZttqKBF16Ip2NIrgPXKv3kIaAJLk-8M5HMcqnl3cKVdwqn0XjyjZ-Avo58kri4B2Kb5YIkuOd5WnwLFu2fznCIS-R4vYfpvIj3f6NqjlhTPCeiGvzPwh92gWSwBlPLn4BlZ5d2OGy8BAhGuCjNswqhXvSTzHu1Oo_wH1gHLxMIF3ePTC12hwH6v-YD0RHTL5cTQVFrRZMKOB-0pyeO-x_UrlYifnq0LmtuL-yzA6t0P_KvlgVZ12w3aWD4qigOX6optsVSA650Vje4EFY2LLwupEfdzNRFUsPI9OjRq2jg1VbnRv2Tlm3hcDYrfQzy8SgI7a8zg3nADNhGdeeFCbWQvV-fpa39bGguX4dG5oZ8jUaANRKgyLGsm5Ow3Pt3zTOGrllSrkRtizz3_yuCptzB1fIouZR0VT0bbeuXXwTorDVNHvoDzYOqBVGljD7vY-3TGxTG_TyjA36D97We7vUlG4eeoA4yXOvLEJa8Um6bfCXVnKT33LmSKP5fP65cDH7-RHhPNhQ980NbCtRmwT7PdrIj1hz5svBuWQYpp3jBYCKC_rx1y-gLMWlCtgU8bptaYxUHvd01nnIsSXINvMBzaG7Rleyr3BHaYJbOa9K913dqDojuLbD69XSssGLZPS557NUF9mpZwdtlWGbqfiFotVYgzCrN0fHE3a64gxH4SpnVEw3Hj0NT3zOP2-uWujCau-GBwGJX5kXThOgxM_6juFmizPaM70wlZFx-szY1tx13CU0C72tqL_0BKwU90u7n6WuKi5xcGz3-IJiw_T7Ys_bu6mUWUsUC_0TiWt0VwGVxIK11OiGB9JplY_vkzrww1yxDR_w8jMcKsp23n-q1oLSWdTTKUmJ3ll1RzvN0SGNszFRFaM9tB6tie2BXt1wA-2Gtg2sdUMuZB0axjAxKH8lqFl_KDkk79zS18VbA7IfMgoKgYReO5ZIDCoUZHPUQlsX7XGqViL6iyYvMBYvGct4F3GmqOrxnFW5AHgcVDCXmtmy0RIlzA83plWwe0h0w5T0G5z3QFqLQoyIsizV_l-a4uTrybhEWQKzdQzi8QR4BgwmIxhG1MY7_3sC8mLQpBGbKiEfQYHwtabiUoGzXfjJEvUCiFYtav6C3oaz6wd9e3FPjoyUCsyA9JkOgXPGdr3L5Wh-O8-kMRKPGM9qjhyCepZNI5cDN1lLI8bFAI0wX5ghVqRvwfJ8fPkYKS5trl99PAXbFbp9A-UNWwJZ2mapS7tsyNegEG0ylp4aoqyrscIAGOZUbtBJdIN5Kyp3LOFIhAZPnZPzwiM9qplPGsHEvQp2UF6IN9JQ_4eU6Tikhe5ccVz1G6YXQkQmnBp3u4svy1s6ett3H7kyyKLuA8CVoq7Pc5KIHeeu8TYdxQtPIDDQVv783MZtmscSnY6stiupfEDowk1w6AZdmW1UEJSBRgzVfpbmH-_GYhGJ9_9eupG3PJCGzoJSsckYfyB0NqXyctcLh9IbTFAmAnIKi_KQNl1APw1tplv1xdGpf__lJJ5TCFngiRBWO53vKzY5jwMLGlaBCz5gbSWOrx8GN_rTAgGF7q8nSbn-uc66EbW4k65mdl__pO80YgaqOMyDqvmXf0Ee6ONRT7Kh8xFMFauoZNGadaNL_b7_ltLyflTpfikAaBx3xRGpPoC4tNHPvzqoVC9xtJ6k3xJR34oEXOGym-vLKF8ujEIt5IAKS53KJUnWN3hYnXi9v0Kz15CshypDIwcsY8Y7AhIzhHRYTECT8QbAbMYxgi2V2y6DLqfUmDEV00vFdD22zKuxJWZxpAmRyaPpBcc0HsyUSdmyc8R_Q8-x0c25Ix7v_x6DpPJY2U2RfqkLiQZ3y2CYFp3BEup9bshk1aJK5AlobEQKCeJoZ5ABaej_x3z6Q560a9Ba_POaW1LV_xja4K-BaYrBBeRlvPvO5N6NmltyIjGdbnS_5hhJzkirQCgH6B6vlGopnsGYtjjSY2EkHxN0EkAXI2t2J_IahkAFlkHSk5bMIwiX59Zmf-W4vUs3tlnoE8VYMW5oTyVu_zpcT-t6cN0BMPTSRDHUDhz_i9lR5kQL7nzZF9F_eaM0e9F6aW3N9VoWcilbDFucYBmc6vLxNJJwoQJsnn2nJoyTDfQnNEa_XqEJgh_zHfUvtkav-jJfUHJjxwzdmn.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC01LjYtbHVuYS0yMDI2MDcwOXxvcGVuYWkifQ\",\"format\":\"openai-responses-v1\"},\"sequence_number\":3}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":1,\"item\":{\"id\":\"ctc_tmp_lxe32c6chve\",\"type\":\"custom_tool_call\",\"status\":\"in_progress\",\"call_id\":\"call_38D0yVyhkNbTKCoidS3nevIP\",\"name\":\"exec\",\"input\":\"\",\"namespace\":\"functions\"},\"sequence_number\":4}\n\nevent: response.custom_tool_call_input.delta\ndata: {\"type\":\"response.custom_tool_call_input.delta\",\"output_index\":1,\"item_id\":\"ctc_tmp_lxe32c6chve\",\"delta\":\"const r = await tools.exec_command({cmd:\\\"git status --short --branch\\\",\\\"workdir\\\":\\\"__E2E_ROOT__/project\\\",\\\"yield_time_ms\\\":10000,\\\"max_output_tokens\\\":2000});\\ntext(r.output);\\n\",\"sequence_number\":5}\n\ndata: {\"type\":\"response.custom_tool_call_input.done\",\"output_index\":1,\"item_id\":\"ctc_tmp_lxe32c6chve\",\"input\":\"const r = await tools.exec_command({cmd:\\\"git status --short --branch\\\",\\\"workdir\\\":\\\"__E2E_ROOT__/project\\\",\\\"yield_time_ms\\\":10000,\\\"max_output_tokens\\\":2000});\\ntext(r.output);\\n\",\"sequence_number\":82}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":1,\"item\":{\"id\":\"ctc_tmp_lxe32c6chve\",\"type\":\"custom_tool_call\",\"status\":\"completed\",\"call_id\":\"call_38D0yVyhkNbTKCoidS3nevIP\",\"name\":\"exec\",\"input\":\"const r = await tools.exec_command({cmd:\\\"git status --short --branch\\\",\\\"workdir\\\":\\\"__E2E_ROOT__/project\\\",\\\"yield_time_ms\\\":10000,\\\"max_output_tokens\\\":2000});\\ntext(r.output);\\n\",\"namespace\":\"functions\"},\"sequence_number\":83}\n\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"gen-1794572811-KSpuTJmigKG3oArh2i1g\",\"object\":\"response\",\"created_at\":1794572811,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"completed\",\"completed_at\":1794572813,\"output\":[{\"id\":\"rs_04ad34e7db74dbdf016af7020befe087d1b6a5648ff661e96d\",\"type\":\"reasoning\",\"status\":\"completed\",\"summary\":[],\"encrypted_content\":\"gAAAAABq9wIMGhhTvNChaVnl0iIIz7vOrCTpmZqzezH8xnG3E6LWTA6_YTWZfg4mnpFhfIpDqRMRTu8-3XnuiG_I1JMEgmg-ClQObYYEXheAL12tXWmBiN8SBRVgttW-kxo4Ohyl1qs0Mo2vUPUxkp2dPQ9ZXwfF8GoRu-5idiRhZpxk2QxdN6J3eN31KRIFv3M7Bxdfk0VVUXru1rxP8MdYGK4wFpexNm6iStMHWrN_71LEdYPmpxsFRI5szEJOwQFfcgXuWW7xUTyqV9C9Ox7hA_VD9fLkjRXeOaWwtdkBZRI_dYXFLflKjtwnWBGXi8ZAHUzbQO7L_jBsDK__QwLSnZttqKBF16Ip2NIrgPXKv3kIaAJLk-8M5HMcqnl3cKVdwqn0XjyjZ-Avo58kri4B2Kb5YIkuOd5WnwLFu2fznCIS-R4vYfpvIj3f6NqjlhTPCeiGvzPwh92gWSwBlPLn4BlZ5d2OGy8BAhGuCjNswqhXvSTzHu1Oo_wH1gHLxMIF3ePTC12hwH6v-YD0RHTL5cTQVFrRZMKOB-0pyeO-x_UrlYifnq0LmtuL-yzA6t0P_KvlgVZ12w3aWD4qigOX6optsVSA650Vje4EFY2LLwupEfdzNRFUsPI9OjRq2jg1VbnRv2Tlm3hcDYrfQzy8SgI7a8zg3nADNhGdeeFCbWQvV-fpa39bGguX4dG5oZ8jUaANRKgyLGsm5Ow3Pt3zTOGrllSrkRtizz3_yuCptzB1fIouZR0VT0bbeuXXwTorDVNHvoDzYOqBVGljD7vY-3TGxTG_TyjA36D97We7vUlG4eeoA4yXOvLEJa8Um6bfCXVnKT33LmSKP5fP65cDH7-RHhPNhQ980NbCtRmwT7PdrIj1hz5svBuWQYpp3jBYCKC_rx1y-gLMWlCtgU8bptaYxUHvd01nnIsSXINvMBzaG7Rleyr3BHaYJbOa9K913dqDojuLbD69XSssGLZPS557NUF9mpZwdtlWGbqfiFotVYgzCrN0fHE3a64gxH4SpnVEw3Hj0NT3zOP2-uWujCau-GBwGJX5kXThOgxM_6juFmizPaM70wlZFx-szY1tx13CU0C72tqL_0BKwU90u7n6WuKi5xcGz3-IJiw_T7Ys_bu6mUWUsUC_0TiWt0VwGVxIK11OiGB9JplY_vkzrww1yxDR_w8jMcKsp23n-q1oLSWdTTKUmJ3ll1RzvN0SGNszFRFaM9tB6tie2BXt1wA-2Gtg2sdUMuZB0axjAxKH8lqFl_KDkk79zS18VbA7IfMgoKgYReO5ZIDCoUZHPUQlsX7XGqViL6iyYvMBYvGct4F3GmqOrxnFW5AHgcVDCXmtmy0RIlzA83plWwe0h0w5T0G5z3QFqLQoyIsizV_l-a4uTrybhEWQKzdQzi8QR4BgwmIxhG1MY7_3sC8mLQpBGbKiEfQYHwtabiUoGzXfjJEvUCiFYtav6C3oaz6wd9e3FPjoyUCsyA9JkOgXPGdr3L5Wh-O8-kMRKPGM9qjhyCepZNI5cDN1lLI8bFAI0wX5ghVqRvwfJ8fPkYKS5trl99PAXbFbp9A-UNWwJZ2mapS7tsyNegEG0ylp4aoqyrscIAGOZUbtBJdIN5Kyp3LOFIhAZPnZPzwiM9qplPGsHEvQp2UF6IN9JQ_4eU6Tikhe5ccVz1G6YXQkQmnBp3u4svy1s6ett3H7kyyKLuA8CVoq7Pc5KIHeeu8TYdxQtPIDDQVv783MZtmscSnY6stiupfEDowk1w6AZdmW1UEJSBRgzVfpbmH-_GYhGJ9_9eupG3PJCGzoJSsckYfyB0NqXyctcLh9IbTFAmAnIKi_KQNl1APw1tplv1xdGpf__lJJ5TCFngiRBWO53vKzY5jwMLGlaBCz5gbSWOrx8GN_rTAgGF7q8nSbn-uc66EbW4k65mdl__pO80YgaqOMyDqvmXf0Ee6ONRT7Kh8xFMFauoZNGadaNL_b7_ltLyflTpfikAaBx3xRGpPoC4tNHPvzqoVC9xtJ6k3xJR34oEXOGym-vLKF8ujEIt5IAKS53KJUnWN3hYnXi9v0Kz15CshypDIwcsY8Y7AhIzhHRYTECT8QbAbMYxgi2V2y6DLqfUmDEV00vFdD22zKuxJWZxpAmRyaPpBcc0HsyUSdmyc8R_Q8-x0c25Ix7v_x6DpPJY2U2RfqkLiQZ3y2CYFp3BEup9bshk1aJK5AlobEQKCeJoZ5ABaej_x3z6Q560a9Ba_POaW1LV_xja4K-BaYrBBeRlvPvO5N6NmltyIjGdbnS_5hhJzkirQCgH6B6vlGopnsGYtjjSY2EkHxN0EkAXI2t2J_IahkAFlkHSk5bMIwiX59Zmf-W4vUs3tlnoE8VYMW5oTyVu_zpcT-t6cN0BMPTSRDHUDhz_i9lR5kQL7nzZF9F_eaM0e9F6aW3N9VoWcilbDFucYBmc6vLxNJJwoQJsnn2nJoyTDfQnNEa_XqEJgh_zHfUvtkav-jJfUHJjxwzdmn.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC01LjYtbHVuYS0yMDI2MDcwOXxvcGVuYWkifQ\",\"format\":\"openai-responses-v1\"},{\"id\":\"ctc_tmp_lxe32c6chve\",\"type\":\"custom_tool_call\",\"status\":\"completed\",\"call_id\":\"call_38D0yVyhkNbTKCoidS3nevIP\",\"name\":\"exec\",\"input\":\"const r = await tools.exec_command({cmd:\\\"git status --short --branch\\\",\\\"workdir\\\":\\\"__E2E_ROOT__/project\\\",\\\"yield_time_ms\\\":10000,\\\"max_output_tokens\\\":2000});\\ntext(r.output);\\n\",\"namespace\":\"functions\"}],\"error\":null,\"incomplete_details\":null,\"access_programs\":{\"cyber\":\"standard\"},\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"default\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":{\"input_tokens\":8768,\"input_tokens_details\":{\"cached_tokens\":8214,\"cache_write_tokens\":551},\"output_tokens\":136,\"output_tokens_details\":{\"reasoning_tokens\":47},\"total_tokens\":8904,\"cost\":0.00046583,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.00046583,\"upstream_inference_input_cost\":0.00030263,\"upstream_inference_output_cost\":0.0001632}}},\"sequence_number\":84}\n\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "bcc73b68fb81dd84",
+      "request": {
+        "model": "gpt-5.6-luna",
+        "system": "",
+        "messages": [
+          {
+            "role": "additional_tools",
+            "content": "{\"type\":\"additional_tools\",\"role\":\"developer\",\"tools\":[{\"type\":\"namespace\",\"name\":\"functions\",\"description\":\"\",\"tools\":[… [17134 chars, sha256 587d93261dd8a25c]"
+          },
+          {
+            "role": "developer",
+            "content": [
+              "You are Codex, an agent based on GPT-5. You and the user share one workspace, and your job is to collaborate with them u… [17729 chars, sha256 0972574f9d43b6c3]"
+            ]
+          },
+          {
+            "role": "developer",
+            "content": [
+              "These MCP servers are part of your normal workflow in every turn, but their tools are loaded on demand, so they are not … [413 chars, sha256 3e5bf84167673db7]",
+              "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Be… [1956 chars, sha256 a24fb2a6b26fac5c]",
+              "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `danger-f… [362 chars, sha256 681b5ba580483b28]",
+              "<collaboration_mode>These MCP servers are part of your normal workflow in every turn, but their tools are loaded on dema… [454 chars, sha256 5d7ec63cb60fadaf]"
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              "Create a file hello.txt containing \"hello\" and commit it with the message \"Add hello.txt\"."
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              "I’ll create `hello.txt`, verify the repository state, and commit it with the requested message."
+            ]
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const matches = ALL_TOOLS.filter(x => x.name.includes(\"mcp__status__\") || x.name.includes(\"status\"));\ntext(matches);"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "[{\"name\":\"mcp__status__status_set\",\"description\":\"Publish where your work stands (replaces your previous status). See the server instructions for when and how.\\n\\nstatus_set publishes where your work stands to a status card the human reads in Paseo instead of asking you \\\"where are we?\\\".\\n- Call it at the end of every turn that changed where things stand: started, finished or abandoned a step, got a result, became blocked, or started waiting on the human. Skip it for turns that changed nothing.\\n- Call it before your final reply, and add no closing line after it: a collapsed turn shows only its last message, so a short line after the status card would hide your answer.\\n- Each call replaces the whole status, so send all fields every time.\\n- Write for someone who skipped the transcript: plain words, no internal jargon, no file paths unless they matter.\\n  - tldr: one or two sentences. What this work is and where it stands.\\n  - now: what you are doing or waiting on this moment.\\n  - done: finished steps, each with its proof (\\\"tests pass: 105/105\\\", \\\"PR #22 open, CI green\\\"). Say \\\"not committed\\\" or \\\"not pushed\\\" when that is true.\\n  - next: what is left, in order. Mark what needs the human.\\n  - state: working, waiting_on_you, blocked or done. Use working while you, a heartbeat or a background job still own the next step; done once nothing is left.\\n- Messages starting with [status] are the human asking for an update: call status_set.\\n\\nexec tool declaration:\\n```ts\\ndeclare const tools: { mcp__status__status_set(args: { done?: Array<string>; next?: Array<string>; now?: string; state: \\\"working\\\" | \\\"waiting_on_you\\\" | \\\"blocked\\\" | \\\"done\\\"; tldr: string; }): Promise<CallToolResult>; };\\n```\"}]"
+                }
+              ]
+            }
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const r = await tools.exec_command({cmd:\"git status --short --branch\",\"workdir\":\"<root>/project\",\"yield_time_ms\":10000,\"max_output_tokens\":2000});\ntext(r.output);"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "## No commits yet on main"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": ": \n\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"gen-1794572813-p8Q8EjCf9KKL6iIPH1rt\",\"object\":\"response\",\"created_at\":1794572813,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"in_progress\",\"completed_at\":null,\"output\":[],\"error\":null,\"incomplete_details\":null,\"access_programs\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\"},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":null},\"sequence_number\":0}\n\ndata: {\"type\":\"response.in_progress\",\"response\":{\"id\":\"gen-1794572813-p8Q8EjCf9KKL6iIPH1rt\",\"object\":\"response\",\"created_at\":1794572813,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"in_progress\",\"completed_at\":null,\"output\":[],\"error\":null,\"incomplete_details\":null,\"access_programs\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\"},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":null},\"sequence_number\":1}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"rs_04ad34e7db74dbdf016af7020e1ed887d1b40a41b945947b42\",\"type\":\"reasoning\",\"status\":\"in_progress\",\"summary\":[]},\"sequence_number\":2}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"rs_04ad34e7db74dbdf016af7020e1ed887d1b40a41b945947b42\",\"type\":\"reasoning\",\"status\":\"completed\",\"summary\":[],\"encrypted_content\":\"gAAAAABq9wIObFNx911elLp-G-8EYRzo4a1RwZGLZ3CuahyQlhbHNiCVa8GcdTiNTqjgg5u_9TD4gvE5iy9rTs5hkdkxqlThTyZBzDVW2m8Jwe-LjGYDD2NMoZlLuYahhoGNPORvPfp-BNIaDlSUDjhuLRirEqtrnWqfX4hJZ30UIiUEzbcctSOB-1fwnjkiZw8GtKqcm-_h3uQcHHZamHp5pn7alud4X0-wnVlYc3Hx5jkmmnIdJtsrKO4-NN-vEXouMNg-djxJP425ukDOwfFCWs9NIgqurP-4Pw0dt6tqh8q5JVIVj7W5HDUxyZzRiIgwf3BWyzeQYQf7IHauwcMag6RxXnoy_KNzALeaRppTS6dwW0kJlqUzvZvFMCG3-EQdvYYJ5nvet3l7J0Uw_Sb82JW5_2wKO3vT4YsYPaayFMzLhrNfXUEZyCOPCbmDIYswua5848wKK9rpwo3cvtuRXZBoNLEP4L6ZB_do1w4YBpSQZyVcqJ5Cg1mngJznozqIDtE8tc8O2YGgByJONI5byEcSQgzlQmX_dk6ZVBzIiZQjifuwiuaXb3oGd8dpQYTM6jlMeY3OvoL4qEOqqH7A97sIf5mj6tw1pUIVlW8QcwyDGcEBv6ISXxMxcNLQ53nrG-Z2-uO2lRTWDnvjm13kGIA1jHNsOUCR7hC9MAeabatpd9GBzzyNJkv4l2-TMyVylwX0U1k4bS9DS-nKpL09IROKosV2mX4tgm7vgCtSL50CsTi7g9wYU5W-ufs219KiploAjpDyvBhy6zfr9ZFx6xMlxprK_OogrpZfo4gGdSOYWTf1bYXaIVuOFvyUPIQcMLr5iw-7dvaKsvHqKk3ezAg8ZAE9-4upUvpuDDB6xCVWLasDRgctGYsF8CYseT7xa4IxNCp6fgFry8puO0dzycecthhQXqWFBx5TYdF9mkcpMS1iy5oPB8W7GdR-q8E6nlJgp1gC4OoVq4_HraAuzEF7th8q28gxI_WTcrRPViCdUpEbXxIzH-Z4FdQmZMm0NKWFeLlfowyQ9ugQxiyZfsW5NWj3D0GHEj6sKzW2cpfsO1nS3ZpF5Sy0aaiVuRvVfASkiOHdvwG2euT5TQCAmoWDL1VPolLltjpPi64llNW3fyUmfIJssjN_IIrhHA6JjkgtgzyaVfxdlogh8xnGbMFLVqe7Xk6z4z627M0ccq75metWFcPJv6CsRRqG9kXj1ThEC4hOSmZekX5BZi8fLVjOTs0c1zv1oBs6Y0wfUoNX6ZrqrG1MtOy7MOXX-lTZgMmgLiS8UxfOagrnyOhfG58ZFvPSxHGEKmM7zPQBSuw46tMWIP9kIG_dDqxgyMrNBl7VtcDZW5aoWFPecsBDgVrUXkCaH1pbVoeKhDLgqYpMPr5RBxH_HlT1bB1zxaKLBtiwTAxSXTvc_1QsIT9u5mlojBmtjQBorCEpNvQ_cBk9-i5Ugf98RSLdQ0epg9oc-W78AwHsp2jsjjPM0A4BzKpVS1Ouvff68f9t9M4qqktb1cSqnBnRy-XQlqP1jXjRnH1pfBbWISKgP_T86DUUzSIN_yx5rLV1blwpH7rPW28EQcDumaInSiwM2pbUsOIM0WY1ixue8tFXwAVsb5757cki3hsIfK9NFq28dAMTl1YJaxrgfMcVPqPShTP_ISRaROBhUnnEWrYDfz-sVVv_bNvv4kxGgzk4SY5Ulv_y5g7UIq2sj6JxaU3EldKbcoXGh-t4iRSQ5BdX2NatPnDYTZn57x2aKu8zQRWSvA5fQJywWckmijvDQCkx34UHw9fJPgslMWfajpXWH5VmGmgSKiAtOoZ4juCXrAMNbUoBJnYv9tipVTl62LEauoaE2iK-uvIuDrEBkTB8ArubetMBqctThsp1BdN312kod3qVEMwKNmF8RA9-K2mLGYtgo9ros_U_BkRO5sC35PY6ApU8npzKdN2fW8hOSZDtOVwX05ghX9xg8QRKfed7V5MbkTwmRPCON0j5.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC01LjYtbHVuYS0yMDI2MDcwOXxvcGVuYWkifQ\",\"format\":\"openai-responses-v1\"},\"sequence_number\":3}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":1,\"item\":{\"id\":\"ctc_tmp_weyqx3jps5\",\"type\":\"custom_tool_call\",\"status\":\"in_progress\",\"call_id\":\"call_2sb5rSmLzmhTt6ux2jHmDVsH\",\"name\":\"exec\",\"input\":\"\",\"namespace\":\"functions\"},\"sequence_number\":4}\n\nevent: response.custom_tool_call_input.delta\ndata: {\"type\":\"response.custom_tool_call_input.delta\",\"output_index\":1,\"item_id\":\"ctc_tmp_weyqx3jps5\",\"delta\":\"const patch = \\\"*** Begin Patch\\\\n*** Add File: __E2E_ROOT__/project/hello.txt\\\\n+hello\\\\n*** End Patch\\\";\\ntext(await tools.apply_patch(patch));\\n\",\"sequence_number\":5}\n\ndata: {\"type\":\"response.custom_tool_call_input.done\",\"output_index\":1,\"item_id\":\"ctc_tmp_weyqx3jps5\",\"input\":\"const patch = \\\"*** Begin Patch\\\\n*** Add File: __E2E_ROOT__/project/hello.txt\\\\n+hello\\\\n*** End Patch\\\";\\ntext(await tools.apply_patch(patch));\\n\",\"sequence_number\":73}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":1,\"item\":{\"id\":\"ctc_tmp_weyqx3jps5\",\"type\":\"custom_tool_call\",\"status\":\"completed\",\"call_id\":\"call_2sb5rSmLzmhTt6ux2jHmDVsH\",\"name\":\"exec\",\"input\":\"const patch = \\\"*** Begin Patch\\\\n*** Add File: __E2E_ROOT__/project/hello.txt\\\\n+hello\\\\n*** End Patch\\\";\\ntext(await tools.apply_patch(patch));\\n\",\"namespace\":\"functions\"},\"sequence_number\":74}\n\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"gen-1794572813-p8Q8EjCf9KKL6iIPH1rt\",\"object\":\"response\",\"created_at\":1794572813,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"completed\",\"completed_at\":1794572814,\"output\":[{\"id\":\"rs_04ad34e7db74dbdf016af7020e1ed887d1b40a41b945947b42\",\"type\":\"reasoning\",\"status\":\"completed\",\"summary\":[],\"encrypted_content\":\"gAAAAABq9wIObFNx911elLp-G-8EYRzo4a1RwZGLZ3CuahyQlhbHNiCVa8GcdTiNTqjgg5u_9TD4gvE5iy9rTs5hkdkxqlThTyZBzDVW2m8Jwe-LjGYDD2NMoZlLuYahhoGNPORvPfp-BNIaDlSUDjhuLRirEqtrnWqfX4hJZ30UIiUEzbcctSOB-1fwnjkiZw8GtKqcm-_h3uQcHHZamHp5pn7alud4X0-wnVlYc3Hx5jkmmnIdJtsrKO4-NN-vEXouMNg-djxJP425ukDOwfFCWs9NIgqurP-4Pw0dt6tqh8q5JVIVj7W5HDUxyZzRiIgwf3BWyzeQYQf7IHauwcMag6RxXnoy_KNzALeaRppTS6dwW0kJlqUzvZvFMCG3-EQdvYYJ5nvet3l7J0Uw_Sb82JW5_2wKO3vT4YsYPaayFMzLhrNfXUEZyCOPCbmDIYswua5848wKK9rpwo3cvtuRXZBoNLEP4L6ZB_do1w4YBpSQZyVcqJ5Cg1mngJznozqIDtE8tc8O2YGgByJONI5byEcSQgzlQmX_dk6ZVBzIiZQjifuwiuaXb3oGd8dpQYTM6jlMeY3OvoL4qEOqqH7A97sIf5mj6tw1pUIVlW8QcwyDGcEBv6ISXxMxcNLQ53nrG-Z2-uO2lRTWDnvjm13kGIA1jHNsOUCR7hC9MAeabatpd9GBzzyNJkv4l2-TMyVylwX0U1k4bS9DS-nKpL09IROKosV2mX4tgm7vgCtSL50CsTi7g9wYU5W-ufs219KiploAjpDyvBhy6zfr9ZFx6xMlxprK_OogrpZfo4gGdSOYWTf1bYXaIVuOFvyUPIQcMLr5iw-7dvaKsvHqKk3ezAg8ZAE9-4upUvpuDDB6xCVWLasDRgctGYsF8CYseT7xa4IxNCp6fgFry8puO0dzycecthhQXqWFBx5TYdF9mkcpMS1iy5oPB8W7GdR-q8E6nlJgp1gC4OoVq4_HraAuzEF7th8q28gxI_WTcrRPViCdUpEbXxIzH-Z4FdQmZMm0NKWFeLlfowyQ9ugQxiyZfsW5NWj3D0GHEj6sKzW2cpfsO1nS3ZpF5Sy0aaiVuRvVfASkiOHdvwG2euT5TQCAmoWDL1VPolLltjpPi64llNW3fyUmfIJssjN_IIrhHA6JjkgtgzyaVfxdlogh8xnGbMFLVqe7Xk6z4z627M0ccq75metWFcPJv6CsRRqG9kXj1ThEC4hOSmZekX5BZi8fLVjOTs0c1zv1oBs6Y0wfUoNX6ZrqrG1MtOy7MOXX-lTZgMmgLiS8UxfOagrnyOhfG58ZFvPSxHGEKmM7zPQBSuw46tMWIP9kIG_dDqxgyMrNBl7VtcDZW5aoWFPecsBDgVrUXkCaH1pbVoeKhDLgqYpMPr5RBxH_HlT1bB1zxaKLBtiwTAxSXTvc_1QsIT9u5mlojBmtjQBorCEpNvQ_cBk9-i5Ugf98RSLdQ0epg9oc-W78AwHsp2jsjjPM0A4BzKpVS1Ouvff68f9t9M4qqktb1cSqnBnRy-XQlqP1jXjRnH1pfBbWISKgP_T86DUUzSIN_yx5rLV1blwpH7rPW28EQcDumaInSiwM2pbUsOIM0WY1ixue8tFXwAVsb5757cki3hsIfK9NFq28dAMTl1YJaxrgfMcVPqPShTP_ISRaROBhUnnEWrYDfz-sVVv_bNvv4kxGgzk4SY5Ulv_y5g7UIq2sj6JxaU3EldKbcoXGh-t4iRSQ5BdX2NatPnDYTZn57x2aKu8zQRWSvA5fQJywWckmijvDQCkx34UHw9fJPgslMWfajpXWH5VmGmgSKiAtOoZ4juCXrAMNbUoBJnYv9tipVTl62LEauoaE2iK-uvIuDrEBkTB8ArubetMBqctThsp1BdN312kod3qVEMwKNmF8RA9-K2mLGYtgo9ros_U_BkRO5sC35PY6ApU8npzKdN2fW8hOSZDtOVwX05ghX9xg8QRKfed7V5MbkTwmRPCON0j5.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC01LjYtbHVuYS0yMDI2MDcwOXxvcGVuYWkifQ\",\"format\":\"openai-responses-v1\"},{\"id\":\"ctc_tmp_weyqx3jps5\",\"type\":\"custom_tool_call\",\"status\":\"completed\",\"call_id\":\"call_2sb5rSmLzmhTt6ux2jHmDVsH\",\"name\":\"exec\",\"input\":\"const patch = \\\"*** Begin Patch\\\\n*** Add File: __E2E_ROOT__/project/hello.txt\\\\n+hello\\\\n*** End Patch\\\";\\ntext(await tools.apply_patch(patch));\\n\",\"namespace\":\"functions\"}],\"error\":null,\"incomplete_details\":null,\"access_programs\":{\"cyber\":\"standard\"},\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"default\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":{\"input_tokens\":8934,\"input_tokens_details\":{\"cached_tokens\":8765,\"cache_write_tokens\":166},\"output_tokens\":89,\"output_tokens_details\":{\"reasoning_tokens\":9},\"total_tokens\":9023,\"cost\":0.0003242,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.0003242,\"upstream_inference_input_cost\":0.0002174,\"upstream_inference_output_cost\":0.0001068}}},\"sequence_number\":75}\n\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "8313fc3b19fa1564",
+      "request": {
+        "model": "gpt-5.6-luna",
+        "system": "",
+        "messages": [
+          {
+            "role": "additional_tools",
+            "content": "{\"type\":\"additional_tools\",\"role\":\"developer\",\"tools\":[{\"type\":\"namespace\",\"name\":\"functions\",\"description\":\"\",\"tools\":[… [17134 chars, sha256 587d93261dd8a25c]"
+          },
+          {
+            "role": "developer",
+            "content": [
+              "You are Codex, an agent based on GPT-5. You and the user share one workspace, and your job is to collaborate with them u… [17729 chars, sha256 0972574f9d43b6c3]"
+            ]
+          },
+          {
+            "role": "developer",
+            "content": [
+              "These MCP servers are part of your normal workflow in every turn, but their tools are loaded on demand, so they are not … [413 chars, sha256 3e5bf84167673db7]",
+              "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Be… [1956 chars, sha256 a24fb2a6b26fac5c]",
+              "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `danger-f… [362 chars, sha256 681b5ba580483b28]",
+              "<collaboration_mode>These MCP servers are part of your normal workflow in every turn, but their tools are loaded on dema… [454 chars, sha256 5d7ec63cb60fadaf]"
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              "Create a file hello.txt containing \"hello\" and commit it with the message \"Add hello.txt\"."
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              "I’ll create `hello.txt`, verify the repository state, and commit it with the requested message."
+            ]
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const matches = ALL_TOOLS.filter(x => x.name.includes(\"mcp__status__\") || x.name.includes(\"status\"));\ntext(matches);"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "[{\"name\":\"mcp__status__status_set\",\"description\":\"Publish where your work stands (replaces your previous status). See the server instructions for when and how.\\n\\nstatus_set publishes where your work stands to a status card the human reads in Paseo instead of asking you \\\"where are we?\\\".\\n- Call it at the end of every turn that changed where things stand: started, finished or abandoned a step, got a result, became blocked, or started waiting on the human. Skip it for turns that changed nothing.\\n- Call it before your final reply, and add no closing line after it: a collapsed turn shows only its last message, so a short line after the status card would hide your answer.\\n- Each call replaces the whole status, so send all fields every time.\\n- Write for someone who skipped the transcript: plain words, no internal jargon, no file paths unless they matter.\\n  - tldr: one or two sentences. What this work is and where it stands.\\n  - now: what you are doing or waiting on this moment.\\n  - done: finished steps, each with its proof (\\\"tests pass: 105/105\\\", \\\"PR #22 open, CI green\\\"). Say \\\"not committed\\\" or \\\"not pushed\\\" when that is true.\\n  - next: what is left, in order. Mark what needs the human.\\n  - state: working, waiting_on_you, blocked or done. Use working while you, a heartbeat or a background job still own the next step; done once nothing is left.\\n- Messages starting with [status] are the human asking for an update: call status_set.\\n\\nexec tool declaration:\\n```ts\\ndeclare const tools: { mcp__status__status_set(args: { done?: Array<string>; next?: Array<string>; now?: string; state: \\\"working\\\" | \\\"waiting_on_you\\\" | \\\"blocked\\\" | \\\"done\\\"; tldr: string; }): Promise<CallToolResult>; };\\n```\"}]"
+                }
+              ]
+            }
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const r = await tools.exec_command({cmd:\"git status --short --branch\",\"workdir\":\"<root>/project\",\"yield_time_ms\":10000,\"max_output_tokens\":2000});\ntext(r.output);"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "## No commits yet on main"
+                }
+              ]
+            }
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const patch = \"*** Begin Patch\\n*** Add File: <root>/project/hello.txt\\n+hello\\n*** End Patch\";\ntext(await tools.apply_patch(patch));"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "{}"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": ": \n\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"gen-1794572814-FeoTtRNLOQNrPBvjgX9P\",\"object\":\"response\",\"created_at\":1794572814,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"in_progress\",\"completed_at\":null,\"output\":[],\"error\":null,\"incomplete_details\":null,\"access_programs\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\"},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":null},\"sequence_number\":0}\n\ndata: {\"type\":\"response.in_progress\",\"response\":{\"id\":\"gen-1794572814-FeoTtRNLOQNrPBvjgX9P\",\"object\":\"response\",\"created_at\":1794572814,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"in_progress\",\"completed_at\":null,\"output\":[],\"error\":null,\"incomplete_details\":null,\"access_programs\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\"},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":null},\"sequence_number\":1}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"rs_04ad34e7db74dbdf016af7020faa4087d18c996e9dac006fda\",\"type\":\"reasoning\",\"status\":\"in_progress\",\"summary\":[]},\"sequence_number\":2}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"rs_04ad34e7db74dbdf016af7020faa4087d18c996e9dac006fda\",\"type\":\"reasoning\",\"status\":\"completed\",\"summary\":[],\"encrypted_content\":\"gAAAAABq9wIQeFJQP3WrmyQik7po__z_S0MSYhkY271MqlLxcdp7gwExXq0JxWEhmFMEltrG_hVFyD28dsvnC29NUOIbW_rV5iNzryQ8Bz32341deAtvaZzqZbzcdObOay9dp7Hk7_hlnrWLX5byfjFDHjXlCMhrO7boNehkCNLv2RA805_1lti4PRrorPmk5GuEURf8vZhmRF3jqh51zJSAt4Jpupu7AsDMimCDKpBm76Ffu-sCKmrfDvXx2XCPxb6ZnXjCHFc4apG3m99-c2RSA9VI_gJqKql8KmXISdDCtYj7S1Hr7Ba68ETQvzRZTgATMwa-xU88bTQqU2PeasqG3mSBXBUydcEuh_y8NpYidnk1HRggD04iudPiiS8Fxzjf6rf_lkmRu3eSEbpXpx8foaJFTzjb694bWSwHL_O8b3fNzH-nxy5IIxqFln5Lnmz7W4LfMylKzhuZprobbem8E0bSXGBZT1ODNDKBAkWQqUPPaWfwhfQlY-zxvEw3ZeQOzHivc-gRh0zAiRFF0sup2CTaSs4D4VZsDWhLPYozvdC8PXoAwUQeQhWgN5A2qLNMHyrzgGydIj8CywNfz4xupIFfEUqpbnIhFTIM9hMBsnukTOYXITeW0mAvyISPwHElU8bjjk0pXGDbxJwcihZh-qRMVp1JJ1QEMhjkqGmEStTPPRYkWWYLcQxJ0-gokNm5PIHi2H6pzwiFD2wcBLN5YaALMJB-r-BgW9YAfHgbwHHHt_uxhwvImDyfBXo297X5PL2ZhBQ9745BTRl7fZheWMV3zg4Zul3Ww5TRRYJ46EC8JIR-XHcDrYh7lNFb4oL9QuEpvK3pE8tKaQLnG26UgFMV0HmfO4H4iov469N71zUt0Wt0hbf9f9dXmqSiXzOse5DH6Sn3mdfWSOkP2Dk27z8_PkUBUDkxyAD2cpghOPtoWN0UwDOBK1s7nmXhSGR7FQHs_P2ieOwuQ5NvN-Hzs0UZKkKfsx-8NU0WWD7OtHZKKHvFLYGsBK9ZU0caPe-vN2uv9PxPKS9Wug3XG1KIUZSgW3RB_rAvuUtyzgRzFHLu4FI1y-QqubFYsgDv9lPb0mN3pOJKZabzg9If78AxgjHv7PAfPf7fk4Dt5XnGLmb5GSJklCw48bHbOWNU2kfT5zvl0Fax38AZIkWaa1idd94b98_7Yibh6SeAYV97zwjzhMbeahh9PehR36l-YWWHvNsDThvAPpEuldPaPin4UzYjGrNKHjkDuB7HLdXa283bN0lDr7tVRbHrSL_VwuUkit6XQoV1-Ib6Zz1O4jb6xxuFhg_zOUW7BhjRYT4QzBQmEjd3Mzu-95B_Ax-ytTAidhxJ_m3jbsTo7LhBIFp6jpPGZMly4UG4zi2dqzd-rrrI13UH67KxcSd7KnpmAys9qnWP7zd1m4cws0DgDRbqHCb8Z20VEJ9cIF9enE_BNhdQeVzLVQF6cZkEBkSKsc-2MzecuRwNcE4K3A93RBt_KDiF_B7VwlsgYNJkMXuQzPpPCmSEbnd5N6va0TTTXc3uwEOKljkAfTjDufDwwHM4MJc3vSKmAm7AjXOEM6xG1H0rGuYilYicQPSsCXYUHz5sq_4OUSZcocyq3IxR2nbyAg0MeWGaHCbQX7eLtqGiN3X6SEIvlJ6vR0zirQ3xup9BrlH8C5ePTRnOy4nFbXQ_Lwr-lyKNTZxsYOgi9OFV4stk1NCCJe6zReexr3CSUW2j7GFlkuBO4JJvWmubfWsMD2xTxGZVvt34OkkQ3j4X6CMvEorkTc_0tm165tyj6u0dnvVvE341Hhz_mDD3KmaWtSqwxQBzDzLI8UFuk3jfErRtT2HUQH1H-A3R0_Q5ba_dIzgJVHV9F4eedYkL3ZjSfuU_AUc-xD0_eO7nO8xqsRNR0KvA49ZKMeOOoltbUSJrttryk_AMW7FItD-bP9Q0uX2q8AeUQqbwOY1uDV5ihzJUmtwmYW0zvzauj4DvGGPZuiElJbUqbFOJ0Ig1Yx0gGu9SeK35O5xLEtYR2YkR-6M1Nu_2TGfhX_E5kTQfGZ4wsNSuzxtRoI5t4hPOVjM3BBNgCJchhlo4CpOBWxrIzGm1d4OzP9QtE5YtBwaVeurJVusNpdvDgJ6i9bQX7OmRMiWHYOl7DgI60sfngHNmLir7l1nUK4cyyK8nKRuYAO-Kf62c6J99UsAhSB1yA4X8XOOifL-yJL6sZz9x8CogIAl6-BzYtSnhdv8qmgcQk775VN-CpLYCYEHRTwxgVaRLIMzSH3n8h0l26HcJU7b36wd_qox0xWX_H54lAdzVzdKWSd1Od8tUQ1mV3l7lOj46XE5CIefXG3UWhiRI73T4FwK79soM8bsd33v6kVe4XC5iEZU6Gbp9.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC01LjYtbHVuYS0yMDI2MDcwOXxvcGVuYWkifQ\",\"format\":\"openai-responses-v1\"},\"sequence_number\":3}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":1,\"item\":{\"id\":\"msg_tmp_2exb1qr1ibg\",\"type\":\"message\",\"status\":\"in_progress\",\"role\":\"assistant\",\"content\":[],\"phase\":\"commentary\"},\"sequence_number\":4}\n\ndata: {\"type\":\"response.content_part.added\",\"output_index\":1,\"item_id\":\"msg_tmp_2exb1qr1ibg\",\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"\",\"annotations\":[],\"logprobs\":[]},\"sequence_number\":5}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"output_index\":1,\"item_id\":\"msg_tmp_2exb1qr1ibg\",\"content_index\":0,\"delta\":\"`hello.txt` is created with the requested contents. I’m committing it now and will verify the resulting commit.\",\"logprobs\":[],\"sequence_number\":6}\n\ndata: {\"type\":\"response.output_text.done\",\"output_index\":1,\"item_id\":\"msg_tmp_2exb1qr1ibg\",\"content_index\":0,\"text\":\"`hello.txt` is created with the requested contents. I’m committing it now and will verify the resulting commit.\",\"logprobs\":[],\"sequence_number\":29}\n\ndata: {\"type\":\"response.content_part.done\",\"output_index\":1,\"item_id\":\"msg_tmp_2exb1qr1ibg\",\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"`hello.txt` is created with the requested contents. I’m committing it now and will verify the resulting commit.\",\"annotations\":[],\"logprobs\":[]},\"sequence_number\":30}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":1,\"item\":{\"id\":\"msg_tmp_2exb1qr1ibg\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"`hello.txt` is created with the requested contents. I’m committing it now and will verify the resulting commit.\",\"annotations\":[],\"logprobs\":[]}],\"phase\":\"commentary\"},\"sequence_number\":31}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":2,\"item\":{\"id\":\"ctc_tmp_mgwsfy3d7ul\",\"type\":\"custom_tool_call\",\"status\":\"in_progress\",\"call_id\":\"call_PxfMr1TKkZOzCGhlx9dqatYD\",\"name\":\"exec\",\"input\":\"\",\"namespace\":\"functions\"},\"sequence_number\":32}\n\nevent: response.custom_tool_call_input.delta\ndata: {\"type\":\"response.custom_tool_call_input.delta\",\"output_index\":2,\"item_id\":\"ctc_tmp_mgwsfy3d7ul\",\"delta\":\"const r = await tools.exec_command({cmd:\\\"git diff --check && git add hello.txt && git commit -m \\\\\\\"Add hello.txt\\\\\\\" && git status --short --branch\\\",\\\"workdir\\\":\\\"__E2E_ROOT__/project\\\",\\\"yield_time_ms\\\":10000,\\\"max_output_tokens\\\":4000});\\ntext(r.output);\\n\",\"sequence_number\":33}\n\ndata: {\"type\":\"response.custom_tool_call_input.done\",\"output_index\":2,\"item_id\":\"ctc_tmp_mgwsfy3d7ul\",\"input\":\"const r = await tools.exec_command({cmd:\\\"git diff --check && git add hello.txt && git commit -m \\\\\\\"Add hello.txt\\\\\\\" && git status --short --branch\\\",\\\"workdir\\\":\\\"__E2E_ROOT__/project\\\",\\\"yield_time_ms\\\":10000,\\\"max_output_tokens\\\":4000});\\ntext(r.output);\\n\",\"sequence_number\":130}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":2,\"item\":{\"id\":\"ctc_tmp_mgwsfy3d7ul\",\"type\":\"custom_tool_call\",\"status\":\"completed\",\"call_id\":\"call_PxfMr1TKkZOzCGhlx9dqatYD\",\"name\":\"exec\",\"input\":\"const r = await tools.exec_command({cmd:\\\"git diff --check && git add hello.txt && git commit -m \\\\\\\"Add hello.txt\\\\\\\" && git status --short --branch\\\",\\\"workdir\\\":\\\"__E2E_ROOT__/project\\\",\\\"yield_time_ms\\\":10000,\\\"max_output_tokens\\\":4000});\\ntext(r.output);\\n\",\"namespace\":\"functions\"},\"sequence_number\":131}\n\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"gen-1794572814-FeoTtRNLOQNrPBvjgX9P\",\"object\":\"response\",\"created_at\":1794572814,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"completed\",\"completed_at\":1794572816,\"output\":[{\"id\":\"rs_04ad34e7db74dbdf016af7020faa4087d18c996e9dac006fda\",\"type\":\"reasoning\",\"status\":\"completed\",\"summary\":[],\"encrypted_content\":\"gAAAAABq9wIQeFJQP3WrmyQik7po__z_S0MSYhkY271MqlLxcdp7gwExXq0JxWEhmFMEltrG_hVFyD28dsvnC29NUOIbW_rV5iNzryQ8Bz32341deAtvaZzqZbzcdObOay9dp7Hk7_hlnrWLX5byfjFDHjXlCMhrO7boNehkCNLv2RA805_1lti4PRrorPmk5GuEURf8vZhmRF3jqh51zJSAt4Jpupu7AsDMimCDKpBm76Ffu-sCKmrfDvXx2XCPxb6ZnXjCHFc4apG3m99-c2RSA9VI_gJqKql8KmXISdDCtYj7S1Hr7Ba68ETQvzRZTgATMwa-xU88bTQqU2PeasqG3mSBXBUydcEuh_y8NpYidnk1HRggD04iudPiiS8Fxzjf6rf_lkmRu3eSEbpXpx8foaJFTzjb694bWSwHL_O8b3fNzH-nxy5IIxqFln5Lnmz7W4LfMylKzhuZprobbem8E0bSXGBZT1ODNDKBAkWQqUPPaWfwhfQlY-zxvEw3ZeQOzHivc-gRh0zAiRFF0sup2CTaSs4D4VZsDWhLPYozvdC8PXoAwUQeQhWgN5A2qLNMHyrzgGydIj8CywNfz4xupIFfEUqpbnIhFTIM9hMBsnukTOYXITeW0mAvyISPwHElU8bjjk0pXGDbxJwcihZh-qRMVp1JJ1QEMhjkqGmEStTPPRYkWWYLcQxJ0-gokNm5PIHi2H6pzwiFD2wcBLN5YaALMJB-r-BgW9YAfHgbwHHHt_uxhwvImDyfBXo297X5PL2ZhBQ9745BTRl7fZheWMV3zg4Zul3Ww5TRRYJ46EC8JIR-XHcDrYh7lNFb4oL9QuEpvK3pE8tKaQLnG26UgFMV0HmfO4H4iov469N71zUt0Wt0hbf9f9dXmqSiXzOse5DH6Sn3mdfWSOkP2Dk27z8_PkUBUDkxyAD2cpghOPtoWN0UwDOBK1s7nmXhSGR7FQHs_P2ieOwuQ5NvN-Hzs0UZKkKfsx-8NU0WWD7OtHZKKHvFLYGsBK9ZU0caPe-vN2uv9PxPKS9Wug3XG1KIUZSgW3RB_rAvuUtyzgRzFHLu4FI1y-QqubFYsgDv9lPb0mN3pOJKZabzg9If78AxgjHv7PAfPf7fk4Dt5XnGLmb5GSJklCw48bHbOWNU2kfT5zvl0Fax38AZIkWaa1idd94b98_7Yibh6SeAYV97zwjzhMbeahh9PehR36l-YWWHvNsDThvAPpEuldPaPin4UzYjGrNKHjkDuB7HLdXa283bN0lDr7tVRbHrSL_VwuUkit6XQoV1-Ib6Zz1O4jb6xxuFhg_zOUW7BhjRYT4QzBQmEjd3Mzu-95B_Ax-ytTAidhxJ_m3jbsTo7LhBIFp6jpPGZMly4UG4zi2dqzd-rrrI13UH67KxcSd7KnpmAys9qnWP7zd1m4cws0DgDRbqHCb8Z20VEJ9cIF9enE_BNhdQeVzLVQF6cZkEBkSKsc-2MzecuRwNcE4K3A93RBt_KDiF_B7VwlsgYNJkMXuQzPpPCmSEbnd5N6va0TTTXc3uwEOKljkAfTjDufDwwHM4MJc3vSKmAm7AjXOEM6xG1H0rGuYilYicQPSsCXYUHz5sq_4OUSZcocyq3IxR2nbyAg0MeWGaHCbQX7eLtqGiN3X6SEIvlJ6vR0zirQ3xup9BrlH8C5ePTRnOy4nFbXQ_Lwr-lyKNTZxsYOgi9OFV4stk1NCCJe6zReexr3CSUW2j7GFlkuBO4JJvWmubfWsMD2xTxGZVvt34OkkQ3j4X6CMvEorkTc_0tm165tyj6u0dnvVvE341Hhz_mDD3KmaWtSqwxQBzDzLI8UFuk3jfErRtT2HUQH1H-A3R0_Q5ba_dIzgJVHV9F4eedYkL3ZjSfuU_AUc-xD0_eO7nO8xqsRNR0KvA49ZKMeOOoltbUSJrttryk_AMW7FItD-bP9Q0uX2q8AeUQqbwOY1uDV5ihzJUmtwmYW0zvzauj4DvGGPZuiElJbUqbFOJ0Ig1Yx0gGu9SeK35O5xLEtYR2YkR-6M1Nu_2TGfhX_E5kTQfGZ4wsNSuzxtRoI5t4hPOVjM3BBNgCJchhlo4CpOBWxrIzGm1d4OzP9QtE5YtBwaVeurJVusNpdvDgJ6i9bQX7OmRMiWHYOl7DgI60sfngHNmLir7l1nUK4cyyK8nKRuYAO-Kf62c6J99UsAhSB1yA4X8XOOifL-yJL6sZz9x8CogIAl6-BzYtSnhdv8qmgcQk775VN-CpLYCYEHRTwxgVaRLIMzSH3n8h0l26HcJU7b36wd_qox0xWX_H54lAdzVzdKWSd1Od8tUQ1mV3l7lOj46XE5CIefXG3UWhiRI73T4FwK79soM8bsd33v6kVe4XC5iEZU6Gbp9.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC01LjYtbHVuYS0yMDI2MDcwOXxvcGVuYWkifQ\",\"format\":\"openai-responses-v1\"},{\"id\":\"msg_tmp_2exb1qr1ibg\",\"type\":\"message\",\"role\":\"assistant\",\"status\":\"completed\",\"content\":[{\"type\":\"output_text\",\"text\":\"`hello.txt` is created with the requested contents. I’m committing it now and will verify the resulting commit.\",\"annotations\":[],\"logprobs\":[]}],\"phase\":\"commentary\"},{\"id\":\"ctc_tmp_mgwsfy3d7ul\",\"type\":\"custom_tool_call\",\"status\":\"completed\",\"call_id\":\"call_PxfMr1TKkZOzCGhlx9dqatYD\",\"name\":\"exec\",\"input\":\"const r = await tools.exec_command({cmd:\\\"git diff --check && git add hello.txt && git commit -m \\\\\\\"Add hello.txt\\\\\\\" && git status --short --branch\\\",\\\"workdir\\\":\\\"__E2E_ROOT__/project\\\",\\\"yield_time_ms\\\":10000,\\\"max_output_tokens\\\":4000});\\ntext(r.output);\\n\",\"namespace\":\"functions\"}],\"error\":null,\"incomplete_details\":null,\"access_programs\":{\"cyber\":\"standard\"},\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"default\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":{\"input_tokens\":9047,\"input_tokens_details\":{\"cached_tokens\":8931,\"cache_write_tokens\":113},\"output_tokens\":180,\"output_tokens_details\":{\"reasoning_tokens\":41},\"total_tokens\":9227,\"cost\":0.00042347,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.00042347,\"upstream_inference_input_cost\":0.00020747,\"upstream_inference_output_cost\":0.000216}}},\"sequence_number\":132}\n\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "f995010fb14ef50c",
+      "request": {
+        "model": "gpt-5.6-luna",
+        "system": "",
+        "messages": [
+          {
+            "role": "additional_tools",
+            "content": "{\"type\":\"additional_tools\",\"role\":\"developer\",\"tools\":[{\"type\":\"namespace\",\"name\":\"functions\",\"description\":\"\",\"tools\":[… [17134 chars, sha256 587d93261dd8a25c]"
+          },
+          {
+            "role": "developer",
+            "content": [
+              "You are Codex, an agent based on GPT-5. You and the user share one workspace, and your job is to collaborate with them u… [17729 chars, sha256 0972574f9d43b6c3]"
+            ]
+          },
+          {
+            "role": "developer",
+            "content": [
+              "These MCP servers are part of your normal workflow in every turn, but their tools are loaded on demand, so they are not … [413 chars, sha256 3e5bf84167673db7]",
+              "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Be… [1956 chars, sha256 a24fb2a6b26fac5c]",
+              "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `danger-f… [362 chars, sha256 681b5ba580483b28]",
+              "<collaboration_mode>These MCP servers are part of your normal workflow in every turn, but their tools are loaded on dema… [454 chars, sha256 5d7ec63cb60fadaf]"
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              "Create a file hello.txt containing \"hello\" and commit it with the message \"Add hello.txt\"."
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              "I’ll create `hello.txt`, verify the repository state, and commit it with the requested message."
+            ]
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const matches = ALL_TOOLS.filter(x => x.name.includes(\"mcp__status__\") || x.name.includes(\"status\"));\ntext(matches);"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "[{\"name\":\"mcp__status__status_set\",\"description\":\"Publish where your work stands (replaces your previous status). See the server instructions for when and how.\\n\\nstatus_set publishes where your work stands to a status card the human reads in Paseo instead of asking you \\\"where are we?\\\".\\n- Call it at the end of every turn that changed where things stand: started, finished or abandoned a step, got a result, became blocked, or started waiting on the human. Skip it for turns that changed nothing.\\n- Call it before your final reply, and add no closing line after it: a collapsed turn shows only its last message, so a short line after the status card would hide your answer.\\n- Each call replaces the whole status, so send all fields every time.\\n- Write for someone who skipped the transcript: plain words, no internal jargon, no file paths unless they matter.\\n  - tldr: one or two sentences. What this work is and where it stands.\\n  - now: what you are doing or waiting on this moment.\\n  - done: finished steps, each with its proof (\\\"tests pass: 105/105\\\", \\\"PR #22 open, CI green\\\"). Say \\\"not committed\\\" or \\\"not pushed\\\" when that is true.\\n  - next: what is left, in order. Mark what needs the human.\\n  - state: working, waiting_on_you, blocked or done. Use working while you, a heartbeat or a background job still own the next step; done once nothing is left.\\n- Messages starting with [status] are the human asking for an update: call status_set.\\n\\nexec tool declaration:\\n```ts\\ndeclare const tools: { mcp__status__status_set(args: { done?: Array<string>; next?: Array<string>; now?: string; state: \\\"working\\\" | \\\"waiting_on_you\\\" | \\\"blocked\\\" | \\\"done\\\"; tldr: string; }): Promise<CallToolResult>; };\\n```\"}]"
+                }
+              ]
+            }
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const r = await tools.exec_command({cmd:\"git status --short --branch\",\"workdir\":\"<root>/project\",\"yield_time_ms\":10000,\"max_output_tokens\":2000});\ntext(r.output);"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "## No commits yet on main"
+                }
+              ]
+            }
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const patch = \"*** Begin Patch\\n*** Add File: <root>/project/hello.txt\\n+hello\\n*** End Patch\";\ntext(await tools.apply_patch(patch));"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "{}"
+                }
+              ]
+            }
+          },
+          {
+            "role": "assistant",
+            "content": [
+              "`hello.txt` is created with the requested contents. I’m committing it now and will verify the resulting commit."
+            ]
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const r = await tools.exec_command({cmd:\"git diff --check && git add hello.txt && git commit -m \\\"Add hello.txt\\\" && git status --short --branch\",\"workdir\":\"<root>/project\",\"yield_time_ms\":10000,\"max_output_tokens\":4000});\ntext(r.output);"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "[main (root-commit) d654ec5] Add hello.txt\n 1 file changed, 1 insertion(+)\n create mode 100644 hello.txt\n## main"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": ": \n\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"gen-1794572817-GgPhOd0Yvpdd0vgdFxTC\",\"object\":\"response\",\"created_at\":1794572817,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"in_progress\",\"completed_at\":null,\"output\":[],\"error\":null,\"incomplete_details\":null,\"access_programs\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\"},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":null},\"sequence_number\":0}\n\ndata: {\"type\":\"response.in_progress\",\"response\":{\"id\":\"gen-1794572817-GgPhOd0Yvpdd0vgdFxTC\",\"object\":\"response\",\"created_at\":1794572817,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"in_progress\",\"completed_at\":null,\"output\":[],\"error\":null,\"incomplete_details\":null,\"access_programs\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\"},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":null},\"sequence_number\":1}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"rs_04ad34e7db74dbdf016af702120f1c87d1a0e2702ed9de500b\",\"type\":\"reasoning\",\"status\":\"in_progress\",\"summary\":[]},\"sequence_number\":2}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"rs_04ad34e7db74dbdf016af702120f1c87d1a0e2702ed9de500b\",\"type\":\"reasoning\",\"status\":\"completed\",\"summary\":[],\"encrypted_content\":\"gAAAAABq9wISXAewyoYN9aaGOzV9xQxq0XZiju8ENSrSWAPUobbf3a45LJTrxHoZl6UBvfJ0FWLIawsZq5PaI-18dXVLs1i0TSCDyKo28qFTvCzFH3BihKnNQSPaAMy-6sRfokJIuR1Iqk6OhogJ2v_2W8lLxf8Pi4Q0VY1QfXm7LAJkxCTs6FZ_uKZ8bUzyBNEJkfe7rptLrQknS6fhCnn5RqeU_eQhGjruq3pwziDCULj_h5kGA82Fc2-Ty7Y2ZjS_XjZ1RTGPwDv7_CiSuqPcFkwLtz5RYZXcAjm36pAMruzdUBHrsJ8ct0dzmnHwg1I6WHfzchXjKxU3L1nIXbkryTuzfrJEp_86BrrONYbTRxALxL4MGE6ziEy3_9hfQTW1wUiGWB9e8TGctBVS6f6xQowCjnM0sEs4G72v-ws1p8OpSWZnHrvZgQx7he8iy7w2xILAx2di97T7nheKn4-5f0r86aI1sjbrX2kq0uycb8Oa5uCxbwgZ67ZPslRdyXx2iHtTpE3KYVohD71xYmC-dY3COvRAv1Uk49tf0RdbZ45aNOQKjOf7n6Yzfc03XngH0p3GvOWpi0Hd0Ay7UEhmFc6KiYCCgNQq_8XwnRs9GyhQyaevVlwHCnGyEzAH1iwcYET98uvktiL-HQItPBEAZZO2JHPpllT0F08c3vhaQ9pvCoAgLIzigNuo3BHgQSuoEAkm2tT5EE3B6Cyv-ml9lk2_NpujVpJjApNDJ0ijxJFQDzls3Xnrx4UrIXucFk3VlF5xi3DiUw05uJPwRdbMwmvxO1KUwfwjiZZX4t-LY11N6zTrFSjojU0pIGdQii0H3wmF7erexHj-ZF7ABCuyIwXJvHtipJjgT5oTtL2lzbuf0NZMzludjhvtJuKkror9nygdYSk-G9wKleXHNbS9ph7GIrJ2aFQue5upfdlWqAf_pq7LTNMr5PayiZeGfyg7EEhzwIZEUFq8-ZdXrbmUQfINU_iBVLjPL0NEuW-YgCHSNZZ4o_diyZP7VxO7XJvA_MQ5Swp2P7qJSZ3YYi4RtorqWBf-zQHijLBpzWgG15ZMxKtvan-sj7epbyvch6FcMdviMnc-KOVZNul5bxeRfNfBrQKY5XVuCuiFvHBpaR3O3odAIIw5Zme19PykpjknCtfUem0YKzfpofbBR2YOgwOAu18BNTDp59VcGsDJAg1gIlMAFuPgtEOEG6L0AaCVmyaciD6PzY7P703Q0_vLegVyzzn-6h6RAre-RAWAv2glInPxplqAAMZARrChv-kSB0DnM67UfysG2FzlMirYro3K4mpd89OIDxUp_x--sKfPqaekiSKn2Rbf39H130hyks9DoTTizklBCXqZ51aT18gKGp5AdZCcFGRPAIOJ_Ljc1S98bgAVGna1mvkQ7uKXXR3zahYHseRGa1vsRFlAtXL2F80xBSGmnTKEIBl0FtahPN93Enn5InvEFQMCQa1uOOQPEhcRw5XUW3aXkrQUJlRx2u10Mcd5fzXBUEVvRDQxbkAC8nJRlE9RKQ8K5StJKs9ViOpPAYDCXk1_D08vv-aGyyoVNZ3edLzvts7e1Gv1zXGMwJdDBATZIdTChlTKcg45upQQVlVylRiy7m2owK7xxAIEFC3PVBLtvbHe_4tfxFAr2hKpW_WiKh_ntLnxkxiDBSdR_zPjyl4X3Ve8nNf_W6X-EYR6sx15WnUnDFF72IKf5zuJfvftX6pcXqQeqjybRPC9iOXrLhiZqTw1pWmTIWVjaP5EnHo2Cq5lEiOR31mfYWaqFkeuhSispsKzH8PKrK17uWjslL2QvSD0W3sV8p0e2n3Ae1bdYhWiOtzPbclOgbdUroF15QICJKifc1hfYaHB7h4HoSIcb8YxgpRGC2w925lcA4VwJIp22KpzSB5TrrYayZHdX9hi74z3pGwSo_HLA4fQvZGsfo9URBRIu38YuqSsTlkDLt5QCp_iU7-Md7XiPSXoIL670Pp6JHsKh_HZ3JXp12L4BqMmO1YrmS8Wb0J2krp4HKFp9GExD7m8GA3ro1L8Od68l5mErzVBjfuvP93zJP2ugSNFJCfhYS1B1J7XeFSzXPFvOkHPhMSytY7OSFYV4hLB1JyHs2u9pwDW.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC01LjYtbHVuYS0yMDI2MDcwOXxvcGVuYWkifQ\",\"format\":\"openai-responses-v1\"},\"sequence_number\":3}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":1,\"item\":{\"id\":\"ctc_tmp_4j4nznyrk0a\",\"type\":\"custom_tool_call\",\"status\":\"in_progress\",\"call_id\":\"call_WIXsCmuXurpUlnQ7hcEko5uH\",\"name\":\"exec\",\"input\":\"\",\"namespace\":\"functions\"},\"sequence_number\":4}\n\nevent: response.custom_tool_call_input.delta\ndata: {\"type\":\"response.custom_tool_call_input.delta\",\"output_index\":1,\"item_id\":\"ctc_tmp_4j4nznyrk0a\",\"delta\":\"const r = await tools.mcp__status__status_set({\\n  tldr:\\\"Created hello.txt and committed it successfully.\\\",\\n  now:\\\"Work is complete.\\\",\\n  done:[\\\"Created hello.txt containing hello.\\\",\\\"Commit d654ec5 created with message Add hello.txt.\\\",\\\"Working tree is clean on main.\\\"],\\n  next:[],\\n  state:\\\"done\\\"\\n});\\nfor (const c of (r?.content ?? [])) if (c.type === \\\"text\\\") text(c.text);\\n\",\"sequence_number\":5}\n\ndata: {\"type\":\"response.custom_tool_call_input.done\",\"output_index\":1,\"item_id\":\"ctc_tmp_4j4nznyrk0a\",\"input\":\"const r = await tools.mcp__status__status_set({\\n  tldr:\\\"Created hello.txt and committed it successfully.\\\",\\n  now:\\\"Work is complete.\\\",\\n  done:[\\\"Created hello.txt containing hello.\\\",\\\"Commit d654ec5 created with message Add hello.txt.\\\",\\\"Working tree is clean on main.\\\"],\\n  next:[],\\n  state:\\\"done\\\"\\n});\\nfor (const c of (r?.content ?? [])) if (c.type === \\\"text\\\") text(c.text);\\n\",\"sequence_number\":100}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":1,\"item\":{\"id\":\"ctc_tmp_4j4nznyrk0a\",\"type\":\"custom_tool_call\",\"status\":\"completed\",\"call_id\":\"call_WIXsCmuXurpUlnQ7hcEko5uH\",\"name\":\"exec\",\"input\":\"const r = await tools.mcp__status__status_set({\\n  tldr:\\\"Created hello.txt and committed it successfully.\\\",\\n  now:\\\"Work is complete.\\\",\\n  done:[\\\"Created hello.txt containing hello.\\\",\\\"Commit d654ec5 created with message Add hello.txt.\\\",\\\"Working tree is clean on main.\\\"],\\n  next:[],\\n  state:\\\"done\\\"\\n});\\nfor (const c of (r?.content ?? [])) if (c.type === \\\"text\\\") text(c.text);\\n\",\"namespace\":\"functions\"},\"sequence_number\":101}\n\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"gen-1794572817-GgPhOd0Yvpdd0vgdFxTC\",\"object\":\"response\",\"created_at\":1794572817,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"completed\",\"completed_at\":1794572819,\"output\":[{\"id\":\"rs_04ad34e7db74dbdf016af702120f1c87d1a0e2702ed9de500b\",\"type\":\"reasoning\",\"status\":\"completed\",\"summary\":[],\"encrypted_content\":\"gAAAAABq9wISXAewyoYN9aaGOzV9xQxq0XZiju8ENSrSWAPUobbf3a45LJTrxHoZl6UBvfJ0FWLIawsZq5PaI-18dXVLs1i0TSCDyKo28qFTvCzFH3BihKnNQSPaAMy-6sRfokJIuR1Iqk6OhogJ2v_2W8lLxf8Pi4Q0VY1QfXm7LAJkxCTs6FZ_uKZ8bUzyBNEJkfe7rptLrQknS6fhCnn5RqeU_eQhGjruq3pwziDCULj_h5kGA82Fc2-Ty7Y2ZjS_XjZ1RTGPwDv7_CiSuqPcFkwLtz5RYZXcAjm36pAMruzdUBHrsJ8ct0dzmnHwg1I6WHfzchXjKxU3L1nIXbkryTuzfrJEp_86BrrONYbTRxALxL4MGE6ziEy3_9hfQTW1wUiGWB9e8TGctBVS6f6xQowCjnM0sEs4G72v-ws1p8OpSWZnHrvZgQx7he8iy7w2xILAx2di97T7nheKn4-5f0r86aI1sjbrX2kq0uycb8Oa5uCxbwgZ67ZPslRdyXx2iHtTpE3KYVohD71xYmC-dY3COvRAv1Uk49tf0RdbZ45aNOQKjOf7n6Yzfc03XngH0p3GvOWpi0Hd0Ay7UEhmFc6KiYCCgNQq_8XwnRs9GyhQyaevVlwHCnGyEzAH1iwcYET98uvktiL-HQItPBEAZZO2JHPpllT0F08c3vhaQ9pvCoAgLIzigNuo3BHgQSuoEAkm2tT5EE3B6Cyv-ml9lk2_NpujVpJjApNDJ0ijxJFQDzls3Xnrx4UrIXucFk3VlF5xi3DiUw05uJPwRdbMwmvxO1KUwfwjiZZX4t-LY11N6zTrFSjojU0pIGdQii0H3wmF7erexHj-ZF7ABCuyIwXJvHtipJjgT5oTtL2lzbuf0NZMzludjhvtJuKkror9nygdYSk-G9wKleXHNbS9ph7GIrJ2aFQue5upfdlWqAf_pq7LTNMr5PayiZeGfyg7EEhzwIZEUFq8-ZdXrbmUQfINU_iBVLjPL0NEuW-YgCHSNZZ4o_diyZP7VxO7XJvA_MQ5Swp2P7qJSZ3YYi4RtorqWBf-zQHijLBpzWgG15ZMxKtvan-sj7epbyvch6FcMdviMnc-KOVZNul5bxeRfNfBrQKY5XVuCuiFvHBpaR3O3odAIIw5Zme19PykpjknCtfUem0YKzfpofbBR2YOgwOAu18BNTDp59VcGsDJAg1gIlMAFuPgtEOEG6L0AaCVmyaciD6PzY7P703Q0_vLegVyzzn-6h6RAre-RAWAv2glInPxplqAAMZARrChv-kSB0DnM67UfysG2FzlMirYro3K4mpd89OIDxUp_x--sKfPqaekiSKn2Rbf39H130hyks9DoTTizklBCXqZ51aT18gKGp5AdZCcFGRPAIOJ_Ljc1S98bgAVGna1mvkQ7uKXXR3zahYHseRGa1vsRFlAtXL2F80xBSGmnTKEIBl0FtahPN93Enn5InvEFQMCQa1uOOQPEhcRw5XUW3aXkrQUJlRx2u10Mcd5fzXBUEVvRDQxbkAC8nJRlE9RKQ8K5StJKs9ViOpPAYDCXk1_D08vv-aGyyoVNZ3edLzvts7e1Gv1zXGMwJdDBATZIdTChlTKcg45upQQVlVylRiy7m2owK7xxAIEFC3PVBLtvbHe_4tfxFAr2hKpW_WiKh_ntLnxkxiDBSdR_zPjyl4X3Ve8nNf_W6X-EYR6sx15WnUnDFF72IKf5zuJfvftX6pcXqQeqjybRPC9iOXrLhiZqTw1pWmTIWVjaP5EnHo2Cq5lEiOR31mfYWaqFkeuhSispsKzH8PKrK17uWjslL2QvSD0W3sV8p0e2n3Ae1bdYhWiOtzPbclOgbdUroF15QICJKifc1hfYaHB7h4HoSIcb8YxgpRGC2w925lcA4VwJIp22KpzSB5TrrYayZHdX9hi74z3pGwSo_HLA4fQvZGsfo9URBRIu38YuqSsTlkDLt5QCp_iU7-Md7XiPSXoIL670Pp6JHsKh_HZ3JXp12L4BqMmO1YrmS8Wb0J2krp4HKFp9GExD7m8GA3ro1L8Od68l5mErzVBjfuvP93zJP2ugSNFJCfhYS1B1J7XeFSzXPFvOkHPhMSytY7OSFYV4hLB1JyHs2u9pwDW.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC01LjYtbHVuYS0yMDI2MDcwOXxvcGVuYWkifQ\",\"format\":\"openai-responses-v1\"},{\"id\":\"ctc_tmp_4j4nznyrk0a\",\"type\":\"custom_tool_call\",\"status\":\"completed\",\"call_id\":\"call_WIXsCmuXurpUlnQ7hcEko5uH\",\"name\":\"exec\",\"input\":\"const r = await tools.mcp__status__status_set({\\n  tldr:\\\"Created hello.txt and committed it successfully.\\\",\\n  now:\\\"Work is complete.\\\",\\n  done:[\\\"Created hello.txt containing hello.\\\",\\\"Commit d654ec5 created with message Add hello.txt.\\\",\\\"Working tree is clean on main.\\\"],\\n  next:[],\\n  state:\\\"done\\\"\\n});\\nfor (const c of (r?.content ?? [])) if (c.type === \\\"text\\\") text(c.text);\\n\",\"namespace\":\"functions\"}],\"error\":null,\"incomplete_details\":null,\"access_programs\":{\"cyber\":\"standard\"},\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"default\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":{\"input_tokens\":9287,\"input_tokens_details\":{\"cached_tokens\":9044,\"cache_write_tokens\":240},\"output_tokens\":127,\"output_tokens_details\":{\"reasoning_tokens\":20},\"total_tokens\":9414,\"cost\":0.00039388,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.00039388,\"upstream_inference_input_cost\":0.00024148,\"upstream_inference_output_cost\":0.0001524}}},\"sequence_number\":102}\n\ndata: [DONE]\n\n"
+    },
+    {
+      "key": "294656ea98861f9f",
+      "request": {
+        "model": "gpt-5.6-luna",
+        "system": "",
+        "messages": [
+          {
+            "role": "additional_tools",
+            "content": "{\"type\":\"additional_tools\",\"role\":\"developer\",\"tools\":[{\"type\":\"namespace\",\"name\":\"functions\",\"description\":\"\",\"tools\":[… [17134 chars, sha256 587d93261dd8a25c]"
+          },
+          {
+            "role": "developer",
+            "content": [
+              "You are Codex, an agent based on GPT-5. You and the user share one workspace, and your job is to collaborate with them u… [17729 chars, sha256 0972574f9d43b6c3]"
+            ]
+          },
+          {
+            "role": "developer",
+            "content": [
+              "These MCP servers are part of your normal workflow in every turn, but their tools are loaded on demand, so they are not … [413 chars, sha256 3e5bf84167673db7]",
+              "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Be… [1956 chars, sha256 a24fb2a6b26fac5c]",
+              "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `danger-f… [362 chars, sha256 681b5ba580483b28]",
+              "<collaboration_mode>These MCP servers are part of your normal workflow in every turn, but their tools are loaded on dema… [454 chars, sha256 5d7ec63cb60fadaf]"
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              "Create a file hello.txt containing \"hello\" and commit it with the message \"Add hello.txt\"."
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              "I’ll create `hello.txt`, verify the repository state, and commit it with the requested message."
+            ]
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const matches = ALL_TOOLS.filter(x => x.name.includes(\"mcp__status__\") || x.name.includes(\"status\"));\ntext(matches);"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "[{\"name\":\"mcp__status__status_set\",\"description\":\"Publish where your work stands (replaces your previous status). See the server instructions for when and how.\\n\\nstatus_set publishes where your work stands to a status card the human reads in Paseo instead of asking you \\\"where are we?\\\".\\n- Call it at the end of every turn that changed where things stand: started, finished or abandoned a step, got a result, became blocked, or started waiting on the human. Skip it for turns that changed nothing.\\n- Call it before your final reply, and add no closing line after it: a collapsed turn shows only its last message, so a short line after the status card would hide your answer.\\n- Each call replaces the whole status, so send all fields every time.\\n- Write for someone who skipped the transcript: plain words, no internal jargon, no file paths unless they matter.\\n  - tldr: one or two sentences. What this work is and where it stands.\\n  - now: what you are doing or waiting on this moment.\\n  - done: finished steps, each with its proof (\\\"tests pass: 105/105\\\", \\\"PR #22 open, CI green\\\"). Say \\\"not committed\\\" or \\\"not pushed\\\" when that is true.\\n  - next: what is left, in order. Mark what needs the human.\\n  - state: working, waiting_on_you, blocked or done. Use working while you, a heartbeat or a background job still own the next step; done once nothing is left.\\n- Messages starting with [status] are the human asking for an update: call status_set.\\n\\nexec tool declaration:\\n```ts\\ndeclare const tools: { mcp__status__status_set(args: { done?: Array<string>; next?: Array<string>; now?: string; state: \\\"working\\\" | \\\"waiting_on_you\\\" | \\\"blocked\\\" | \\\"done\\\"; tldr: string; }): Promise<CallToolResult>; };\\n```\"}]"
+                }
+              ]
+            }
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const r = await tools.exec_command({cmd:\"git status --short --branch\",\"workdir\":\"<root>/project\",\"yield_time_ms\":10000,\"max_output_tokens\":2000});\ntext(r.output);"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "## No commits yet on main"
+                }
+              ]
+            }
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const patch = \"*** Begin Patch\\n*** Add File: <root>/project/hello.txt\\n+hello\\n*** End Patch\";\ntext(await tools.apply_patch(patch));"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "{}"
+                }
+              ]
+            }
+          },
+          {
+            "role": "assistant",
+            "content": [
+              "`hello.txt` is created with the requested contents. I’m committing it now and will verify the resulting commit."
+            ]
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const r = await tools.exec_command({cmd:\"git diff --check && git add hello.txt && git commit -m \\\"Add hello.txt\\\" && git status --short --branch\",\"workdir\":\"<root>/project\",\"yield_time_ms\":10000,\"max_output_tokens\":4000});\ntext(r.output);"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "[main (root-commit) d654ec5] Add hello.txt\n 1 file changed, 1 insertion(+)\n create mode 100644 hello.txt\n## main"
+                }
+              ]
+            }
+          },
+          {
+            "role": "custom_tool_call",
+            "content": {
+              "type": "custom_tool_call",
+              "status": "completed",
+              "name": "exec",
+              "namespace": "functions",
+              "input": "const r = await tools.mcp__status__status_set({\n  tldr:\"Created hello.txt and committed it successfully.\",\n  now:\"Work is complete.\",\n  done:[\"Created hello.txt containing hello.\",\"Commit d654ec5 created with message Add hello.txt.\",\"Working tree is clean on main.\"],\n  next:[],\n  state:\"done\"\n});\nfor (const c of (r?.content ?? [])) if (c.type === \"text\") text(c.text);"
+            }
+          },
+          {
+            "role": "custom_tool_call_output",
+            "content": {
+              "type": "custom_tool_call_output",
+              "output": [
+                {
+                  "type": "input_text",
+                  "text": "Script completed\nWall time <time>\nOutput:"
+                },
+                {
+                  "type": "input_text",
+                  "text": "Status published (done)."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "status": 200,
+      "contentType": "text/event-stream",
+      "body": "data: {\"type\":\"response.created\",\"response\":{\"id\":\"gen-1794572819-dtwtTFEFXNK2YkBx0v6D\",\"object\":\"response\",\"created_at\":1794572819,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"in_progress\",\"completed_at\":null,\"output\":[],\"error\":null,\"incomplete_details\":null,\"access_programs\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\"},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":null},\"sequence_number\":0}\n\ndata: {\"type\":\"response.in_progress\",\"response\":{\"id\":\"gen-1794572819-dtwtTFEFXNK2YkBx0v6D\",\"object\":\"response\",\"created_at\":1794572819,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"in_progress\",\"completed_at\":null,\"output\":[],\"error\":null,\"incomplete_details\":null,\"access_programs\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\"},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":null},\"sequence_number\":1}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"msg_tmp_tv796zwe21\",\"type\":\"message\",\"status\":\"in_progress\",\"role\":\"assistant\",\"content\":[],\"phase\":\"final_answer\"},\"sequence_number\":2}\n\ndata: {\"type\":\"response.content_part.added\",\"output_index\":0,\"item_id\":\"msg_tmp_tv796zwe21\",\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"\",\"annotations\":[],\"logprobs\":[]},\"sequence_number\":3}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"output_index\":0,\"item_id\":\"msg_tmp_tv796zwe21\",\"content_index\":0,\"delta\":\"Created `hello.txt` containing `hello` and committed it.\\n\\nCommit: `d654ec5 Add hello.txt`\",\"logprobs\":[],\"sequence_number\":4}\n\ndata: {\"type\":\"response.output_text.done\",\"output_index\":0,\"item_id\":\"msg_tmp_tv796zwe21\",\"content_index\":0,\"text\":\"Created `hello.txt` containing `hello` and committed it.\\n\\nCommit: `d654ec5 Add hello.txt`\",\"logprobs\":[],\"sequence_number\":28}\n\ndata: {\"type\":\"response.content_part.done\",\"output_index\":0,\"item_id\":\"msg_tmp_tv796zwe21\",\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"Created `hello.txt` containing `hello` and committed it.\\n\\nCommit: `d654ec5 Add hello.txt`\",\"annotations\":[],\"logprobs\":[]},\"sequence_number\":29}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"msg_tmp_tv796zwe21\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"Created `hello.txt` containing `hello` and committed it.\\n\\nCommit: `d654ec5 Add hello.txt`\",\"annotations\":[],\"logprobs\":[]}],\"phase\":\"final_answer\"},\"sequence_number\":30}\n\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"gen-1794572819-dtwtTFEFXNK2YkBx0v6D\",\"object\":\"response\",\"created_at\":1794572819,\"model\":\"openai/gpt-5.6-luna\",\"status\":\"completed\",\"completed_at\":1794572820,\"output\":[{\"id\":\"msg_tmp_tv796zwe21\",\"type\":\"message\",\"role\":\"assistant\",\"status\":\"completed\",\"content\":[{\"type\":\"output_text\",\"text\":\"Created `hello.txt` containing `hello` and committed it.\\n\\nCommit: `d654ec5 Add hello.txt`\",\"annotations\":[],\"logprobs\":[]}],\"phase\":\"final_answer\"}],\"error\":null,\"incomplete_details\":null,\"access_programs\":{\"cyber\":\"standard\"},\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":false,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"default\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"verbosity\":\"low\"},\"reasoning\":{\"effort\":\"medium\",\"context\":\"all_turns\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":null,\"prompt_cache_key\":\"01a1d4df-f307-7572-8edc-c5b2f97160d0\",\"prompt_cache_options\":null,\"usage\":{\"input_tokens\":9442,\"input_tokens_details\":{\"cached_tokens\":9284,\"cache_write_tokens\":155},\"output_tokens\":28,\"output_tokens_details\":{\"reasoning_tokens\":0},\"total_tokens\":9470,\"cost\":0.00025863,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0.00025863,\"upstream_inference_input_cost\":0.00022503,\"upstream_inference_output_cost\":0.0000336}}},\"sequence_number\":31}\n\ndata: [DONE]\n\n"
+    }
+  ]
+}
