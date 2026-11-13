@@ -14,6 +14,7 @@ Paseo plugin: agents publish where their work stands via one MCP tool (`status_s
 
 ## Load-bearing facts (Paseo 0.12)
 
+- Background workspaces (`workspace.background`, e.g. Inbox runs before the human opens them) get no status cards: `status_set` returns `BACKGROUND_SKIP` and stores nothing, and Refresh all skips them. The tool stays, because an agent's tools are fixed at creation and the human may take the run over.
 - The stdio bridge inherits `PASEO_AGENT_ID` from the agent process; that is how a tool call knows its caller. Codex drops it, so the bridge also sends its cwd and `pickCaller` picks the running agent there.
 - `agent.turn_ended` carries no history: its `timeline` has been empty since Paseo 0.15 (getpaseo/paseo#7477). Read the turn with the host's `latestTurn` (`@getpaseo/plugin/server`, FSH hosts from `0bd77c5`; typed locally in `server/host-sdk.ts` until the npm SDK has it).
 - `agents.ref(id).send()` interrupts a running turn, so Refresh waits for `agent.turn_ended` when the agent is running.
