@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { BACKGROUND_SKIP, FALLBACK_PROMPT, readOpenAskCounts, readWaiting, REFRESH_PROMPT, StatusService, type AgentState, type Courier } from "../server/service";
+import { BACKGROUND_SKIP, FALLBACK_PROMPT, readOpenAskCounts, readWaiting, REFRESH_PROMPT, StatusService, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
 import { needsYou, rowBadgeLabel, summarize, workspaceWorkState, type Status } from "../shared/status";
 
@@ -211,6 +211,24 @@ describe("status", () => {
   });
 });
 
+describe("wake", () => {
+  it("prompts an idle agent to check its children, and holds a plain refresh for a running one", async () => {
+    const store = new StatusStore(mkdtempSync(join(tmpdir(), "status-")));
+    const courier = new FakeCourier();
+    const service = new StatusService(store, courier, async () => WS);
+    await service.callTool(AGENT, "status_set", status);
+    await service.turnEnded(AGENT);
+    expect(await service.wake(AGENT)).toEqual({ sent: true });
+    expect(courier.sent).toEqual([{ agentId: AGENT, text: WAKE_PROMPT }]);
+
+    courier.states.set(AGENT, "running");
+    expect(await service.wake(AGENT)).toEqual({ sent: false });
+    courier.states.set(AGENT, "idle");
+    await service.turnEnded(AGENT);
+    expect(courier.sent.at(-1)).toEqual({ agentId: AGENT, text: REFRESH_PROMPT });
+  });
+});
+
 describe("summarize", () => {
   const card = (workspaceId: string, agentId: string, state: Status["state"], turnsSince = 0): Status => ({
     agentId,
@@ -291,12 +309,44 @@ describe("workspaceWorkState", () => {
     ...fields,
   });
 
-  it("keeps a workspace working while a card says so, even after quiet heartbeat turns", () => {
-    expect(workspaceWorkState([card({ turnsSince: 5 })], now)).toBe("working");
+  const live = { running: false, live: true };
+  const idle = { running: false, live: false };
+  const on = { liveBacked: true };
+
+  describe("with the live-backing experiment off (the default)", () => {
+    it("keeps a workspace working while a card says so, even after quiet heartbeat turns", () => {
+      expect(workspaceWorkState([card({ turnsSince: 5 })], now)).toBe("working");
+      expect(workspaceWorkState([card({})], now, () => idle)).toBe("working");
+    });
+
+    it("lets a working card lapse after a day without an update, live work or not", () => {
+      expect(workspaceWorkState([card({ updatedAt: "2026-11-11T11:00:00Z" })], now)).toBeNull();
+      expect(workspaceWorkState([card({ updatedAt: "2026-11-11T11:00:00Z" })], now, () => live)).toBeNull();
+    });
   });
 
-  it("lets a working card lapse after a day without an update", () => {
-    expect(workspaceWorkState([card({ updatedAt: "2026-11-11T11:00:00Z" })], now)).toBeNull();
+  describe("with the live-backing experiment on", () => {
+    it("keeps a workspace working while live work backs the card, however old the card", () => {
+      expect(workspaceWorkState([card({ turnsSince: 5, updatedAt: "2026-11-01T00:00:00Z" })], now, () => live, on)).toBe("working");
+      expect(workspaceWorkState([card({})], now, () => ({ running: true, live: true }), on)).toBe("working");
+    });
+
+    it("holds an unbacked working card for the grace period after its update", () => {
+      expect(workspaceWorkState([card({ updatedAt: "2026-11-12T11:56:00Z" })], now, () => idle, on)).toBe("working");
+      expect(workspaceWorkState([card({ updatedAt: "2026-11-12T11:55:00Z" })], now, () => idle, on)).toBeNull();
+    });
+
+    it("holds it for the grace period after live work was last seen, then falls back to Paseo", () => {
+      const lastLiveAt = (minutesAgo: number) => () => ({ running: false, live: false, lastLiveAt: now - minutesAgo * 60_000 });
+      expect(workspaceWorkState([card({})], now, lastLiveAt(4), on)).toBe("working");
+      expect(workspaceWorkState([card({})], now, lastLiveAt(6), on)).toBeNull();
+      expect(workspaceWorkState([card({})], now, undefined, on)).toBeNull();
+    });
+
+    it("counts another agent's backed working card over a done one", () => {
+      expect(workspaceWorkState([card({ state: "done" }), card({ agentId: "b", state: "working" })], now, () => idle, on)).toBeNull();
+      expect(workspaceWorkState([card({ state: "done" }), card({ agentId: "b", state: "working" })], now, (id) => (id === "b" ? live : idle), on)).toBe("working");
+    });
   });
 
   it("reports done while every card says done, even after quiet turns made it stale", () => {

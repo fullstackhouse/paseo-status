@@ -1,17 +1,25 @@
 import { dirname, join } from "node:path";
 import type { PaseoApi } from "@getpaseo/client";
 import { latestTurn, type PluginServerContext } from "@getpaseo/plugin/server";
-import { listStatuses, refreshAll, refreshStatus, summarize, summarizeWorkspaces, type SilentAgent } from "./shared/status";
+import { listStatuses, refreshAll, refreshStatus, summarize, summarizeWorkspaces, workspaceWorkState, type SilentAgent, type WorkState } from "./shared/status";
 import { AgentDirectory, pickCaller } from "./server/agents";
 import { installBridge } from "./server/bridge";
 import { Equipped } from "./server/equipped";
 import { listen } from "./server/listener";
+import { hasBackgroundWork, Liveness, PARENT_AGENT_ID_LABEL, type LiveAgent } from "./server/liveness";
 import { dataDir } from "./server/paths";
 import { isStatusPermission } from "./server/permissions";
 import { INSTRUCTIONS, readOpenAskCounts, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
 import { StatusStore } from "./server/store";
+import { experimentSettings } from "./shared/settings";
 
 export default function contribute(server: PluginServerContext) {
+  const experiments = server.registerSettings(experimentSettings);
+  /** Settings → Plugins → Status → Experimental: a working card needs live work behind it, plus the parent wake-up. */
+  const liveBacked = async () => {
+    const state = await experiments.read();
+    return state.status === "ready" && state.values.liveBackedWorking;
+  };
   const dir = dataDir();
   // Sibling plugin's data, read for the "waiting on you" lines when it is installed.
   const asksDir = join(dirname(dir), "asks");
@@ -74,6 +82,71 @@ export default function contribute(server: PluginServerContext) {
   const liveAgents = async (api: PaseoApi): Promise<AgentPayload[]> =>
     (await api.agents.list()).entries.map(({ agent }) => agent).filter((agent) => !agent.archivedAt && !agent.internal);
 
+  /** Every non-archived agent on the host, background workspaces included: any can be a descendant. */
+  const everyAgent = async (api: PaseoApi): Promise<LiveAgent[]> => {
+    const busyWorkspaces = new Set<string>();
+    let page: string | undefined;
+    do {
+      const { entries, pageInfo } = await api.workspaces.list({ includeBackground: true, page: { limit: 200, cursor: page } });
+      for (const workspace of entries) if (workspace.status === "running") busyWorkspaces.add(workspace.id);
+      page = pageInfo.hasMore ? (pageInfo.nextCursor ?? undefined) : undefined;
+    } while (page);
+    const found: LiveAgent[] = [];
+    let cursor: string | undefined;
+    do {
+      const { entries, pageInfo } = await api.agents.list({
+        includeBackground: true,
+        filter: { includeBackground: true },
+        page: { limit: 200, cursor },
+      });
+      for (const { agent } of entries) {
+        if (agent.archivedAt) continue;
+        found.push({
+          id: agent.id,
+          running: isRunning(agent),
+          parentAgentId: agent.labels?.[PARENT_AGENT_ID_LABEL] ?? null,
+          workspaceBusy: !!agent.workspaceId && busyWorkspaces.has(agent.workspaceId),
+        });
+      }
+      cursor = pageInfo.hasMore ? (pageInfo.nextCursor ?? undefined) : undefined;
+    } while (cursor);
+    return found;
+  };
+  const liveness = new Liveness(
+    (agentId) => hasBackgroundWork(requirePaseo().agents.ref(agentId)),
+    undefined,
+    (agentId) => void service.wake(agentId).catch((error) => console.error(`[status] could not wake ${agentId}`, error)),
+  );
+  let wakeTimer: ReturnType<typeof setTimeout> | undefined;
+  /** What backs each card now (sending the wake-ups that fell due), and arms a timer for the next one. */
+  const assess = async (api: PaseoApi) => {
+    const { backing } = await liveness.assess(async () => ({ agents: await everyAgent(api), statuses: store.list() }));
+    const due = liveness.nextWakeAt();
+    if (due !== undefined && !wakeTimer) {
+      wakeTimer = setTimeout(() => {
+        wakeTimer = undefined;
+        void liveBacked()
+          .then((on) => (on ? assess(api) : undefined))
+          .catch((error) => console.error("[status] wake check failed", error));
+      }, Math.max(0, due - Date.now()) + 1000);
+    }
+    return backing;
+  };
+  const workStates = async (api: PaseoApi): Promise<Record<string, WorkState | null>> => {
+    const experiment = await liveBacked();
+    // Off, only "is it running" matters (for cards waiting on the human), as before the experiment.
+    const backing = experiment
+      ? await assess(api)
+      : new Map((await liveAgents(api)).map((agent) => [agent.id, { running: isRunning(agent), live: isRunning(agent) }]));
+    const byWorkspace = new Map<string, ReturnType<StatusStore["list"]>>();
+    for (const status of store.list()) byWorkspace.set(status.workspaceId, [...(byWorkspace.get(status.workspaceId) ?? []), status]);
+    const now = Date.now();
+    const idle = { running: false, live: false };
+    return Object.fromEntries(
+      [...byWorkspace].map(([workspaceId, cards]) => [workspaceId, workspaceWorkState(cards, now, (agentId) => backing.get(agentId) ?? idle, { liveBacked: experiment })]),
+    );
+  };
+
   server.before("agent.create", ({ request }, { paseo: api }) => {
     capture(api);
     return { ...request, config: { ...request.config, mcpServers: { ...request.config.mcpServers, status: mcp } } };
@@ -89,8 +162,13 @@ export default function contribute(server: PluginServerContext) {
   });
   server.on("agent.turn_ended", ({ agent }, { paseo: api }) => {
     capture(api);
+    liveness.turnEnded(agent.id);
     void latestTurn(api.agents.ref(agent.id).timeline)
       .then((timeline) => service.turnEnded(agent.id, timeline))
+      // A child stopping may leave its parent's working card with nothing behind it.
+      .then(async () => {
+        if (await liveBacked()) await assess(api);
+      })
       .catch((error) => console.error("[status] turn bookkeeping failed", error));
   });
   // Plan mode and Codex prompt even for preapproved MCP tools. status_set only writes this plugin's card.
@@ -104,7 +182,7 @@ export default function contribute(server: PluginServerContext) {
     store.patch(agent.id, { archived: true });
   });
 
-  server.handle(listStatuses, async ({ workspaceId }, { paseo: api }) => {
+  server.handle(listStatuses, async ({ workspaceId, withWorkStates }, { paseo: api }) => {
     capture(api);
     const statuses = store.list(workspaceId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     const live = await liveAgents(api);
@@ -115,7 +193,15 @@ export default function contribute(server: PluginServerContext) {
       ? {}
       : Object.fromEntries((await api.workspaces.list()).entries.map((workspace) => [workspace.id, workspace.title || workspace.name]));
     const silent = workspaceId ? silentAgents(live, workspaceId) : [];
-    return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent, agents, workspaces };
+    // Only the sidebar grouping asks: it lists and probes every agent on the host.
+    const states =
+      withWorkStates && !workspaceId
+        ? await workStates(api).catch((error) => {
+            console.error("[status] could not work out work states", error);
+            return undefined;
+          })
+        : undefined;
+    return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent, agents, workspaces, workStates: states };
   });
   server.handle(summarizeWorkspaces, async (_input, { paseo: api }) => {
     capture(api);
@@ -145,9 +231,12 @@ export default function contribute(server: PluginServerContext) {
     "/call": async ({ agentId, cwd, name, arguments: args }) => service.callTool(agentId ?? (cwd ? await callerIn(cwd) : null), name, args),
     // The same Refresh the UI does, for scripts and terminal use.
     "/refresh": async (input) => service.refresh(refreshStatus.input.parse(input).agentId),
+    // What the sidebar grouping gets per workspace, for checking it from a terminal.
+    "/work-states": async () => ({ workStates: await workStates(requirePaseo()) }),
   });
 
   return async () => {
+    if (wakeTimer) clearTimeout(wakeTimer);
     (await listening).close();
   };
 }
