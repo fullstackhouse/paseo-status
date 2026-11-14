@@ -46,8 +46,9 @@ agent ──stdio MCP──▶ bridge.mjs ──HTTP 127.0.0.1──▶ plugin s
 
 - Every agent created after the plugin is installed gets a `status` MCP server with one tool, `status_set`. Its instructions tell the agent when to call it and how to write each field, so no `CLAUDE.md` edit is needed.
 - Each call replaces the agent's whole status. The plugin counts the turns that end without a call; that count is the staleness shown on the card.
-- **Sidebar grouping** (Paseo's experimental agent-reported grouping): a card waiting on the human groups its workspace as needing you, all-`done` cards as Done. A `working` card holds the workspace in Working only while something live backs it: the agent itself running, its background work (shells, Monitor watches) or subagents, or any agent it started (by parent link, recursively, in any workspace) doing any of that. Without that, it holds for 5 more minutes after the card's update or the last live work, to bridge gaps between turns, then Paseo's own turn state decides (Ready to review / Done). Subagents are only visible as the host showing the agent's workspace as running, so another agent running in the same workspace also holds the card. Heartbeats and schedules aren't visible to plugins, so an agent waiting on one drops out of Working after the 5 minutes.
-- When the last agent a parent started stops while the parent sits idle with a `working` card, Paseo itself usually tells the parent (agents created with `create_agent` notify their parent when they finish). If a minute later nothing has woken the parent (no turn, no card update, no child live again), the plugin prompts it once to check its children and update its status.
+- **Sidebar grouping** (Paseo's experimental agent-reported grouping): a card waiting on the human groups its workspace as needing you, all-`done` cards as Done, and a `working` card updated within the last day as Working.
+- **Experimental: Working only while work is live** (Settings → Plugins → Status, off by default). A `working` card then holds the workspace in Working only while something live backs it: the agent itself running, its background work (shells, Monitor watches) or subagents, or any agent it started (by parent link, recursively, in any workspace) doing any of that. Without that, it holds for 5 more minutes after the card's update or the last live work, to bridge gaps between turns, then Paseo's own turn state decides (Ready to review / Done). Subagents are only visible as the host showing the agent's workspace as running, so another agent or a working terminal in the same workspace also holds the card. Heartbeats and schedules aren't visible to plugins, so an agent waiting on one drops out of Working after the 5 minutes.
+  When the last agent a parent started stops while the parent sits idle with a `working` card, Paseo itself usually tells the parent (agents created with `create_agent` notify their parent when they finish). With the experiment on, if a minute later nothing has woken the parent (no turn, no card update, no child live again), the plugin prompts it once to check its children and update its status.
 - The only text read from a transcript is a `paseo-status` block the agent was asked for. The card is only as current as the agent's last update, and the staleness says how current that is.
 
 ## Install
@@ -73,7 +74,7 @@ P=$(jq -r .port $S); T=$(jq -r .token $S)
 curl -s -H "authorization: Bearer $T" -X POST localhost:$P/refresh -d '{"agentId":"…"}'
 ```
 
-`POST /work-states` (same headers, empty body) returns the work state each workspace reports to the sidebar grouping. Like the sidebar's own poll, it may send a wake-up that has fallen due.
+`POST /work-states` (same headers, empty body) returns the work state each workspace reports to the sidebar grouping. With the experiment on, like the sidebar's own poll, it may send a wake-up that has fallen due.
 
 Right after the plugin loads, this returns `No daemon session yet` until an agent runs a turn or the panel is opened: Paseo hands plugin server code its daemon session through hooks and RPCs only.
 

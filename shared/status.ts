@@ -49,8 +49,11 @@ export function needsYou(status: Status, running: boolean): boolean {
   return status.turnsSince === 0 && !(running && !status.setThisTurn);
 }
 
+/** Without the live-backing experiment: how long a `working` card keeps an idle workspace in Working without an update. */
+export const WORKING_HOLD_MS = 24 * 60 * 60 * 1000;
+
 /**
- * How long a `working` card keeps an idle workspace in Paseo's Working group once nothing live backs it:
+ * With the live-backing experiment: how long a `working` card keeps an idle workspace in Paseo's Working group once nothing live backs it:
  * counted from the card's update or the last live work it saw, whichever is later. Covers gaps between turns.
  */
 export const WORKING_GRACE_MS = 5 * 60 * 1000;
@@ -70,9 +73,10 @@ export type WorkState = "waiting" | "working" | "done";
 /**
  * Where one workspace's work stands for Paseo's experimental agent-reported sidebar grouping, from
  * the cards of its agents: `waiting` while a card still waits on the human (see `needsYou`); `working`
- * while a `working` card is backed by live work, or within `WORKING_GRACE_MS` of its update or of the
- * last live work. A claim nothing backs is not believed: `null` leaves the workspace to Paseo's own turn
- * state, as for an answered question. A `done` card counts even when stale: agents skip status_set on
+ * while a `working` card is fresh. Fresh means updated within `WORKING_HOLD_MS`, or with `liveBacked`
+ * (the experiment) backed by live work, or within `WORKING_GRACE_MS` of its update or of the last live
+ * work: a claim nothing backs is not believed. `null` leaves the workspace to Paseo's own turn state, as
+ * for an answered question. A `done` card counts even when stale: agents skip status_set on
  * turns that change nothing (answering an ask, a reminder), and those turns must not drop the workspace
  * back to Ready to review.
  */
@@ -80,6 +84,7 @@ export function workspaceWorkState(
   statuses: readonly Status[],
   now: number,
   backing: (agentId: string) => Backing = () => ({ running: false, live: false }),
+  { liveBacked = false }: { liveBacked?: boolean } = {},
 ): WorkState | null {
   const cards = statuses.filter((status) => !status.archived);
   if (cards.length === 0) return null;
@@ -87,6 +92,7 @@ export function workspaceWorkState(
   if (cards.some((status) => status.state === "waiting_on_you" || status.state === "blocked")) return null;
   const heldWorking = cards.some((status) => {
     if (status.state !== "working") return false;
+    if (!liveBacked) return now - Date.parse(status.updatedAt) < WORKING_HOLD_MS;
     const { live, lastLiveAt = 0 } = backing(status.agentId);
     return live || now - Math.max(Date.parse(status.updatedAt), lastLiveAt) < WORKING_GRACE_MS;
   });
