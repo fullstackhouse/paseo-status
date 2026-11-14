@@ -5,9 +5,8 @@ import { listStatuses, refreshAll, refreshStatus, summarize, summarizeWorkspaces
 import { AgentDirectory, pickCaller } from "./server/agents";
 import { installBridge } from "./server/bridge";
 import { Equipped } from "./server/equipped";
-import { hasBackgroundWork } from "./server/host-sdk";
 import { listen } from "./server/listener";
-import { Liveness, PARENT_AGENT_ID_LABEL, type LiveAgent } from "./server/liveness";
+import { hasBackgroundWork, Liveness, PARENT_AGENT_ID_LABEL, type LiveAgent } from "./server/liveness";
 import { dataDir } from "./server/paths";
 import { isStatusPermission } from "./server/permissions";
 import { INSTRUCTIONS, readOpenAskCounts, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
@@ -76,30 +75,50 @@ export default function contribute(server: PluginServerContext) {
   const liveAgents = async (api: PaseoApi): Promise<AgentPayload[]> =>
     (await api.agents.list()).entries.map(({ agent }) => agent).filter((agent) => !agent.archivedAt && !agent.internal);
 
-  /** Every non-archived agent on the host, background workspaces and helpers included: any can be a descendant. */
+  /** Every non-archived agent on the host, background workspaces included: any can be a descendant. */
   const everyAgent = async (api: PaseoApi): Promise<LiveAgent[]> => {
+    const busyWorkspaces = new Set<string>();
+    let page: string | undefined;
+    do {
+      const { entries, pageInfo } = await api.workspaces.list({ includeBackground: true, page: { limit: 200, cursor: page } });
+      for (const workspace of entries) if (workspace.status === "running") busyWorkspaces.add(workspace.id);
+      page = pageInfo.hasMore ? (pageInfo.nextCursor ?? undefined) : undefined;
+    } while (page);
     const found: LiveAgent[] = [];
     let cursor: string | undefined;
     do {
       const { entries, pageInfo } = await api.agents.list({
         includeBackground: true,
-        filter: { includeBackground: true, includeInternal: true },
+        filter: { includeBackground: true },
         page: { limit: 200, cursor },
       });
       for (const { agent } of entries) {
         if (agent.archivedAt) continue;
-        found.push({ id: agent.id, running: isRunning(agent), parentAgentId: agent.labels?.[PARENT_AGENT_ID_LABEL] ?? null });
+        found.push({
+          id: agent.id,
+          running: isRunning(agent),
+          parentAgentId: agent.labels?.[PARENT_AGENT_ID_LABEL] ?? null,
+          workspaceBusy: !!agent.workspaceId && busyWorkspaces.has(agent.workspaceId),
+        });
       }
       cursor = pageInfo.hasMore ? (pageInfo.nextCursor ?? undefined) : undefined;
     } while (cursor);
     return found;
   };
   const liveness = new Liveness((agentId) => hasBackgroundWork(requirePaseo().agents.ref(agentId)));
-  /** What backs each card now; sends the wake-ups this look found due. */
+  let wakeTimer: ReturnType<typeof setTimeout> | undefined;
+  /** What backs each card now; sends the wake-ups that fell due and arms a timer for the next one. */
   const assess = async (api: PaseoApi) => {
     const { backing, wake } = await liveness.assess(async () => ({ agents: await everyAgent(api), statuses: store.list() }));
     for (const agentId of wake) {
       void service.wake(agentId).catch((error) => console.error(`[status] could not wake ${agentId}`, error));
+    }
+    const due = liveness.nextWakeAt();
+    if (due !== undefined && !wakeTimer) {
+      wakeTimer = setTimeout(() => {
+        wakeTimer = undefined;
+        void assess(api).catch((error) => console.error("[status] wake check failed", error));
+      }, Math.max(0, due - Date.now()) + 1000);
     }
     return backing;
   };
@@ -147,7 +166,7 @@ export default function contribute(server: PluginServerContext) {
     store.patch(agent.id, { archived: true });
   });
 
-  server.handle(listStatuses, async ({ workspaceId }, { paseo: api }) => {
+  server.handle(listStatuses, async ({ workspaceId, withWorkStates }, { paseo: api }) => {
     capture(api);
     const statuses = store.list(workspaceId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     const live = await liveAgents(api);
@@ -158,7 +177,14 @@ export default function contribute(server: PluginServerContext) {
       ? {}
       : Object.fromEntries((await api.workspaces.list()).entries.map((workspace) => [workspace.id, workspace.title || workspace.name]));
     const silent = workspaceId ? silentAgents(live, workspaceId) : [];
-    const states = workspaceId ? undefined : await workStates(api);
+    // Only the sidebar grouping asks: it lists and probes every agent on the host.
+    const states =
+      withWorkStates && !workspaceId
+        ? await workStates(api).catch((error) => {
+            console.error("[status] could not work out work states", error);
+            return undefined;
+          })
+        : undefined;
     return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent, agents, workspaces, workStates: states };
   });
   server.handle(summarizeWorkspaces, async (_input, { paseo: api }) => {
@@ -194,6 +220,7 @@ export default function contribute(server: PluginServerContext) {
   });
 
   return async () => {
+    if (wakeTimer) clearTimeout(wakeTimer);
     (await listening).close();
   };
 }

@@ -42,7 +42,7 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
 
   const refresh = async () => {
     // The server decides the work state: only it sees child agents and background work.
-    const { statuses, workStates = {} } = await client.rpc(listStatuses, {});
+    const { statuses, workStates = {} } = await client.rpc(listStatuses, { withWorkStates: true });
     if (stopped) return;
     const byWorkspace = new Map<string, Status[]>();
     for (const status of statuses) {

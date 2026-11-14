@@ -105,7 +105,11 @@ export type SilentAgent = z.infer<typeof SilentAgentSchema>;
 
 export const listStatuses = defineRpc({
   name: "status.list",
-  input: z.object({ workspaceId: z.string().optional() }),
+  input: z.object({
+    workspaceId: z.string().optional(),
+    /** Also work out `workStates` (every workspace only); costs a scan of every agent on the host. */
+    withWorkStates: z.boolean().optional(),
+  }),
   output: z.object({
     statuses: z.array(StatusSchema),
     waiting: z.array(WaitingSchema),
@@ -113,7 +117,7 @@ export const listStatuses = defineRpc({
     /** Looked up on the server: Paseo's state hooks only work inside a workspace panel, not on screens or popovers. */
     agents: z.record(z.string(), z.object({ title: z.string().nullable(), running: z.boolean() })),
     workspaces: z.record(z.string(), z.string()),
-    /** Per workspace with a card, for Paseo's sidebar grouping; only when listing every workspace. */
+    /** Per workspace with a card, for Paseo's sidebar grouping; only when asked for with `withWorkStates`. */
     workStates: z.record(z.string(), z.enum(["waiting", "working", "done"]).nullable()).optional(),
   }),
 });
