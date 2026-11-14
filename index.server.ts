@@ -1,11 +1,13 @@
 import { dirname, join } from "node:path";
 import type { PaseoApi } from "@getpaseo/client";
 import { latestTurn, type PluginServerContext } from "@getpaseo/plugin/server";
-import { listStatuses, refreshAll, refreshStatus, summarize, summarizeWorkspaces, type SilentAgent } from "./shared/status";
+import { listStatuses, refreshAll, refreshStatus, summarize, summarizeWorkspaces, workspaceWorkState, type SilentAgent, type WorkState } from "./shared/status";
 import { AgentDirectory, pickCaller } from "./server/agents";
 import { installBridge } from "./server/bridge";
 import { Equipped } from "./server/equipped";
+import { hasBackgroundWork } from "./server/host-sdk";
 import { listen } from "./server/listener";
+import { Liveness, PARENT_AGENT_ID_LABEL, type LiveAgent } from "./server/liveness";
 import { dataDir } from "./server/paths";
 import { isStatusPermission } from "./server/permissions";
 import { INSTRUCTIONS, readOpenAskCounts, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
@@ -74,6 +76,44 @@ export default function contribute(server: PluginServerContext) {
   const liveAgents = async (api: PaseoApi): Promise<AgentPayload[]> =>
     (await api.agents.list()).entries.map(({ agent }) => agent).filter((agent) => !agent.archivedAt && !agent.internal);
 
+  /** Every non-archived agent on the host, background workspaces and helpers included: any can be a descendant. */
+  const everyAgent = async (api: PaseoApi): Promise<LiveAgent[]> => {
+    const found: LiveAgent[] = [];
+    let cursor: string | undefined;
+    do {
+      const { entries, pageInfo } = await api.agents.list({
+        includeBackground: true,
+        filter: { includeBackground: true, includeInternal: true },
+        page: { limit: 200, cursor },
+      });
+      for (const { agent } of entries) {
+        if (agent.archivedAt) continue;
+        found.push({ id: agent.id, running: isRunning(agent), parentAgentId: agent.labels?.[PARENT_AGENT_ID_LABEL] ?? null });
+      }
+      cursor = pageInfo.hasMore ? (pageInfo.nextCursor ?? undefined) : undefined;
+    } while (cursor);
+    return found;
+  };
+  const liveness = new Liveness((agentId) => hasBackgroundWork(requirePaseo().agents.ref(agentId)));
+  /** What backs each card now; sends the wake-ups this look found due. */
+  const assess = async (api: PaseoApi) => {
+    const { backing, wake } = await liveness.assess(async () => ({ agents: await everyAgent(api), statuses: store.list() }));
+    for (const agentId of wake) {
+      void service.wake(agentId).catch((error) => console.error(`[status] could not wake ${agentId}`, error));
+    }
+    return backing;
+  };
+  const workStates = async (api: PaseoApi): Promise<Record<string, WorkState | null>> => {
+    const backing = await assess(api);
+    const byWorkspace = new Map<string, ReturnType<StatusStore["list"]>>();
+    for (const status of store.list()) byWorkspace.set(status.workspaceId, [...(byWorkspace.get(status.workspaceId) ?? []), status]);
+    const now = Date.now();
+    const idle = { running: false, live: false };
+    return Object.fromEntries(
+      [...byWorkspace].map(([workspaceId, cards]) => [workspaceId, workspaceWorkState(cards, now, (agentId) => backing.get(agentId) ?? idle)]),
+    );
+  };
+
   server.before("agent.create", ({ request }, { paseo: api }) => {
     capture(api);
     return { ...request, config: { ...request.config, mcpServers: { ...request.config.mcpServers, status: mcp } } };
@@ -89,8 +129,11 @@ export default function contribute(server: PluginServerContext) {
   });
   server.on("agent.turn_ended", ({ agent }, { paseo: api }) => {
     capture(api);
+    liveness.turnEnded(agent.id);
     void latestTurn(api.agents.ref(agent.id).timeline)
       .then((timeline) => service.turnEnded(agent.id, timeline))
+      // A child stopping may leave its parent's working card with nothing behind it.
+      .then(() => assess(api))
       .catch((error) => console.error("[status] turn bookkeeping failed", error));
   });
   // Plan mode and Codex prompt even for preapproved MCP tools. status_set only writes this plugin's card.
@@ -115,7 +158,8 @@ export default function contribute(server: PluginServerContext) {
       ? {}
       : Object.fromEntries((await api.workspaces.list()).entries.map((workspace) => [workspace.id, workspace.title || workspace.name]));
     const silent = workspaceId ? silentAgents(live, workspaceId) : [];
-    return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent, agents, workspaces };
+    const states = workspaceId ? undefined : await workStates(api);
+    return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent, agents, workspaces, workStates: states };
   });
   server.handle(summarizeWorkspaces, async (_input, { paseo: api }) => {
     capture(api);

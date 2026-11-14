@@ -49,31 +49,48 @@ export function needsYou(status: Status, running: boolean): boolean {
   return status.turnsSince === 0 && !(running && !status.setThisTurn);
 }
 
-/** How long a `working` card keeps an idle workspace in Paseo's Working group without an update. */
-export const WORKING_HOLD_MS = 24 * 60 * 60 * 1000;
+/**
+ * How long a `working` card keeps an idle workspace in Paseo's Working group once nothing live backs it:
+ * counted from the card's update or the last live work it saw, whichever is later. Covers gaps between turns.
+ */
+export const WORKING_GRACE_MS = 5 * 60 * 1000;
+
+/** What backs one agent's card right now, as the server sees it. */
+export interface Backing {
+  /** The agent itself is mid-turn. */
+  running: boolean;
+  /** The agent, its background work (shells, watches), or a descendant agent (or its background work) is live. */
+  live: boolean;
+  /** When live work was last seen for this agent (epoch ms), if it was. */
+  lastLiveAt?: number;
+}
 
 export type WorkState = "waiting" | "working" | "done";
 
 /**
  * Where one workspace's work stands for Paseo's experimental agent-reported sidebar grouping, from
- * the cards of its agents: `waiting` while a card still waits on the human (see `needsYou`). `null`
- * leaves the workspace to Paseo's own turn state: an answered question or a `working` card silent for
- * a day. A `done` card counts even when stale: agents skip status_set on turns that change nothing
- * (answering an ask, a reminder), and those turns must not drop the workspace back to Ready to review.
+ * the cards of its agents: `waiting` while a card still waits on the human (see `needsYou`); `working`
+ * while a `working` card is backed by live work, or within `WORKING_GRACE_MS` of its update or of the
+ * last live work. A claim nothing backs is not believed: `null` leaves the workspace to Paseo's own turn
+ * state, as for an answered question. A `done` card counts even when stale: agents skip status_set on
+ * turns that change nothing (answering an ask, a reminder), and those turns must not drop the workspace
+ * back to Ready to review.
  */
 export function workspaceWorkState(
   statuses: readonly Status[],
   now: number,
-  running: (agentId: string) => boolean = () => false,
+  backing: (agentId: string) => Backing = () => ({ running: false, live: false }),
 ): WorkState | null {
   const cards = statuses.filter((status) => !status.archived);
   if (cards.length === 0) return null;
-  if (cards.some((status) => needsYou(status, running(status.agentId)))) return "waiting";
+  if (cards.some((status) => needsYou(status, backing(status.agentId).running))) return "waiting";
   if (cards.some((status) => status.state === "waiting_on_you" || status.state === "blocked")) return null;
-  const freshWorking = cards.some(
-    (status) => status.state === "working" && now - Date.parse(status.updatedAt) < WORKING_HOLD_MS,
-  );
-  if (freshWorking) return "working";
+  const heldWorking = cards.some((status) => {
+    if (status.state !== "working") return false;
+    const { live, lastLiveAt = 0 } = backing(status.agentId);
+    return live || now - Math.max(Date.parse(status.updatedAt), lastLiveAt) < WORKING_GRACE_MS;
+  });
+  if (heldWorking) return "working";
   if (cards.every((status) => status.state === "done")) return "done";
   return null;
 }
@@ -96,6 +113,8 @@ export const listStatuses = defineRpc({
     /** Looked up on the server: Paseo's state hooks only work inside a workspace panel, not on screens or popovers. */
     agents: z.record(z.string(), z.object({ title: z.string().nullable(), running: z.boolean() })),
     workspaces: z.record(z.string(), z.string()),
+    /** Per workspace with a card, for Paseo's sidebar grouping; only when listing every workspace. */
+    workStates: z.record(z.string(), z.enum(["waiting", "working", "done"]).nullable()).optional(),
   }),
 });
 

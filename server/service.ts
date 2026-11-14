@@ -34,6 +34,10 @@ export const TOOLS = [
 export const REFRESH_PROMPT =
   "[status] The human asked where things stand. Call status_set with your current status, then carry on with what you were doing, if anything.";
 
+/** Sent once when the last agent a parent started stops while the parent sits idle with a working card. */
+export const WAKE_PROMPT =
+  "[status] Every agent you started has stopped and nothing of yours is running, but your status still says working. Check what your child agents left, carry on if something remains, and call status_set with where things stand.";
+
 /** For agents created before the plugin was installed: they have no tool, so the status rides in their reply. */
 export const FALLBACK_PROMPT = `[status] The human asked where things stand, for a status card shown outside this chat. End your reply with a fenced code block tagged paseo-status holding one JSON object:
 \`\`\`paseo-status
@@ -89,9 +93,10 @@ export class StatusService {
 
   /**
    * Ask one agent for an update. A send mid-turn would interrupt the agent, so that case waits
-   * for the turn to end. `auto` asks at most once per update, so reopening the panel never nags.
+   * for the turn to end (with the plain refresh prompt: `prompt` only replaces it for an idle agent).
+   * `auto` asks at most once per update, so reopening the panel never nags.
    */
-  async refresh(agentId: string, { auto = false } = {}): Promise<{ sent: boolean; skipped?: boolean }> {
+  async refresh(agentId: string, { auto = false, prompt }: { auto?: boolean; prompt?: string } = {}): Promise<{ sent: boolean; skipped?: boolean }> {
     const status = this.store.get(agentId);
     // An update clears refreshRequestedAt, so a set value means the last request is still unanswered.
     if (auto && status?.refreshRequestedAt) return { sent: false, skipped: true };
@@ -103,7 +108,7 @@ export class StatusService {
       else this.pendingWithoutStatus.add(agentId);
       return { sent: false };
     }
-    await this.courier.send(agentId, this.prompt(agentId));
+    await this.courier.send(agentId, prompt ?? this.prompt(agentId));
     return { sent: true };
   }
 
@@ -146,6 +151,11 @@ export class StatusService {
     // The turn that just ended already answered the request.
     if (status && status.turnsSince === 0) return;
     await this.courier.send(agentId, this.prompt(agentId));
+  }
+
+  /** An idle agent's working card lost its last live child: ask it to look at its children and update. */
+  async wake(agentId: string): Promise<{ sent: boolean }> {
+    return this.refresh(agentId, { prompt: this.isEquipped(agentId) ? WAKE_PROMPT : FALLBACK_PROMPT });
   }
 
   private prompt(agentId: string): string {

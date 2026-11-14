@@ -46,6 +46,8 @@ agent ──stdio MCP──▶ bridge.mjs ──HTTP 127.0.0.1──▶ plugin s
 
 - Every agent created after the plugin is installed gets a `status` MCP server with one tool, `status_set`. Its instructions tell the agent when to call it and how to write each field, so no `CLAUDE.md` edit is needed.
 - Each call replaces the agent's whole status. The plugin counts the turns that end without a call; that count is the staleness shown on the card.
+- **Sidebar grouping** (Paseo's experimental agent-reported grouping): a card waiting on the human groups its workspace as needing you, all-`done` cards as Done. A `working` card holds the workspace in Working only while something live backs it: the agent itself running, its background work (shells, Monitor watches), or any agent it started (by parent link, recursively, in any workspace) running or with background work. Without that, it holds for 5 minutes after the card's update or the last live work, to bridge gaps between turns, then Paseo's own turn state decides (Ready to review / Done). The sidebar polls, so a row leaves Working within seconds of the last child stopping.
+- When the last agent a parent started stops while the parent sits idle with a `working` card, the plugin prompts the parent once to check its children and update its status. It does not prompt again until a child is live again.
 - The only text read from a transcript is a `paseo-status` block the agent was asked for. The card is only as current as the agent's last update, and the staleness says how current that is.
 
 ## Install

@@ -1,5 +1,5 @@
 import type { PluginClientContext } from "@getpaseo/plugin/client";
-import { listStatuses, workspaceWorkState, type Status, type WorkState } from "../shared/status";
+import { listStatuses, type Status, type WorkState } from "../shared/status";
 import { age, POLL_MS, STATE_LABELS } from "./StatusView";
 
 // COMPAT(workspaceSummaryItem): FSH hosts have addWorkspaceSummaryItem (and `workState` from
@@ -41,7 +41,8 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
   let stopped = false;
 
   const refresh = async () => {
-    const { statuses, agents } = await client.rpc(listStatuses, {});
+    // The server decides the work state: only it sees child agents and background work.
+    const { statuses, workStates = {} } = await client.rpc(listStatuses, {});
     if (stopped) return;
     const byWorkspace = new Map<string, Status[]>();
     for (const status of statuses) {
@@ -50,13 +51,12 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
       if (list) list.push(status);
       else byWorkspace.set(status.workspaceId, [status]);
     }
-    const now = Date.now();
     for (const [workspaceId, cards] of byWorkspace) {
       const latest = newest(cards);
       const state: SummaryState = {
         label: latest ? `${STATE_LABELS[latest.state]} · ${age(latest.updatedAt)}` : undefined,
         panelId: "status",
-        workState: workspaceWorkState(cards, now, (agentId) => agents[agentId]?.running ?? false),
+        workState: workStates[workspaceId] ?? null,
       };
       const item = items.get(workspaceId);
       if (item) item.update(state);
