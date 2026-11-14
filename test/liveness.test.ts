@@ -146,6 +146,21 @@ describe("Liveness", () => {
     expect((await look(family(false))).wake).toEqual([]);
   });
 
+  it("sends a due wake-up once, however many callers share the assessment", async () => {
+    const clock = { now: 1_000 };
+    const woken: string[] = [];
+    const liveness = new Liveness(async () => false, () => clock.now, (agentId) => woken.push(agentId));
+    const family = (child: boolean) => [agent("parent"), agent("child", { parentAgentId: "parent", running: child })];
+    const look = (child: boolean) => liveness.assess(async () => ({ agents: family(child), statuses: [card("parent")] }));
+    await look(true);
+    await look(false);
+    clock.now += WAKE_DELAY_MS;
+    const [a, b, c] = [look(false), look(false), look(false)];
+    expect((await a).wake).toEqual(["parent"]);
+    await Promise.all([b, c]);
+    expect(woken).toEqual(["parent"]);
+  });
+
   it("runs one assessment at a time, sharing a queued one", async () => {
     const liveness = new Liveness(async () => false);
     let release!: () => void;

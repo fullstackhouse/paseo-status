@@ -105,14 +105,15 @@ export default function contribute(server: PluginServerContext) {
     } while (cursor);
     return found;
   };
-  const liveness = new Liveness((agentId) => hasBackgroundWork(requirePaseo().agents.ref(agentId)));
+  const liveness = new Liveness(
+    (agentId) => hasBackgroundWork(requirePaseo().agents.ref(agentId)),
+    undefined,
+    (agentId) => void service.wake(agentId).catch((error) => console.error(`[status] could not wake ${agentId}`, error)),
+  );
   let wakeTimer: ReturnType<typeof setTimeout> | undefined;
-  /** What backs each card now; sends the wake-ups that fell due and arms a timer for the next one. */
+  /** What backs each card now (sending the wake-ups that fell due), and arms a timer for the next one. */
   const assess = async (api: PaseoApi) => {
-    const { backing, wake } = await liveness.assess(async () => ({ agents: await everyAgent(api), statuses: store.list() }));
-    for (const agentId of wake) {
-      void service.wake(agentId).catch((error) => console.error(`[status] could not wake ${agentId}`, error));
-    }
+    const { backing } = await liveness.assess(async () => ({ agents: await everyAgent(api), statuses: store.list() }));
     const due = liveness.nextWakeAt();
     if (due !== undefined && !wakeTimer) {
       wakeTimer = setTimeout(() => {

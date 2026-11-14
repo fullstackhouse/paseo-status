@@ -56,6 +56,8 @@ export class Liveness {
   constructor(
     private readonly hasBackgroundWork: (agentId: string) => Promise<boolean>,
     private readonly now: () => number = () => Date.now(),
+    /** Called once per wake-up that falls due, however many callers share the assessment. */
+    private readonly onWake: (agentId: string) => void = () => undefined,
   ) {}
 
   /** The agent's own turn ended: whatever its children did meanwhile, it has seen. */
@@ -79,7 +81,9 @@ export class Liveness {
     const run = this.queue.then(async () => {
       this.queued = undefined;
       const { agents, statuses } = await load();
-      return this.assessNow(agents, statuses);
+      const assessment = await this.assessNow(agents, statuses);
+      for (const agentId of assessment.wake) this.onWake(agentId);
+      return assessment;
     });
     this.queued = run;
     this.queue = run.catch(() => undefined);
