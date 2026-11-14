@@ -73,6 +73,8 @@ P=$(jq -r .port $S); T=$(jq -r .token $S)
 curl -s -H "authorization: Bearer $T" -X POST localhost:$P/refresh -d '{"agentId":"…"}'
 ```
 
+`POST /work-states` (same headers, empty body) returns the work state each workspace reports to the sidebar grouping.
+
 Right after the plugin loads, this returns `No daemon session yet` until an agent runs a turn or the panel is opened: Paseo hands plugin server code its daemon session through hooks and RPCs only.
 
 ## Develop

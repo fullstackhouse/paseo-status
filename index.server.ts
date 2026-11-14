@@ -189,6 +189,8 @@ export default function contribute(server: PluginServerContext) {
     "/call": async ({ agentId, cwd, name, arguments: args }) => service.callTool(agentId ?? (cwd ? await callerIn(cwd) : null), name, args),
     // The same Refresh the UI does, for scripts and terminal use.
     "/refresh": async (input) => service.refresh(refreshStatus.input.parse(input).agentId),
+    // What the sidebar grouping gets per workspace, for checking it from a terminal.
+    "/work-states": async () => ({ workStates: await workStates(requirePaseo()) }),
   });
 
   return async () => {
