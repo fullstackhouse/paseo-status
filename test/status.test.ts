@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { BACKGROUND_SKIP, FALLBACK_PROMPT, readOpenAskCounts, readWaiting, REFRESH_PROMPT, StatusService, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
+import { BACKGROUND_SKIP, FALLBACK_PROMPT, readOpenAskOwners, readWaiting, REFRESH_PROMPT, StatusService, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
 import { needsYou, rowBadgeLabel, summarize, workspaceWorkState, type Status } from "../shared/status";
 
@@ -256,7 +256,17 @@ describe("summarize", () => {
   });
 
   it("counts open asks as needing you, even when every card says done", () => {
-    const result = summarize({ statuses: [card("ws-a", "a1", "done")], openAsks: { "ws-a": 2, "ws-b": 0 }, agents: [], running: () => false });
+    const result = summarize({ statuses: [card("ws-a", "a1", "done")], openAsks: { "ws-a": ["x1", "x2"], "ws-b": [] }, agents: [], running: () => false });
+    expect(result).toEqual({ "ws-a": { state: "needs_you", waiting: 2 } });
+  });
+
+  it("counts a waiting card once when its agent's open asks already say what it needs", () => {
+    const result = summarize({
+      statuses: [card("ws-a", "a1", "blocked"), card("ws-a", "a2", "waiting_on_you")],
+      openAsks: { "ws-a": ["a1"] },
+      agents: [],
+      running: () => false,
+    });
     expect(result).toEqual({ "ws-a": { state: "needs_you", waiting: 2 } });
   });
 
@@ -281,17 +291,24 @@ describe("rowBadgeLabel", () => {
   });
 });
 
-describe("readOpenAskCounts", () => {
-  it("counts open asks per workspace file and ignores closed ones", () => {
+describe("readOpenAskOwners", () => {
+  it("lists each open ask's owner per workspace file and ignores closed ones", () => {
     const asksDir = mkdtempSync(join(tmpdir(), "asks-"));
     mkdirSync(join(asksDir, "workspaces"));
     writeFileSync(
       join(asksDir, "workspaces", `${encodeURIComponent("wks/1")}.json`),
-      JSON.stringify({ asks: [{ status: "open" }, { status: "done" }, { status: "open" }, { status: "in_progress" }] }),
+      JSON.stringify({
+        asks: [
+          { status: "open", ownerAgentId: "a1" },
+          { status: "done", ownerAgentId: "a1" },
+          { status: "open", ownerAgentId: "a2" },
+          { status: "in_progress", ownerAgentId: "a2" },
+        ],
+      }),
     );
     writeFileSync(join(asksDir, "workspaces", "wks_2.json"), JSON.stringify({ asks: [{ status: "dropped" }] }));
-    expect(readOpenAskCounts(asksDir)).toEqual({ "wks/1": 2 });
-    expect(readOpenAskCounts(join(asksDir, "missing"))).toEqual({});
+    expect(readOpenAskOwners(asksDir)).toEqual({ "wks/1": ["a1", "a2"] });
+    expect(readOpenAskOwners(join(asksDir, "missing"))).toEqual({});
   });
 });
 

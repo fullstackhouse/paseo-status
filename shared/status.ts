@@ -165,13 +165,15 @@ export const summarizeWorkspaces = defineRpc({
 });
 
 /**
- * Needs you beats working beats done. An open ask or a card asking for the human needs you; a running
+ * Needs you beats working beats done. An open ask or a card asking for the human needs you, counted once:
+ * a waiting card whose agent has open asks is the same request, so only its asks count. A running
  * agent or a card that says work goes on is working, even between turns. Paseo's own status only
  * sees the agent stop, so it calls a workspace done while its agents still have work queued.
  */
 export function summarize(input: {
   statuses: readonly Status[];
-  openAsks: Readonly<Record<string, number>>;
+  /** The owning agent of each open ask, per workspace. */
+  openAsks: Readonly<Record<string, readonly string[]>>;
   /** Live agents with the workspace they are in. */
   agents: readonly { workspaceId: string; running: boolean }[];
   running: (agentId: string) => boolean;
@@ -188,14 +190,14 @@ export function summarize(input: {
   for (const status of input.statuses) {
     const summary = at(status.workspaceId);
     if (needsYou(status, input.running(status.agentId))) {
-      summary.waiting += 1;
+      if (!input.openAsks[status.workspaceId]?.includes(status.agentId)) summary.waiting += 1;
       raise(summary, "needs_you");
     } else if (status.state === "working") raise(summary, "working");
   }
-  for (const [workspaceId, count] of Object.entries(input.openAsks)) {
-    if (count === 0) continue;
+  for (const [workspaceId, owners] of Object.entries(input.openAsks)) {
+    if (owners.length === 0) continue;
     const summary = at(workspaceId);
-    summary.waiting += count;
+    summary.waiting += owners.length;
     raise(summary, "needs_you");
   }
   return result;

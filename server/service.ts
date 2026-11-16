@@ -198,23 +198,23 @@ export function readWaiting(asksDir: string, workspaceIds: readonly string[]): W
   return waiting;
 }
 
-/** Open asks per workspace, across every workspace the asks plugin has a file for. Never written to. */
-export function readOpenAskCounts(asksDir: string): Record<string, number> {
+/** The owning agent of each open ask, per workspace, across every workspace the asks plugin has a file for. Never written to. */
+export function readOpenAskOwners(asksDir: string): Record<string, string[]> {
   const dir = join(asksDir, "workspaces");
   if (!existsSync(dir)) return {};
-  const counts: Record<string, number> = {};
+  const owners: Record<string, string[]> = {};
   for (const file of readdirSync(dir)) {
     if (!file.endsWith(".json")) continue;
     const workspaceId = decodeURIComponent(file.slice(0, -".json".length));
     try {
-      const parsed = JSON.parse(readFileSync(join(dir, file), "utf8")) as { asks?: { status: string }[] };
-      const open = (parsed.asks ?? []).filter((ask) => ask.status === "open").length;
-      if (open > 0) counts[workspaceId] = open;
+      const parsed = JSON.parse(readFileSync(join(dir, file), "utf8")) as { asks?: { status: string; ownerAgentId: string }[] };
+      const open = (parsed.asks ?? []).filter((ask) => ask.status === "open").map((ask) => ask.ownerAgentId);
+      if (open.length > 0) owners[workspaceId] = open;
     } catch (error) {
       console.error(`[status] could not read asks for ${workspaceId}`, error);
     }
   }
-  return counts;
+  return owners;
 }
 
 export function workspacesOf(statuses: readonly Status[]): string[] {
