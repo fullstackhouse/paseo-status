@@ -9,7 +9,7 @@ import { listen } from "./server/listener";
 import { hasBackgroundWork, Liveness, PARENT_AGENT_ID_LABEL, type LiveAgent } from "./server/liveness";
 import { dataDir } from "./server/paths";
 import { isStatusPermission } from "./server/permissions";
-import { INSTRUCTIONS, readOpenAskCounts, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
+import { INSTRUCTIONS, readOpenAskOwners, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
 import { StatusStore } from "./server/store";
 import { experimentSettings } from "./shared/settings";
 
@@ -209,7 +209,7 @@ export default function contribute(server: PluginServerContext) {
     const running = new Set(live.filter(isRunning).map((agent) => agent.id));
     const workspaces = summarize({
       statuses: store.list(),
-      openAsks: readOpenAskCounts(asksDir),
+      openAsks: readOpenAskOwners(asksDir),
       agents: live.flatMap((agent) => (agent.workspaceId ? [{ workspaceId: agent.workspaceId, running: running.has(agent.id) }] : [])),
       running: (agentId) => running.has(agentId),
     });
