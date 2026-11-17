@@ -1,14 +1,17 @@
 import type { PluginClientContext } from "@getpaseo/plugin/client";
-import { listStatuses, type Status, type WorkState } from "../shared/status";
+import { listStatuses, overviewStatus, type OverviewStatus, type Status, type WorkState } from "../shared/status";
 import { age, POLL_MS, STATE_LABELS } from "./StatusView";
 
 // COMPAT(workspaceSummaryItem): FSH hosts have addWorkspaceSummaryItem (and `workState` from
-// fullstackhouse/paseo's agent-reported grouping), but the npm SDK pin doesn't type them yet.
+// fullstackhouse/paseo's agent-reported grouping, `status` from its Overview v2), but the npm SDK pin
+// doesn't type them yet.
 // Older hosts lack it; Status then only shows its pills and row badge.
 interface SummaryState {
   label?: string;
   panelId?: string;
   workState?: WorkState | null;
+  /** The newest card, shown as the Overview's Status card. Older hosts drop the field. */
+  status?: OverviewStatus | null;
 }
 interface SummaryRegistration {
   update(patch: SummaryState): void;
@@ -20,7 +23,7 @@ type SummaryHost = {
   ) => SummaryRegistration;
 };
 
-/** The newest card in a workspace, for the item's label. */
+/** The newest card in a workspace, for the item's label and Overview status. */
 function newest(statuses: readonly Status[]): Status | undefined {
   return statuses.reduce<Status | undefined>(
     (latest, status) => (!latest || status.updatedAt > latest.updatedAt ? status : latest),
@@ -42,7 +45,7 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
 
   const refresh = async () => {
     // The server decides the work state: only it sees child agents and background work.
-    const { statuses, workStates = {} } = await client.rpc(listStatuses, { withWorkStates: true });
+    const { statuses, agents, workStates = {} } = await client.rpc(listStatuses, { withWorkStates: true });
     if (stopped) return;
     const byWorkspace = new Map<string, Status[]>();
     for (const status of statuses) {
@@ -57,6 +60,7 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
         label: latest ? `${STATE_LABELS[latest.state]} · ${age(latest.updatedAt)}` : undefined,
         panelId: "status",
         workState: workStates[workspaceId] ?? null,
+        status: latest ? overviewStatus(latest, agents[latest.agentId]?.running ?? false) : null,
       };
       const item = items.get(workspaceId);
       if (item) item.update(state);

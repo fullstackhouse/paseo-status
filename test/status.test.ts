@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { BACKGROUND_SKIP, FALLBACK_PROMPT, readOpenAskOwners, readWaiting, REFRESH_PROMPT, StatusService, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
-import { needsYou, rowBadgeLabel, summarize, workspaceWorkState, type Status } from "../shared/status";
+import { isAnswered, needsYou, overviewStatus, rowBadgeLabel, summarize, workspaceWorkState, type Status } from "../shared/status";
 
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
@@ -288,6 +288,40 @@ describe("rowBadgeLabel", () => {
     expect(rowBadgeLabel({ state: "done", waiting: 0 })).toBeNull();
     expect(rowBadgeLabel({ state: "needs_you", waiting: 1 })).toBe("needs you");
     expect(rowBadgeLabel({ state: "needs_you", waiting: 6 })).toBe("needs you (6)");
+  });
+});
+
+describe("overviewStatus", () => {
+  const card = (fields: Partial<Status>): Status => ({
+    agentId: AGENT,
+    workspaceId: WS,
+    state: "waiting_on_you",
+    tldr: "Spec ready",
+    now: "Waiting on your review",
+    done: ["drafted"],
+    next: ["merge"],
+    updatedAt: "2026-11-12T10:00:00Z",
+    turnsSince: 0,
+    ...fields,
+  });
+
+  it("maps a card to the Overview's status shape", () => {
+    expect(overviewStatus(card({}), false)).toEqual({
+      state: "waiting_on_you",
+      summary: "Spec ready",
+      now: "Waiting on your review",
+      updatedAt: Date.parse("2026-11-12T10:00:00Z"),
+    });
+    expect(overviewStatus(card({ state: "working", now: undefined }), true)).not.toHaveProperty("now");
+  });
+
+  it("marks a waiting or blocked card answered once a turn started after it", () => {
+    expect(isAnswered(card({}), false)).toBe(false);
+    expect(overviewStatus(card({ turnsSince: 1 }), false).answered).toBe(true);
+    expect(overviewStatus(card({ state: "blocked" }), true).answered).toBe(true); // the human replied; the agent is running
+    expect(overviewStatus(card({ state: "blocked", setThisTurn: true }), true)).not.toHaveProperty("answered");
+    expect(overviewStatus(card({ state: "working", turnsSince: 3 }), false)).not.toHaveProperty("answered");
+    expect(overviewStatus(card({ state: "done", turnsSince: 3 }), false)).not.toHaveProperty("answered");
   });
 });
 
