@@ -127,6 +127,22 @@ export function workspaceWorkState(
   return null;
 }
 
+/**
+ * The agent to report when a snoozed workspace needs you: its work state (`workspaceWorkState`) is
+ * `waiting` or `done`, and the card that says so was written after the snooze began. A workspace that
+ * already needed you when it was snoozed stays snoozed; the human snoozed it knowing that.
+ */
+export function needsYouSince(statuses: readonly Status[], state: WorkState | null, snoozedAt: string): string | null {
+  if (state !== "waiting" && state !== "done") return null;
+  const says = (status: Status) =>
+    state === "waiting" ? status.state === "waiting_on_you" || status.state === "blocked" : status.state === "done";
+  const since = Date.parse(snoozedAt);
+  const newest = statuses
+    .filter((status) => !status.archived && says(status) && Date.parse(status.updatedAt) > since)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+  return newest?.agentId ?? null;
+}
+
 /** An open ask from the asks plugin, when it is installed. Read-only. */
 export const WaitingSchema = z.object({ id: z.string(), title: z.string(), agentId: z.string() });
 export type Waiting = z.infer<typeof WaitingSchema>;
