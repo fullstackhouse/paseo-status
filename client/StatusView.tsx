@@ -4,7 +4,7 @@ import { Icon, ScrollView, useToast } from "@getpaseo/plugin/client/react-native
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { listStatuses, needsYou, refreshAll, refreshStatus, STALE_TURNS, type SilentAgent, type Status, type Waiting } from "../shared/status";
+import { isAnswered, listStatuses, refreshAll, refreshStatus, STALE_TURNS, type SilentAgent, type Status, type Waiting } from "../shared/status";
 import { isCurrent, type StatusCard as StatusCardData } from "../shared/timeline";
 
 export const POLL_MS = 4000;
@@ -180,7 +180,7 @@ function StatusCard(props: {
     onError: (error) => toast.error(error instanceof Error ? error.message : String(error)),
   });
   const stale = status.turnsSince >= STALE_TURNS;
-  const answered = status.state !== "working" && status.state !== "done" && !needsYou(status, agent?.running ?? false);
+  const answered = isAnswered(status, agent?.running ?? false);
   const stateTone = answered
     ? styles.muted
     : status.state === "blocked"

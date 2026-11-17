@@ -49,6 +49,32 @@ export function needsYou(status: Status, running: boolean): boolean {
   return status.turnsSince === 0 && !(running && !status.setThisTurn);
 }
 
+/** A waiting or blocked card the human already replied to: a turn started after it was written. */
+export function isAnswered(status: Status, running: boolean): boolean {
+  return status.state !== "working" && status.state !== "done" && !needsYou(status, running);
+}
+
+/** A card as the host's Overview shows it (FSH `PluginWorkspaceSummaryItemState.status`). */
+export interface OverviewStatus {
+  state: Status["state"];
+  /** True once an agent turn started after the card was written: the human already replied. */
+  answered?: boolean;
+  summary: string;
+  now?: string;
+  /** Epoch ms of the card's last update. */
+  updatedAt: number;
+}
+
+export function overviewStatus(status: Status, running: boolean): OverviewStatus {
+  return {
+    state: status.state,
+    ...(isAnswered(status, running) ? { answered: true } : {}),
+    summary: status.tldr,
+    ...(status.now ? { now: status.now } : {}),
+    updatedAt: Date.parse(status.updatedAt),
+  };
+}
+
 /** Without the live-backing experiment: how long a `working` card keeps an idle workspace in Working without an update. */
 export const WORKING_HOLD_MS = 24 * 60 * 60 * 1000;
 
