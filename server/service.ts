@@ -47,7 +47,8 @@ Write for someone who skipped the transcript. Say "not committed" or "not pushed
 
 const FENCED = /```paseo-status[^\n]*\n([\s\S]*?)```/g;
 
-export type AgentState = "idle" | "running" | "gone";
+/** `steerable`: mid-turn, on a provider that takes a steer into the running turn instead of interrupting it. */
+export type AgentState = "idle" | "steerable" | "running" | "gone";
 
 export interface Courier {
   state(agentId: string): Promise<AgentState>;
@@ -92,8 +93,9 @@ export class StatusService {
   }
 
   /**
-   * Ask one agent for an update. A send mid-turn would interrupt the agent, so that case waits
-   * for the turn to end (with the plain refresh prompt: `prompt` only replaces it for an idle agent).
+   * Ask one agent for an update: now if it is idle or can take a steer into its running turn. On a
+   * provider without steering a send mid-turn would interrupt the agent, so that case waits for the
+   * turn to end (with the plain refresh prompt: `prompt` only replaces it for a send that goes out now).
    * `auto` asks at most once per update, so reopening the panel never nags.
    */
   async refresh(agentId: string, { auto = false, prompt }: { auto?: boolean; prompt?: string } = {}): Promise<{ sent: boolean; skipped?: boolean }> {

@@ -55,7 +55,9 @@ export default function contribute(server: PluginServerContext) {
       const handle = requirePaseo().agents.ref(agentId);
       const found = await handle.refresh();
       if (!found || handle.archivedAt) return "gone";
-      return handle.status === "running" || handle.status === "initializing" ? "running" : "idle";
+      if (handle.status !== "running" && handle.status !== "initializing") return "idle";
+      // COMPAT(supportsSteering): hosts before fullstackhouse/paseo#115 omit it; those wait for the turn to end.
+      return handle.capabilities?.supportsSteering ? "steerable" : "running";
     },
     async send(agentId, text) {
       await requirePaseo().agents.ref(agentId).send(text, { activeTurnBehavior: "steer" });
