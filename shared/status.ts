@@ -170,7 +170,7 @@ export const listStatuses = defineRpc({
   }),
 });
 
-/** Ask an agent to update its status. Sent now if it is idle, otherwise when its turn ends. */
+/** Ask an agent to update its status. Sent now if it is idle or can take a steer, otherwise when its turn ends. */
 export const refreshStatus = defineRpc({
   name: "status.refresh",
   input: z.object({ agentId: z.string() }),

@@ -25,7 +25,7 @@ Status is a [Paseo](https://paseo.sh) plugin. Each agent keeps a short, plain-la
 - **Opening the panel** asks every agent whose card is stale (two or more turns without an update) for an update. It asks once per update, so reopening the panel never nags an agent that has not answered yet.
 - **Refresh** at the top of the panel asks every agent whose card missed a turn, plus agents that have no card yet. Each card has its own **Refresh**, and an agent with no card has **Ask for status**.
 - **`/paseo-status`** in an agent's composer asks that agent and opens the panel.
-- If the agent is in the middle of a turn, the request waits until the turn ends, so it never interrupts. If the agent updates its card during that turn anyway, the request is dropped.
+- If the agent is in the middle of a turn, the request joins that turn when its provider allows it (Claude, Codex, OpenCode, Pi), and otherwise waits until the turn ends, so it never interrupts. If the agent updates its card during that turn anyway, the request is dropped.
 - **Agents created before the plugin was installed** have no `status_set` tool, since Paseo adds MCP servers only when an agent is created. When asked, they end their reply with a `paseo-status` JSON block instead, and the plugin reads the card from that reply.
 
 ## Where cards show up
@@ -45,7 +45,7 @@ Snooze a workspace whose agent is waiting on other agents, and it comes back whe
 agent ──stdio MCP──▶ bridge.mjs ──HTTP 127.0.0.1──▶ plugin server ──▶ ~/.paseo/plugin-data/status/
   ▲                    (inherits PASEO_AGENT_ID,                  │  workspaces/<id>.json
   │                     so every call knows its caller)           │
-  └──── "[status] …" update request, held until the turn ends ────┘
+  └──── "[status] …" request, steered into the turn or held ───────┘
 ```
 
 - Every agent created after the plugin is installed gets a `status` MCP server with one tool, `status_set`. Its instructions tell the agent when to call it and how to write each field, so no `CLAUDE.md` edit is needed.
@@ -95,7 +95,7 @@ cd preview && npm install && npm run dev   # the UI with sample data, at localho
 
 - **The agent writes its own status.** Only the agent knows where its work stands. A model summarising the transcript after every turn would cost a call per turn and could misread it.
 - **Staleness instead of trust.** The card says how many turns it has missed, so a forgotten update is visible rather than silently wrong.
-- **Never mid-turn.** An update request waits for the turn to end, because a prompt sent mid-turn interrupts the agent.
+- **Never interrupting.** An update request joins a running turn when the provider takes a steer, and otherwise waits for the turn to end, because a prompt sent mid-turn would interrupt the agent.
 - **Separate from Asks.** Status says where the agent is; Asks says what it needs from you. They work alone or together, and Status only reads Asks' data.
 
 ## Limits

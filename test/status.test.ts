@@ -89,6 +89,17 @@ describe("status", () => {
     expect(store.get(AGENT)?.refreshPending).toBe(false);
   });
 
+  it("steers a refresh into a running turn when the provider can take it", async () => {
+    await service.callTool(AGENT, "status_set", status);
+    await service.turnEnded(AGENT);
+    courier.states.set(AGENT, "steerable");
+    expect(await service.refresh(AGENT)).toEqual({ sent: true });
+    expect(courier.sent).toEqual([{ agentId: AGENT, text: REFRESH_PROMPT }]);
+    expect(store.get(AGENT)?.refreshPending).toBeFalsy();
+    await service.turnEnded(AGENT);
+    expect(courier.sent).toHaveLength(1);
+  });
+
   it("holds a refresh for a running agent that never published a status", async () => {
     courier.states.set(AGENT, "running");
     await service.refresh(AGENT);
