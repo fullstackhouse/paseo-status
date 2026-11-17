@@ -1,7 +1,7 @@
 import { dirname, join } from "node:path";
 import type { PaseoApi } from "@getpaseo/client";
 import { latestTurn, type PluginServerContext } from "@getpaseo/plugin/server";
-import { listStatuses, refreshAll, refreshStatus, summarize, summarizeWorkspaces, workspaceWorkState, type SilentAgent, type WorkState } from "./shared/status";
+import { listStatuses, needsYouSince, refreshAll, refreshStatus, summarize, summarizeWorkspaces, workspaceWorkState, type SilentAgent, type WorkState } from "./shared/status";
 import { AgentDirectory, pickCaller } from "./server/agents";
 import { installBridge } from "./server/bridge";
 import { Equipped } from "./server/equipped";
@@ -10,6 +10,7 @@ import { hasBackgroundWork, Liveness, PARENT_AGENT_ID_LABEL, type LiveAgent } fr
 import { dataDir } from "./server/paths";
 import { isStatusPermission } from "./server/permissions";
 import { INSTRUCTIONS, readOpenAskOwners, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
+import { reportNeedsYou, snoozedWorkspaces } from "./server/snooze";
 import { StatusStore } from "./server/store";
 import { experimentSettings } from "./shared/settings";
 
@@ -147,6 +148,24 @@ export default function contribute(server: PluginServerContext) {
     );
   };
 
+  /**
+   * Reports snoozed workspaces whose work came back to the human after the snooze began: a card
+   * turned waiting or done. The host decides, from its snoozed-workspace setting, whether that wakes them.
+   */
+  const reportSnoozedNeedingYou = async (api: PaseoApi) => {
+    const snoozed = await snoozedWorkspaces(api);
+    if (snoozed.length === 0) return;
+    const states = await workStates(api);
+    for (const workspace of snoozed) {
+      const agentId = needsYouSince(store.list(workspace.id), states[workspace.id] ?? null, workspace.snoozedAt);
+      if (agentId && (await reportNeedsYou(api, workspace.id, agentId))) {
+        console.log(`[status] woke snoozed workspace ${workspace.id}: it needs you`);
+      }
+    }
+  };
+  const afterStatusChange = (api: PaseoApi) =>
+    void reportSnoozedNeedingYou(api).catch((error) => console.error("[status] could not report snoozed workspaces", error));
+
   server.before("agent.create", ({ request }, { paseo: api }) => {
     capture(api);
     return { ...request, config: { ...request.config, mcpServers: { ...request.config.mcpServers, status: mcp } } };
@@ -169,6 +188,7 @@ export default function contribute(server: PluginServerContext) {
       .then(async () => {
         if (await liveBacked()) await assess(api);
       })
+      .then(() => afterStatusChange(api))
       .catch((error) => console.error("[status] turn bookkeeping failed", error));
   });
   // Plan mode and Codex prompt even for preapproved MCP tools. status_set only writes this plugin's card.
@@ -228,7 +248,11 @@ export default function contribute(server: PluginServerContext) {
   const listening = listen(dir, {
     "/instructions": async () => ({ instructions: INSTRUCTIONS }),
     "/tools": async () => ({ tools: TOOLS }),
-    "/call": async ({ agentId, cwd, name, arguments: args }) => service.callTool(agentId ?? (cwd ? await callerIn(cwd) : null), name, args),
+    "/call": async ({ agentId, cwd, name, arguments: args }) => {
+      const result = await service.callTool(agentId ?? (cwd ? await callerIn(cwd) : null), name, args);
+      if (paseo) afterStatusChange(paseo);
+      return result;
+    },
     // The same Refresh the UI does, for scripts and terminal use.
     "/refresh": async (input) => service.refresh(refreshStatus.input.parse(input).agentId),
     // What the sidebar grouping gets per workspace, for checking it from a terminal.

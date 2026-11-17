@@ -35,6 +35,10 @@ Status is a [Paseo](https://paseo.sh) plugin. Each agent keeps a short, plain-la
 - a **Status** panel in each workspace (⌘K: "Open status for this workspace"), which can also sit in the Explorer next to files and changes;
 - a **Status** screen covering every workspace (⌘K: "Open status across workspaces").
 
+## Snoozed workspaces
+
+Snooze a workspace whose agent is waiting on other agents, and it comes back when the work needs you. When a card in a snoozed workspace turns *waiting on you* or *done* after you snoozed it, the plugin tells Paseo the workspace needs you. Paseo treats that like a permission prompt: by default it wakes the workspace and notifies you (host Settings → Workspaces picks wake, count on Snoozed, or stay silent). A workspace you snoozed while it already needed you stays snoozed. Needs a Paseo host with `workspaceAttentionReport` (FSH builds).
+
 ## How it works
 
 ```

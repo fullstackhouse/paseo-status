@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { BACKGROUND_SKIP, FALLBACK_PROMPT, readOpenAskOwners, readWaiting, REFRESH_PROMPT, StatusService, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
-import { isAnswered, needsYou, overviewStatus, rowBadgeLabel, summarize, workspaceWorkState, type Status } from "../shared/status";
+import { isAnswered, needsYou, needsYouSince, overviewStatus, rowBadgeLabel, summarize, workspaceWorkState, type Status } from "../shared/status";
 
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
@@ -415,5 +415,41 @@ describe("workspaceWorkState", () => {
     expect(workspaceWorkState([card({ state: "waiting_on_you", turnsSince: 1 })], now)).toBeNull();
     expect(workspaceWorkState([card({ archived: true })], now)).toBeNull();
     expect(workspaceWorkState([], now)).toBeNull();
+  });
+});
+
+describe("needsYouSince", () => {
+  const SNOOZED_AT = "2026-11-17T10:00:00Z";
+  const card = (fields: Partial<Status>): Status => ({
+    agentId: AGENT,
+    workspaceId: WS,
+    state: "done",
+    tldr: "Both PRs merged",
+    done: [],
+    next: [],
+    updatedAt: "2026-11-17T11:00:00Z",
+    turnsSince: 0,
+    ...fields,
+  });
+
+  it("names the agent whose card turned waiting or done after the snooze", () => {
+    expect(needsYouSince([card({})], "done", SNOOZED_AT)).toBe(AGENT);
+    const waiting = card({ agentId: "parent", state: "waiting_on_you" });
+    expect(needsYouSince([card({ agentId: "child", state: "working" }), waiting], "waiting", SNOOZED_AT)).toBe("parent");
+  });
+
+  it("leaves a workspace that already needed you when it was snoozed", () => {
+    expect(needsYouSince([card({ updatedAt: "2026-11-17T09:00:00Z" })], "done", SNOOZED_AT)).toBeNull();
+  });
+
+  it("leaves a workspace whose work is still going", () => {
+    expect(needsYouSince([card({ state: "working" })], "working", SNOOZED_AT)).toBeNull();
+    expect(needsYouSince([card({})], null, SNOOZED_AT)).toBeNull();
+  });
+
+  it("picks the newest matching card", () => {
+    const older = card({ agentId: "a", updatedAt: "2026-11-17T10:30:00Z" });
+    const newer = card({ agentId: "b", updatedAt: "2026-11-17T10:45:00Z" });
+    expect(needsYouSince([older, newer, card({ agentId: "c", archived: true })], "done", SNOOZED_AT)).toBe("b");
   });
 });
