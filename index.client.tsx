@@ -7,7 +7,6 @@ import type {
   PluginWorkspacePanelProps,
 } from "@getpaseo/plugin/client";
 import { contributeRowBadge } from "./client/RowBadge";
-import { SettingsScreen } from "./client/SettingsScreen";
 import { contributeWorkspaceSummaries } from "./client/summary";
 import { age, AgentStatus, ANSWERED_LABEL, InlineStatus, POLL_MS, STATE_LABELS, StatusView } from "./client/StatusView";
 import { listStatuses, needsYou, refreshStatus, STALE_TURNS, type Status } from "./shared/status";
@@ -129,7 +128,6 @@ export default function contribute(client: PluginClientContext) {
     Component: WorkspacePanel,
   });
   client.addScreen({ id: "status", title: "Status", Component: GlobalScreen });
-  client.addSettingsScreen({ id: "status", title: "Status", icon: "Gauge", Component: SettingsScreen });
   client.addCommandCenterItem({
     id: "open-status",
     title: "Open status for this workspace",
