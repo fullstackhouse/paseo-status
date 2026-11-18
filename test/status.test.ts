@@ -373,41 +373,32 @@ describe("workspaceWorkState", () => {
 
   const live = { running: false, live: true };
   const idle = { running: false, live: false };
-  const on = { liveBacked: true };
 
-  describe("with the live-backing experiment off (the default)", () => {
-    it("keeps a workspace working while a card says so, even after quiet heartbeat turns", () => {
-      expect(workspaceWorkState([card({ turnsSince: 5 })], now)).toBe("working");
-      expect(workspaceWorkState([card({})], now, () => idle)).toBe("working");
-    });
-
-    it("lets a working card lapse after a day without an update, live work or not", () => {
-      expect(workspaceWorkState([card({ updatedAt: "2026-11-11T11:00:00Z" })], now)).toBeNull();
-      expect(workspaceWorkState([card({ updatedAt: "2026-11-11T11:00:00Z" })], now, () => live)).toBeNull();
-    });
-  });
-
-  describe("with the live-backing experiment on", () => {
+  describe("a working card", () => {
     it("keeps a workspace working while live work backs the card, however old the card", () => {
-      expect(workspaceWorkState([card({ turnsSince: 5, updatedAt: "2026-11-01T00:00:00Z" })], now, () => live, on)).toBe("working");
-      expect(workspaceWorkState([card({})], now, () => ({ running: true, live: true }), on)).toBe("working");
+      expect(workspaceWorkState([card({ turnsSince: 5, updatedAt: "2026-11-01T00:00:00Z" })], now, () => live)).toBe("working");
+      expect(workspaceWorkState([card({})], now, () => ({ running: true, live: true }))).toBe("working");
     });
 
     it("holds an unbacked working card for the grace period after its update", () => {
-      expect(workspaceWorkState([card({ updatedAt: "2026-11-12T11:56:00Z" })], now, () => idle, on)).toBe("working");
-      expect(workspaceWorkState([card({ updatedAt: "2026-11-12T11:55:00Z" })], now, () => idle, on)).toBeNull();
+      expect(workspaceWorkState([card({ updatedAt: "2026-11-12T11:56:00Z" })], now, () => idle)).toBe("working");
+      expect(workspaceWorkState([card({ updatedAt: "2026-11-12T11:55:00Z" })], now, () => idle)).toBeNull();
     });
 
     it("holds it for the grace period after live work was last seen, then falls back to Paseo", () => {
       const lastLiveAt = (minutesAgo: number) => () => ({ running: false, live: false, lastLiveAt: now - minutesAgo * 60_000 });
-      expect(workspaceWorkState([card({})], now, lastLiveAt(4), on)).toBe("working");
-      expect(workspaceWorkState([card({})], now, lastLiveAt(6), on)).toBeNull();
-      expect(workspaceWorkState([card({})], now, undefined, on)).toBeNull();
+      expect(workspaceWorkState([card({})], now, lastLiveAt(4))).toBe("working");
+      expect(workspaceWorkState([card({})], now, lastLiveAt(6))).toBeNull();
+      expect(workspaceWorkState([card({})], now, undefined)).toBeNull();
+    });
+
+    it("lapses as soon as the grace period passes with nothing live, however recent its turns", () => {
+      expect(workspaceWorkState([card({ turnsSince: 5 })], now, () => idle)).toBeNull();
     });
 
     it("counts another agent's backed working card over a done one", () => {
-      expect(workspaceWorkState([card({ state: "done" }), card({ agentId: "b", state: "working" })], now, () => idle, on)).toBeNull();
-      expect(workspaceWorkState([card({ state: "done" }), card({ agentId: "b", state: "working" })], now, (id) => (id === "b" ? live : idle), on)).toBe("working");
+      expect(workspaceWorkState([card({ state: "done" }), card({ agentId: "b", state: "working" })], now, () => idle)).toBeNull();
+      expect(workspaceWorkState([card({ state: "done" }), card({ agentId: "b", state: "working" })], now, (id) => (id === "b" ? live : idle))).toBe("working");
     });
   });
 

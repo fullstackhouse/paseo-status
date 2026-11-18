@@ -12,15 +12,8 @@ import { isStatusPermission } from "./server/permissions";
 import { INSTRUCTIONS, readOpenAskOwners, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
 import { reportNeedsYou, snoozedWorkspaces } from "./server/snooze";
 import { StatusStore } from "./server/store";
-import { experimentSettings } from "./shared/settings";
 
 export default function contribute(server: PluginServerContext) {
-  const experiments = server.registerSettings(experimentSettings);
-  /** Settings → Plugins → Status → Experimental: a working card needs live work behind it, plus the parent wake-up. */
-  const liveBacked = async () => {
-    const state = await experiments.read();
-    return state.status === "ready" && state.values.liveBackedWorking;
-  };
   const dir = dataDir();
   // Sibling plugin's data, read for the "waiting on you" lines when it is installed.
   const asksDir = join(dirname(dir), "asks");
@@ -128,25 +121,19 @@ export default function contribute(server: PluginServerContext) {
     if (due !== undefined && !wakeTimer) {
       wakeTimer = setTimeout(() => {
         wakeTimer = undefined;
-        void liveBacked()
-          .then((on) => (on ? assess(api) : undefined))
-          .catch((error) => console.error("[status] wake check failed", error));
+        void assess(api).catch((error) => console.error("[status] wake check failed", error));
       }, Math.max(0, due - Date.now()) + 1000);
     }
     return backing;
   };
   const workStates = async (api: PaseoApi): Promise<Record<string, WorkState | null>> => {
-    const experiment = await liveBacked();
-    // Off, only "is it running" matters (for cards waiting on the human), as before the experiment.
-    const backing = experiment
-      ? await assess(api)
-      : new Map((await liveAgents(api)).map((agent) => [agent.id, { running: isRunning(agent), live: isRunning(agent) }]));
+    const backing = await assess(api);
     const byWorkspace = new Map<string, ReturnType<StatusStore["list"]>>();
     for (const status of store.list()) byWorkspace.set(status.workspaceId, [...(byWorkspace.get(status.workspaceId) ?? []), status]);
     const now = Date.now();
     const idle = { running: false, live: false };
     return Object.fromEntries(
-      [...byWorkspace].map(([workspaceId, cards]) => [workspaceId, workspaceWorkState(cards, now, (agentId) => backing.get(agentId) ?? idle, { liveBacked: experiment })]),
+      [...byWorkspace].map(([workspaceId, cards]) => [workspaceId, workspaceWorkState(cards, now, (agentId) => backing.get(agentId) ?? idle)]),
     );
   };
 
@@ -187,9 +174,7 @@ export default function contribute(server: PluginServerContext) {
     void latestTurn(api.agents.ref(agent.id).timeline)
       .then((timeline) => service.turnEnded(agent.id, timeline))
       // A child stopping may leave its parent's working card with nothing behind it.
-      .then(async () => {
-        if (await liveBacked()) await assess(api);
-      })
+      .then(() => assess(api))
       .then(() => afterStatusChange(api))
       .catch((error) => console.error("[status] turn bookkeeping failed", error));
   });
