@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { BACKGROUND_SKIP, FALLBACK_PROMPT, readOpenAskOwners, readWaiting, REFRESH_PROMPT, StatusService, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
-import { isAnswered, needsYou, needsYouSince, overviewStatus, rowBadgeLabel, summarize, workspaceWorkState, type Status } from "../shared/status";
+import { isAnswered, needsYou, needsYouSince, overviewStatus, rowBadgeLabel, workspaceOverviewStatus, summarize, workspaceWorkState, type Status } from "../shared/status";
 
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
@@ -40,6 +40,16 @@ describe("status", () => {
     const reloaded = new StatusStore(dir).list(WS);
     expect(reloaded).toHaveLength(1);
     expect(reloaded[0]).toMatchObject({ agentId: AGENT, state: "done", tldr: "Shipped.", turnsSince: 0 });
+  });
+
+  it("keeps the goal across updates that leave it out, and clears it on an empty one", async () => {
+    await service.callTool(AGENT, "status_set", { ...status, goal: "Ship gift cards as 3 PRs; 1 merged." });
+    await service.callTool(AGENT, "status_set", { ...status, tldr: "Second PR open." });
+    expect(new StatusStore(dir).get(AGENT)).toMatchObject({ goal: "Ship gift cards as 3 PRs; 1 merged.", tldr: "Second PR open." });
+    await service.callTool(AGENT, "status_set", { ...status, goal: "Ship gift cards as 3 PRs; 2 merged." });
+    expect(store.get(AGENT)?.goal).toBe("Ship gift cards as 3 PRs; 2 merged.");
+    await service.callTool(AGENT, "status_set", { ...status, goal: " " });
+    expect(store.get(AGENT)?.goal).toBeUndefined();
   });
 
   it("rejects calls without an agent identity or with a bad payload", async () => {
@@ -324,6 +334,15 @@ describe("overviewStatus", () => {
       updatedAt: Date.parse("2026-11-12T10:00:00Z"),
     });
     expect(overviewStatus(card({ state: "working", now: undefined }), true)).not.toHaveProperty("now");
+    expect(overviewStatus(card({ goal: "Ship the spec" }), false).goal).toBe("Ship the spec");
+  });
+
+  it("shows the workspace's newest card with the newest goal any agent set", () => {
+    const lead = card({ agentId: "lead", goal: "Ship gift cards as 3 PRs; 1 merged.", updatedAt: "2026-11-12T10:00:00Z" });
+    const helper = card({ agentId: "helper", tldr: "Tests pass", updatedAt: "2026-11-12T11:00:00Z" });
+    expect(workspaceOverviewStatus([lead, helper], () => false)).toMatchObject({ summary: "Tests pass", goal: "Ship gift cards as 3 PRs; 1 merged." });
+    expect(workspaceOverviewStatus([helper], () => false)).not.toHaveProperty("goal");
+    expect(workspaceOverviewStatus([], () => false)).toBeNull();
   });
 
   it("marks a waiting or blocked card answered once a turn started after it", () => {

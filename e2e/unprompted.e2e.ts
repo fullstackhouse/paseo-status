@@ -35,6 +35,6 @@ describe.each<Provider>(["claude", "codex"])("a %s agent publishes a status card
     await sandbox.settle(agent);
 
     expect(await sandbox.timeline(agent)).toMatch(/status_set/);
-    expect(sandbox.card(agent)).toMatchObject({ agentId: agent, turnsSince: 0 });
+    expect(sandbox.card(agent)).toMatchObject({ agentId: agent, turnsSince: 0, goal: expect.any(String) });
   });
 });

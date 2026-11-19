@@ -200,6 +200,7 @@ function StatusCard(props: {
         </Text>
         <Text style={[styles.badge, stateTone]}>{answered ? ANSWERED_LABEL : STATE_LABELS[status.state]}</Text>
       </View>
+      {status.goal ? <Line styles={styles} label="Goal" text={status.goal} /> : null}
       <Text style={styles.tldr}>{status.tldr}</Text>
       {status.now ? <Line styles={styles} label="Now" text={status.now} /> : null}
       {waiting.map((ask) => (
@@ -337,6 +338,7 @@ function EarlierStatus(props: { card: StatusCardData; styles: Styles; theme: Plu
         <Text style={[styles.badge, styles.muted]}>{STATE_LABELS[card.state]}</Text>
         <Icon name={expanded ? "ChevronUp" : "ChevronDown"} size={14} color={theme.colors.foregroundMuted} />
       </View>
+      {expanded && card.goal ? <Line styles={styles} label="Goal" text={card.goal} /> : null}
       <Text style={[styles.tldr, earlier && styles.muted]}>{card.tldr}</Text>
       {expanded && card.now ? <Line styles={styles} label="Now" text={card.now} /> : null}
       {expanded && card.done.length > 0 && <List styles={styles} title="DONE" mark="✓" items={card.done} />}

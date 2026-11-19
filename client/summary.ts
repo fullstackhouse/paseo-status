@@ -1,5 +1,5 @@
 import type { PluginClientContext } from "@getpaseo/plugin/client";
-import { listStatuses, overviewStatus, type OverviewStatus, type Status, type WorkState } from "../shared/status";
+import { listStatuses, newestCard, workspaceOverviewStatus, type OverviewStatus, type Status, type WorkState } from "../shared/status";
 import { age, POLL_MS, STATE_LABELS } from "./StatusView";
 
 // COMPAT(workspaceSummaryItem): FSH hosts have addWorkspaceSummaryItem (and `workState` from
@@ -10,7 +10,7 @@ interface SummaryState {
   label?: string;
   panelId?: string;
   workState?: WorkState | null;
-  /** The newest card, shown as the Overview's Status card. Older hosts drop the field. */
+  /** The newest card, shown as the Overview's Status card, with the workspace's newest goal. Older hosts drop the field (and hosts before `goal`, the goal). */
   status?: OverviewStatus | null;
 }
 interface SummaryRegistration {
@@ -22,14 +22,6 @@ type SummaryHost = {
     contribution: SummaryState & { id: string; workspaceId: string; title: string },
   ) => SummaryRegistration;
 };
-
-/** The newest card in a workspace, for the item's label and Overview status. */
-function newest(statuses: readonly Status[]): Status | undefined {
-  return statuses.reduce<Status | undefined>(
-    (latest, status) => (!latest || status.updatedAt > latest.updatedAt ? status : latest),
-    undefined,
-  );
-}
 
 /**
  * One summary item per workspace with a card: its newest state for the Overview tab, and the
@@ -55,12 +47,12 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
       else byWorkspace.set(status.workspaceId, [status]);
     }
     for (const [workspaceId, cards] of byWorkspace) {
-      const latest = newest(cards);
+      const latest = newestCard(cards);
       const state: SummaryState = {
         label: latest ? `${STATE_LABELS[latest.state]} · ${age(latest.updatedAt)}` : undefined,
         panelId: "status",
         workState: workStates[workspaceId] ?? null,
-        status: latest ? overviewStatus(latest, agents[latest.agentId]?.running ?? false) : null,
+        status: workspaceOverviewStatus(cards, (agentId) => agents[agentId]?.running ?? false),
       };
       const item = items.get(workspaceId);
       if (item) item.update(state);
