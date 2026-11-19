@@ -2,7 +2,7 @@ Status puts a short, plain-language summary of where each agent's work stands on
 
 ## How it works
 
-Every agent created after the plugin is installed gets a `status` MCP server with one tool, `status_set`. The server's instructions tell the agent to call it at the end of any turn that changed where things stand. A status has a one or two sentence summary, what the agent is doing now, what is done with its proof, what is next, and a state: working, waiting on you, blocked or done. Each call replaces the previous status.
+Every agent created after the plugin is installed gets a `status` MCP server with one tool, `status_set`. The server's instructions tell the agent to call it at the end of any turn that changed where things stand. A status has a goal (the whole job and its overall progress, kept until the agent sends a new one), a one or two sentence summary of where things stand now, what the agent is doing now, what is done with its proof, what is next, and a state: working, waiting on you, blocked or done. Each call replaces the previous status, except the goal when the call leaves it out.
 
 ## Where you see it
 

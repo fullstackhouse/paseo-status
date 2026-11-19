@@ -8,6 +8,8 @@ export const STALE_TURNS = 2;
 /** What an agent sends with status_set (or in a paseo-status reply block). */
 export const StatusInputSchema = z.object({
   state: z.enum(STATES),
+  /** The whole job and its overall progress. Sticky: omitted keeps the previous one, "" clears it. */
+  goal: z.string().max(400).optional(),
   tldr: z.string().min(1).max(600),
   now: z.string().max(400).optional(),
   done: z.array(z.string().min(1).max(300)).max(12).default([]),
@@ -19,7 +21,9 @@ export const StatusSchema = z.object({
   agentId: z.string(),
   workspaceId: z.string(),
   state: z.enum(STATES),
-  /** One or two plain sentences: where things stand. */
+  /** One or two plain sentences: what the whole job is and how far along it is. Survives updates that omit it. */
+  goal: z.string().optional(),
+  /** One or two plain sentences: where things stand right now. */
   tldr: z.string(),
   /** What the agent is doing or waiting on right now. */
   now: z.string().optional(),
@@ -59,6 +63,8 @@ export interface OverviewStatus {
   state: Status["state"];
   /** True once an agent turn started after the card was written: the human already replied. */
   answered?: boolean;
+  /** The whole job and its overall progress, shown above the Status card. */
+  goal?: string;
   summary: string;
   now?: string;
   /** Epoch ms of the card's last update. */
@@ -69,10 +75,27 @@ export function overviewStatus(status: Status, running: boolean): OverviewStatus
   return {
     state: status.state,
     ...(isAnswered(status, running) ? { answered: true } : {}),
+    ...(status.goal ? { goal: status.goal } : {}),
     summary: status.tldr,
     ...(status.now ? { now: status.now } : {}),
     updatedAt: Date.parse(status.updatedAt),
   };
+}
+
+/**
+ * The Overview status for a workspace: its newest card, with the newest goal any agent there set,
+ * since a helper agent's card often has none.
+ */
+export function workspaceOverviewStatus(cards: readonly Status[], running: (agentId: string) => boolean): OverviewStatus | null {
+  const latest = newestCard(cards);
+  if (!latest) return null;
+  const status = overviewStatus(latest, running(latest.agentId));
+  const goal = newestCard(cards.filter((card) => card.goal))?.goal;
+  return goal ? { ...status, goal } : status;
+}
+
+export function newestCard(cards: readonly Status[]): Status | undefined {
+  return cards.reduce<Status | undefined>((latest, card) => (!latest || card.updatedAt > latest.updatedAt ? card : latest), undefined);
 }
 
 /**

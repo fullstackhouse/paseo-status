@@ -26,7 +26,7 @@ export type Provider = "claude" | "codex";
 /** The model each provider's agents run. Codex's is a cheap OpenAI model in Codex 0.166's catalog, so Codex defers MCP tools behind its tool search as it does in production. */
 const MODELS: Record<Provider, string> = { claude: "haiku", codex: "gpt-5.6-luna" };
 
-export type Card = { agentId: string; workspaceId: string; state: string; tldr: string; done: string[]; next: string[]; updatedAt: string; turnsSince: number };
+export type Card = { agentId: string; workspaceId: string; state: string; goal?: string; tldr: string; done: string[]; next: string[]; updatedAt: string; turnsSince: number };
 
 /**
  * A throwaway Paseo daemon with this plugin installed, in its own home, talking to the

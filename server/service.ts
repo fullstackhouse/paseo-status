@@ -8,9 +8,10 @@ import type { StatusStore } from "./store";
 export const INSTRUCTIONS = `status_set publishes where your work stands to a status card the human reads in Paseo instead of asking you "where are we?".
 - Call it at the end of every turn that changed where things stand: started, finished or abandoned a step, got a result, became blocked, or started waiting on the human. Skip it for turns that changed nothing.
 - Call it before your final reply, and add no closing line after it: a collapsed turn shows only its last message, so a short line after the status card would hide your answer.
-- Each call replaces the whole status, so send all fields every time.
+- Each call replaces the whole status, so send every field every time, except goal.
 - Write for someone who skipped the transcript: plain words, no internal jargon, no file paths unless they matter.
-  - tldr: one or two sentences. What this work is and where it stands.
+  - goal: one or two sentences on the whole job and its overall progress, so someone opening this workspace cold knows what it is for ("Ship the record-page redesign from #966 as 7 stacked PRs; 4 merged, QA fixes next"). Send it on your first call and again when the job or its overall progress changes; leaving it out keeps the last one.
+  - tldr: one or two sentences. Where things stand right now.
   - now: what you are doing or waiting on this moment.
   - done: finished steps, each with its proof ("tests pass: 105/105", "PR #22 open, CI green"). Say "not committed" or "not pushed" when that is true.
   - next: what is left, in order. Mark what needs the human.
@@ -41,7 +42,7 @@ export const WAKE_PROMPT =
 /** For agents created before the plugin was installed: they have no tool, so the status rides in their reply. */
 export const FALLBACK_PROMPT = `[status] The human asked where things stand, for a status card shown outside this chat. End your reply with a fenced code block tagged paseo-status holding one JSON object:
 \`\`\`paseo-status
-{"state": "working | waiting_on_you | blocked | done", "tldr": "one or two plain sentences: what this work is and where it stands", "now": "what you are doing or waiting on", "done": ["finished step, with its proof"], "next": ["what is left, in order; mark what needs the human"]}
+{"state": "working | waiting_on_you | blocked | done", "goal": "one or two plain sentences: the whole job and its overall progress", "tldr": "one or two plain sentences: where things stand right now", "now": "what you are doing or waiting on", "done": ["finished step, with its proof"], "next": ["what is left, in order; mark what needs the human"]}
 \`\`\`
 Write for someone who skipped the transcript. Say "not committed" or "not pushed" when that is true. Then carry on with what you were doing, if anything.`;
 

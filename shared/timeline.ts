@@ -35,6 +35,8 @@ export function isCurrent(card: StatusCard, live: Status | undefined): boolean {
   const same = (a: string[], b: string[]) => a.length === b.length && a.every((item, index) => item === b[index]);
   return (
     card.state === live.state &&
+    // A call that left the goal out kept the stored one.
+    (card.goal === undefined || (card.goal.trim() || undefined) === live.goal) &&
     card.tldr === live.tldr &&
     (card.now ?? "") === (live.now ?? "") &&
     same(card.done, live.done) &&

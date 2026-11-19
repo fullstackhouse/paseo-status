@@ -4,7 +4,7 @@ import type { Status } from "../shared/status";
 
 type WorkspaceFile = Record<string, Status>;
 
-export type StatusInput = Pick<Status, "state" | "tldr" | "now" | "done" | "next">;
+export type StatusInput = Pick<Status, "state" | "goal" | "tldr" | "now" | "done" | "next">;
 
 /** One JSON file per workspace, keyed by agent. Single writer (the plugin process). */
 export class StatusStore {
@@ -31,8 +31,11 @@ export class StatusStore {
 
   set(workspaceId: string, agentId: string, input: StatusInput): Status {
     const previous = this.get(agentId);
+    // The goal is sticky: agents send it when the job or its overall progress changes, not every call.
+    const goal = input.goal === undefined ? previous?.goal : input.goal.trim() || undefined;
     return this.write(workspaceId, agentId, {
       ...input,
+      goal,
       agentId,
       workspaceId,
       updatedAt: this.now().toISOString(),

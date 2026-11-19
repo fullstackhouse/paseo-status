@@ -18,7 +18,8 @@ export const statuses: Status[] = [
     agentId: "agent-giftcards",
     workspaceId: "api",
     state: "waiting_on_you",
-    tldr: "Gift cards can now be bought and redeemed at checkout. The code is done and tested; it is waiting on your call on partial refunds before the PR goes up.",
+    goal: "Let shoppers buy and redeem gift cards at checkout, shipped as one PR. Code and tests are done; one decision left.",
+    tldr: "The code is done and tested; it is waiting on your call on partial refunds before the PR goes up.",
     now: "Waiting on you to pick how partial refunds behave.",
     done: [
       "Gift card model, issue and redeem endpoints",

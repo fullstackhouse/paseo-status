@@ -42,6 +42,13 @@ describe("isCurrent", () => {
     expect(isCurrent(card, live)).toBe(true);
   });
 
+  it("matches a call that left the goal out, but not one that sent a different goal", () => {
+    const goaled = { ...live, goal: "Fix search for good." };
+    expect(isCurrent(card, goaled)).toBe(true);
+    expect(isCurrent({ ...card, goal: "Fix search for good." }, goaled)).toBe(true);
+    expect(isCurrent({ ...card, goal: "Something else." }, goaled)).toBe(false);
+  });
+
   it("does not match a later status or a missing one", () => {
     expect(isCurrent(card, { ...live, next: ["Open PR", "Deploy"] })).toBe(false);
     expect(isCurrent(card, { ...live, now: undefined })).toBe(false);
