@@ -12,8 +12,16 @@ import { isStatusPermission } from "./server/permissions";
 import { INSTRUCTIONS, readOpenAskOwners, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
 import { reportNeedsYou, snoozedWorkspaces } from "./server/snooze";
 import { StatusStore } from "./server/store";
+import { experimentSettings } from "./shared/settings";
 
 export default function contribute(server: PluginServerContext) {
+  const experiments = server.registerSettings(experimentSettings);
+  /** Settings → Plugins → Status → Experimental: blocked cards go to Paseo's Blocked group instead of needing you. */
+  const blockedGroup = (): Promise<boolean> =>
+    experiments.read().then(
+      (state) => state.status === "ready" && state.values.blockedGroup,
+      () => false, // An unreadable setting is the default: off.
+    );
   const dir = dataDir();
   // Sibling plugin's data, read for the "waiting on you" lines when it is installed.
   const asksDir = join(dirname(dir), "asks");
@@ -126,14 +134,15 @@ export default function contribute(server: PluginServerContext) {
     }
     return backing;
   };
-  const workStates = async (api: PaseoApi): Promise<Record<string, WorkState | null>> => {
+  const workStates = async (api: PaseoApi, blocked?: boolean): Promise<Record<string, WorkState | null>> => {
     const backing = await assess(api);
+    blocked ??= await blockedGroup();
     const byWorkspace = new Map<string, ReturnType<StatusStore["list"]>>();
     for (const status of store.list()) byWorkspace.set(status.workspaceId, [...(byWorkspace.get(status.workspaceId) ?? []), status]);
     const now = Date.now();
     const idle = { running: false, live: false };
     return Object.fromEntries(
-      [...byWorkspace].map(([workspaceId, cards]) => [workspaceId, workspaceWorkState(cards, now, (agentId) => backing.get(agentId) ?? idle)]),
+      [...byWorkspace].map(([workspaceId, cards]) => [workspaceId, workspaceWorkState(cards, now, (agentId) => backing.get(agentId) ?? idle, { blockedGroup: blocked })]),
     );
   };
 
@@ -144,9 +153,10 @@ export default function contribute(server: PluginServerContext) {
   const reportSnoozedNeedingYou = async (api: PaseoApi) => {
     const snoozed = await snoozedWorkspaces(api);
     if (snoozed.length === 0) return;
-    const states = await workStates(api);
+    const blocked = await blockedGroup();
+    const states = await workStates(api, blocked);
     for (const workspace of snoozed) {
-      const agentId = needsYouSince(store.list(workspace.id), states[workspace.id] ?? null, workspace.snoozedAt);
+      const agentId = needsYouSince(store.list(workspace.id), states[workspace.id] ?? null, workspace.snoozedAt, blocked);
       if (agentId && (await reportNeedsYou(api, workspace.id, agentId))) {
         console.log(`[status] woke snoozed workspace ${workspace.id}: it needs you`);
       }
@@ -219,6 +229,7 @@ export default function contribute(server: PluginServerContext) {
       openAsks: readOpenAskOwners(asksDir),
       agents: live.flatMap((agent) => (agent.workspaceId ? [{ workspaceId: agent.workspaceId, running: running.has(agent.id) }] : [])),
       running: (agentId) => running.has(agentId),
+      blockedGroup: await blockedGroup(),
     });
     return { workspaces };
   });

@@ -15,7 +15,7 @@ export const INSTRUCTIONS = `status_set publishes where your work stands to a st
   - now: what you are doing or waiting on this moment.
   - done: finished steps, each with its proof ("tests pass: 105/105", "PR #22 open, CI green"). Say "not committed" or "not pushed" when that is true.
   - next: what is left, in order. Mark what needs the human.
-  - state: working, waiting_on_you, blocked or done. Use working while you, a heartbeat or a background job still own the next step; done once nothing is left.
+  - state: working, waiting_on_you, blocked or done. Use working while you, a heartbeat or a background job still own the next step; waiting_on_you when the human has to act; blocked only when nothing can move until another workspace or another person acts (a child workspace still running, a peer's code review), not for CI, builds, deploys or your own subagents, which are working; done once nothing is left.
 - Messages starting with [status] are the human asking for an update: call status_set.`;
 
 const SetInput = StatusInputSchema;
@@ -35,9 +35,9 @@ export const TOOLS = [
 export const REFRESH_PROMPT =
   "[status] The human asked where things stand. Call status_set with your current status, then carry on with what you were doing, if anything.";
 
-/** Sent once when the last agent a parent started stops while the parent sits idle with a working card. */
+/** Sent once when the last agent a parent started stops while the parent sits idle with a working or blocked card. */
 export const WAKE_PROMPT =
-  "[status] Every agent you started has stopped and nothing of yours is running, but your status still says working. Check what your child agents left, carry on if something remains, and call status_set with where things stand.";
+  "[status] Every agent you started has stopped and nothing of yours is running, but your status still says working or blocked. Check what your child agents left, carry on if something remains, and call status_set with where things stand.";
 
 /** For agents created before the plugin was installed: they have no tool, so the status rides in their reply. */
 export const FALLBACK_PROMPT = `[status] The human asked where things stand, for a status card shown outside this chat. End your reply with a fenced code block tagged paseo-status holding one JSON object:
@@ -156,7 +156,7 @@ export class StatusService {
     await this.courier.send(agentId, this.prompt(agentId));
   }
 
-  /** An idle agent's working card lost its last live child: ask it to look at its children and update. */
+  /** An idle agent's working or blocked card lost its last live child: ask it to look at its children and update. */
   async wake(agentId: string): Promise<{ sent: boolean }> {
     return this.refresh(agentId, { prompt: this.isEquipped(agentId) ? WAKE_PROMPT : FALLBACK_PROMPT });
   }

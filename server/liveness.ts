@@ -26,7 +26,7 @@ export interface LiveAgent {
 export interface Assessment {
   /** For every card's agent. */
   backing: Map<string, Backing>;
-  /** Agents to prompt now: idle with a working card, their last live descendant stopped `WAKE_DELAY_MS` ago, and nothing has woken them since. */
+  /** Agents to prompt now: idle with a working or blocked card, their last live descendant stopped `WAKE_DELAY_MS` ago, and nothing has woken them since. */
   wake: string[];
 }
 
@@ -39,14 +39,14 @@ export async function hasBackgroundWork(handle: object): Promise<boolean> {
 }
 
 /**
- * Decides what backs each `working` card: the agent running, its workspace busy, its background work, or
+ * Decides what backs each `working` or `blocked` card: the agent running, its workspace busy, its background work, or
  * any descendant agent (by parent link, recursively, in any workspace) that is. Remembers when live work
  * was last seen (for the grace period) and whether descendants were live, so the moment the last one stops
  * while the parent sits idle schedules exactly one wake-up. State is in memory only.
  */
 export class Liveness {
   private readonly lastLive = new Map<string, number>();
-  /** Per agent with a working card: a descendant was live while the agent itself was not running. */
+  /** Per agent with a working or blocked card: a descendant was live while the agent itself was not running. */
   private readonly awaitingDescendants = new Map<string, boolean>();
   /** Wake-ups due once `WAKE_DELAY_MS` has passed, with the card version they were scheduled for. */
   private readonly pendingWakes = new Map<string, { since: number; updatedAt: string }>();
@@ -128,16 +128,17 @@ export class Liveness {
     const now = this.now();
     const backing = new Map<string, Backing>();
     const wake: string[] = [];
-    const working = new Set<string>();
+    const tracked = new Set<string>();
     for (const status of statuses) {
       if (status.archived) continue;
       const agent = byId.get(status.agentId);
       const running = agent?.running ?? false;
-      if (status.state !== "working") {
+      // Working and blocked cards both wait on what the agent started: track it, and wake the agent once it stops.
+      if (status.state !== "working" && status.state !== "blocked") {
         backing.set(status.agentId, { running, live: running, lastLiveAt: this.lastLive.get(status.agentId) });
         continue;
       }
-      working.add(status.agentId);
+      tracked.add(status.agentId);
       const self = await anyLive([status.agentId]);
       const descendants = await anyLive(descendantsOf(status.agentId));
       if (self || descendants) this.lastLive.set(status.agentId, now);
@@ -159,7 +160,7 @@ export class Liveness {
       else if (descendants || !self) this.awaitingDescendants.set(status.agentId, descendants);
     }
     for (const map of [this.awaitingDescendants, this.pendingWakes, this.lastLive]) {
-      for (const agentId of map.keys()) if (!working.has(agentId)) map.delete(agentId);
+      for (const agentId of map.keys()) if (!tracked.has(agentId)) map.delete(agentId);
     }
     return { backing, wake };
   }

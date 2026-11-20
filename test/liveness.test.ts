@@ -137,7 +137,17 @@ describe("Liveness", () => {
     expect(liveness.nextWakeAt()).toBeUndefined();
   });
 
-  it("wakes only agents whose card says working", async () => {
+  it("wakes a parent whose card says blocked on its children once they stop", async () => {
+    const { clock, look } = setup();
+    const family = (child: boolean) => [agent("parent"), agent("child", { parentAgentId: "parent", running: child })];
+    const blocked = [card("parent", "blocked")];
+    await look(family(true), blocked);
+    await look(family(false), blocked);
+    clock.now += WAKE_DELAY_MS;
+    expect((await look(family(false), blocked)).wake).toEqual(["parent"]);
+  });
+
+  it("wakes only agents whose card says working or blocked", async () => {
     const { clock, look } = setup();
     const family = (child: boolean) => [agent("parent"), agent("child", { parentAgentId: "parent", running: child })];
     await look(family(true));

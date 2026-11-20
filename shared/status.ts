@@ -45,17 +45,26 @@ export const StatusSchema = z.object({
 export type Status = z.infer<typeof StatusSchema>;
 
 /**
- * The card asks for the human and no turn has started since: a reply (or any other prompt) starts
- * a turn, which answers it even before the agent publishes again.
+ * A waiting or blocked card no turn has started since: a reply (or any other prompt, such as a
+ * child agent reporting back) starts a turn, which answers it even before the agent publishes again.
  */
-export function needsYou(status: Status, running: boolean): boolean {
+function stillWaiting(status: Status, running: boolean): boolean {
   if (status.state !== "waiting_on_you" && status.state !== "blocked") return false;
   return status.turnsSince === 0 && !(running && !status.setThisTurn);
 }
 
-/** A waiting or blocked card the human already replied to: a turn started after it was written. */
+/**
+ * The card asks for the human and is still unanswered. With the Blocked group experiment on, a blocked
+ * card waits on another workspace or another person instead, so it never needs you; off, it does, as before.
+ */
+export function needsYou(status: Status, running: boolean, blockedGroup = false): boolean {
+  if (status.state !== "waiting_on_you" && (blockedGroup || status.state !== "blocked")) return false;
+  return stillWaiting(status, running);
+}
+
+/** A waiting or blocked card a turn started after: the human replied, or a child agent reported back. */
 export function isAnswered(status: Status, running: boolean): boolean {
-  return status.state !== "working" && status.state !== "done" && !needsYou(status, running);
+  return status.state !== "working" && status.state !== "done" && !stillWaiting(status, running);
 }
 
 /** A card as the host's Overview shows it (FSH `PluginWorkspaceSummaryItemState.status`). */
@@ -114,13 +123,16 @@ export interface Backing {
   lastLiveAt?: number;
 }
 
-export type WorkState = "waiting" | "working" | "done";
+export const WORK_STATES = ["waiting", "blocked", "working", "done"] as const;
+export type WorkState = (typeof WORK_STATES)[number];
 
 /**
- * Where one workspace's work stands for Paseo's experimental agent-reported sidebar grouping, from
- * the cards of its agents: `waiting` while a card still waits on the human (see `needsYou`); `working`
+ * Where one workspace's work stands for Paseo's agent-reported sidebar grouping, from the cards of
+ * its agents: `waiting` while a card still waits on the human (see `needsYou`); `working`
  * while live work backs a `working` card, or within `WORKING_GRACE_MS` of its update or of the last live
- * work: a claim nothing backs is not believed. `null` leaves the workspace to Paseo's own turn state, as
+ * work: a claim nothing backs is not believed; `blocked` otherwise, while a blocked card is unanswered
+ * and `blockedGroup` (the experiment) is on (Paseo's Blocked group, not needs you; hosts before it drop
+ * the value and group by the turn). Off, an unanswered blocked card is `waiting`, as before. `null` leaves the workspace to Paseo's own turn state, as
  * for an answered question. A `done` card counts even when stale: agents skip status_set on
  * turns that change nothing (answering an ask, a reminder), and those turns must not drop the workspace
  * back to Ready to review.
@@ -129,17 +141,22 @@ export function workspaceWorkState(
   statuses: readonly Status[],
   now: number,
   backing: (agentId: string) => Backing = () => ({ running: false, live: false }),
+  { blockedGroup = false }: { blockedGroup?: boolean } = {},
 ): WorkState | null {
   const cards = statuses.filter((status) => !status.archived);
   if (cards.length === 0) return null;
-  if (cards.some((status) => needsYou(status, backing(status.agentId).running))) return "waiting";
-  if (cards.some((status) => status.state === "waiting_on_you" || status.state === "blocked")) return null;
+  if (cards.some((status) => needsYou(status, backing(status.agentId).running, blockedGroup))) return "waiting";
+  const isBlocked = (status: Status) => status.state === "blocked" && stillWaiting(status, backing(status.agentId).running);
+  const blocked = cards.some(isBlocked);
+  if (cards.some((status) => (status.state === "waiting_on_you" || status.state === "blocked") && !isBlocked(status))) return null;
   const heldWorking = cards.some((status) => {
     if (status.state !== "working") return false;
     const { live, lastLiveAt = 0 } = backing(status.agentId);
     return live || now - Math.max(Date.parse(status.updatedAt), lastLiveAt) < WORKING_GRACE_MS;
   });
+  // Work still moving outranks a card waiting on something else.
   if (heldWorking) return "working";
+  if (blocked) return "blocked";
   if (cards.every((status) => status.state === "done")) return "done";
   return null;
 }
@@ -147,12 +164,13 @@ export function workspaceWorkState(
 /**
  * The agent to report when a snoozed workspace needs you: its work state (`workspaceWorkState`) is
  * `waiting` or `done`, and the card that says so was written after the snooze began. A workspace that
- * already needed you when it was snoozed stays snoozed; the human snoozed it knowing that.
+ * already needed you when it was snoozed stays snoozed; the human snoozed it knowing that. With the
+ * Blocked group experiment on, blocked work waits on someone else, so it never wakes one.
  */
-export function needsYouSince(statuses: readonly Status[], state: WorkState | null, snoozedAt: string): string | null {
+export function needsYouSince(statuses: readonly Status[], state: WorkState | null, snoozedAt: string, blockedGroup = false): string | null {
   if (state !== "waiting" && state !== "done") return null;
   const says = (status: Status) =>
-    state === "waiting" ? status.state === "waiting_on_you" || status.state === "blocked" : status.state === "done";
+    state === "waiting" ? status.state === "waiting_on_you" || (!blockedGroup && status.state === "blocked") : status.state === "done";
   const since = Date.parse(snoozedAt);
   const newest = statuses
     .filter((status) => !status.archived && says(status) && Date.parse(status.updatedAt) > since)
@@ -183,7 +201,7 @@ export const listStatuses = defineRpc({
     agents: z.record(z.string(), z.object({ title: z.string().nullable(), running: z.boolean() })),
     workspaces: z.record(z.string(), z.string()),
     /** Per workspace with a card, for Paseo's sidebar grouping; only when asked for with `withWorkStates`. */
-    workStates: z.record(z.string(), z.enum(["waiting", "working", "done"]).nullable()).optional(),
+    workStates: z.record(z.string(), z.enum(WORK_STATES).nullable()).optional(),
   }),
 });
 
@@ -236,6 +254,8 @@ export function summarize(input: {
   /** Live agents with the workspace they are in. */
   agents: readonly { workspaceId: string; running: boolean }[];
   running: (agentId: string) => boolean;
+  /** The Blocked group experiment: blocked cards don't need you. */
+  blockedGroup?: boolean;
 }): Record<string, WorkspaceSummary> {
   const result: Record<string, WorkspaceSummary> = {};
   const at = (workspaceId: string) => (result[workspaceId] ??= { state: "done", waiting: 0 });
@@ -248,7 +268,7 @@ export function summarize(input: {
   }
   for (const status of input.statuses) {
     const summary = at(status.workspaceId);
-    if (needsYou(status, input.running(status.agentId))) {
+    if (needsYou(status, input.running(status.agentId), input.blockedGroup)) {
       if (!input.openAsks[status.workspaceId]?.includes(status.agentId)) summary.waiting += 1;
       raise(summary, "needs_you");
     } else if (status.state === "working") raise(summary, "working");
