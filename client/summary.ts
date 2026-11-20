@@ -4,7 +4,8 @@ import { age, POLL_MS, STATE_LABELS } from "./StatusView";
 
 // COMPAT(workspaceSummaryItem): FSH hosts have addWorkspaceSummaryItem (and `workState` from
 // fullstackhouse/paseo's agent-reported grouping, `status` from its Overview v2), but the npm SDK pin
-// doesn't type them yet.
+// doesn't type them yet. Hosts before the Blocked group drop `workState: "blocked"` and group the
+// workspace by its turn.
 // Older hosts lack it; Status then only shows its pills and row badge.
 interface SummaryState {
   label?: string;

@@ -14,7 +14,7 @@ Status is a [Paseo](https://paseo.sh) plugin. Each agent keeps a short, plain-la
 
 - **Goal.** The whole job and its overall progress, for someone opening the workspace cold ("Ship the record-page redesign as 7 stacked PRs; 4 merged"). It stays until the agent sends a new one, so it doesn't shrink to the latest step.
 - **Summary.** One or two sentences on where things stand right now, written for someone who skipped the transcript.
-- **State.** *working*, *waiting on you*, *blocked* or *done*.
+- **State.** *working*, *waiting on you* (you have to act), *blocked* (waiting on something else: another workspace or agent, a reviewer, CI) or *done*.
 - **Now.** What the agent is doing or waiting on this moment.
 - **Done.** Finished steps, each with its proof: "tests pass: 42/42", "PR #7 merged, CI green", and "not pushed" when that is true.
 - **Next.** What is left, in order, with what needs you marked.
@@ -38,7 +38,7 @@ Status is a [Paseo](https://paseo.sh) plugin. Each agent keeps a short, plain-la
 
 ## Snoozed workspaces
 
-Snooze a workspace whose agent is waiting on other agents, and it comes back when the work needs you. When a card in a snoozed workspace turns *waiting on you* or *done* after you snoozed it, the plugin tells Paseo the workspace needs you. Paseo treats that like a permission prompt: by default it wakes the workspace and notifies you (host Settings → Workspaces picks wake, count on Snoozed, or stay silent). A workspace you snoozed while it already needed you stays snoozed. Needs a Paseo host with `workspaceAttentionReport` (FSH builds).
+Snooze a workspace whose agent is waiting on other agents, and it comes back when the work needs you. When a card in a snoozed workspace turns *waiting on you* or *done* after you snoozed it, the plugin tells Paseo the workspace needs you. A *blocked* card does not: it waits on something other than you. Paseo treats that like a permission prompt: by default it wakes the workspace and notifies you (host Settings → Workspaces picks wake, count on Snoozed, or stay silent). A workspace you snoozed while it already needed you stays snoozed. Needs a Paseo host with `workspaceAttentionReport` (FSH builds).
 
 ## How it works
 
@@ -51,7 +51,7 @@ agent ──stdio MCP──▶ bridge.mjs ──HTTP 127.0.0.1──▶ plugin s
 
 - Every agent created after the plugin is installed gets a `status` MCP server with one tool, `status_set`. Its instructions tell the agent when to call it and how to write each field, so no `CLAUDE.md` edit is needed.
 - Each call replaces the agent's whole status, except the goal: a call that leaves it out keeps the previous one, and an empty goal clears it. The Overview shows the newest goal any agent in the workspace set, above the newest card. The plugin counts the turns that end without a call; that count is the staleness shown on the card.
-- **Sidebar grouping** (Paseo's experimental agent-reported grouping): a card waiting on the human groups its workspace as needing you, all-`done` cards as Done, and a `working` card as Working while live work backs it.
+- **Sidebar grouping** (Paseo's experimental agent-reported grouping): a card waiting on the human groups its workspace as needing you, an unanswered *blocked* card as Blocked (no needs-you badge; Paseo hosts before the Blocked group fall back to their own turn state), all-`done` cards as Done, and a `working` card as Working while live work backs it.
 - **Working only while work is live.** A `working` card holds the workspace in Working only while something live backs it: the agent itself running, its background work (shells, Monitor watches) or subagents, or any agent it started (by parent link, recursively, in any workspace) doing any of that. Without that, it holds for 5 more minutes after the card's update or the last live work, to bridge gaps between turns, then Paseo's own turn state decides (Ready to review / Done). Subagents are only visible as the host showing the agent's workspace as running, so another agent or a working terminal in the same workspace also holds the card. Heartbeats and schedules aren't visible to plugins, so an agent waiting on one drops out of Working after the 5 minutes.
   When the last agent a parent started stops while the parent sits idle with a `working` card, Paseo itself usually tells the parent (agents created with `create_agent` notify their parent when they finish). If a minute later nothing has woken the parent (no turn, no card update, no child live again), the plugin prompts it once to check its children and update its status.
 - The only text read from a transcript is a `paseo-status` block the agent was asked for. The card is only as current as the agent's last update, and the staleness says how current that is.

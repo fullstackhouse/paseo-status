@@ -227,8 +227,17 @@ describe("status", () => {
     expect(needsYou(store.get(AGENT)!, true)).toBe(false); // the human replied; the agent is running
     await service.turnEnded(AGENT);
     expect(needsYou(store.get(AGENT)!, false)).toBe(false); // that turn ended without a new status
-    await service.callTool(AGENT, "status_set", { ...status, state: "blocked" });
+    await service.callTool(AGENT, "status_set", { ...status, state: "waiting_on_you" });
     expect(needsYou(store.get(AGENT)!, false)).toBe(true);
+  });
+
+  it("a blocked card never needs the human, and is unanswered until a turn starts after it", async () => {
+    await service.callTool(AGENT, "status_set", { ...status, state: "blocked" });
+    expect(needsYou(store.get(AGENT)!, false)).toBe(false);
+    expect(isAnswered(store.get(AGENT)!, false)).toBe(false);
+    await service.turnEnded(AGENT);
+    expect(isAnswered(store.get(AGENT)!, false)).toBe(false);
+    expect(isAnswered(store.get(AGENT)!, true)).toBe(true);
   });
 });
 
@@ -289,6 +298,12 @@ describe("summarize", () => {
       running: () => false,
     });
     expect(result).toEqual({ "ws-a": { state: "needs_you", waiting: 2 } });
+  });
+
+  it("does not count a blocked card as needing you", () => {
+    const result = summarize({ statuses: [card("ws-a", "a1", "blocked")], openAsks: {}, agents: [], running: () => false });
+    expect(result).toEqual({ "ws-a": { state: "done", waiting: 0 } });
+    expect(rowBadgeLabel(result["ws-a"])).toBeNull();
   });
 
   it("treats a running agent as working and an answered card as no longer waiting", () => {
@@ -429,7 +444,18 @@ describe("workspaceWorkState", () => {
 
   it("reports waiting while a card waits on the human, over another agent's working card", () => {
     expect(workspaceWorkState([card({}), card({ agentId: "b", state: "waiting_on_you" })], now)).toBe("waiting");
-    expect(workspaceWorkState([card({ state: "blocked" })], now)).toBe("waiting");
+    expect(workspaceWorkState([card({ state: "blocked" }), card({ agentId: "b", state: "waiting_on_you" })], now)).toBe("waiting");
+  });
+
+  it("reports blocked, not waiting, while a main workspace's card waits on its child workspaces", () => {
+    expect(workspaceWorkState([card({ state: "blocked" })], now)).toBe("blocked");
+    expect(workspaceWorkState([card({ state: "blocked" }), card({ agentId: "b" })], now, () => live)).toBe("blocked");
+    expect(workspaceWorkState([card({ state: "blocked" }), card({ agentId: "b", state: "done" })], now)).toBe("blocked");
+  });
+
+  it("leaves a blocked card to Paseo once a turn started after it (a child reported back)", () => {
+    expect(workspaceWorkState([card({ state: "blocked", turnsSince: 1 })], now)).toBeNull();
+    expect(workspaceWorkState([card({ state: "blocked" })], now, () => ({ running: true, live: true }))).toBeNull();
   });
 
   it("leaves answered questions, archived cards and empty workspaces to Paseo", () => {
@@ -461,6 +487,13 @@ describe("needsYouSince", () => {
 
   it("leaves a workspace that already needed you when it was snoozed", () => {
     expect(needsYouSince([card({ updatedAt: "2026-11-17T09:00:00Z" })], "done", SNOOZED_AT)).toBeNull();
+  });
+
+  it("never wakes a workspace for a blocked card", () => {
+    expect(needsYouSince([card({ state: "blocked" })], "blocked", SNOOZED_AT)).toBeNull();
+    const blocked = card({ agentId: "a", state: "blocked", updatedAt: "2026-11-17T11:30:00Z" });
+    const waiting = card({ agentId: "b", state: "waiting_on_you" });
+    expect(needsYouSince([blocked, waiting], "waiting", SNOOZED_AT)).toBe("b");
   });
 
   it("leaves a workspace whose work is still going", () => {
