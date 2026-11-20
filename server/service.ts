@@ -35,7 +35,7 @@ export const TOOLS = [
 export const REFRESH_PROMPT =
   "[status] The human asked where things stand. Call status_set with your current status, then carry on with what you were doing, if anything.";
 
-/** Sent once when the last agent a parent started stops while the parent sits idle with a working card. */
+/** Sent once when the last agent a parent started stops while the parent sits idle with a working or blocked card. */
 export const WAKE_PROMPT =
   "[status] Every agent you started has stopped and nothing of yours is running, but your status still says working or blocked. Check what your child agents left, carry on if something remains, and call status_set with where things stand.";
 
@@ -156,7 +156,7 @@ export class StatusService {
     await this.courier.send(agentId, this.prompt(agentId));
   }
 
-  /** An idle agent's working card lost its last live child: ask it to look at its children and update. */
+  /** An idle agent's working or blocked card lost its last live child: ask it to look at its children and update. */
   async wake(agentId: string): Promise<{ sent: boolean }> {
     return this.refresh(agentId, { prompt: this.isEquipped(agentId) ? WAKE_PROMPT : FALLBACK_PROMPT });
   }
