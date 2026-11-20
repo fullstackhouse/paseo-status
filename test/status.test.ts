@@ -449,8 +449,12 @@ describe("workspaceWorkState", () => {
 
   it("reports blocked, not waiting, while a main workspace's card waits on its child workspaces", () => {
     expect(workspaceWorkState([card({ state: "blocked" })], now)).toBe("blocked");
-    expect(workspaceWorkState([card({ state: "blocked" }), card({ agentId: "b" })], now, () => live)).toBe("blocked");
+    expect(workspaceWorkState([card({ state: "blocked" }), card({ agentId: "b", updatedAt: "2026-11-01T00:00:00Z" })], now, () => idle)).toBe("blocked");
     expect(workspaceWorkState([card({ state: "blocked" }), card({ agentId: "b", state: "done" })], now)).toBe("blocked");
+  });
+
+  it("lets another agent's live work outrank a blocked card", () => {
+    expect(workspaceWorkState([card({ state: "blocked" }), card({ agentId: "b" })], now, (id) => (id === "b" ? live : idle))).toBe("working");
   });
 
   it("leaves a blocked card to Paseo once a turn started after it (a child reported back)", () => {

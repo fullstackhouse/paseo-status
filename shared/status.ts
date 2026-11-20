@@ -127,11 +127,10 @@ export type WorkState = (typeof WORK_STATES)[number];
 
 /**
  * Where one workspace's work stands for Paseo's agent-reported sidebar grouping, from the cards of
- * its agents: `waiting` while a card still waits on the human (see `needsYou`); `blocked` while a
- * blocked card is unanswered (Paseo's Blocked group, not needs you; hosts before it drop the value
- * and group by the turn); `working`
+ * its agents: `waiting` while a card still waits on the human (see `needsYou`); `working`
  * while live work backs a `working` card, or within `WORKING_GRACE_MS` of its update or of the last live
- * work: a claim nothing backs is not believed. `null` leaves the workspace to Paseo's own turn state, as
+ * work: a claim nothing backs is not believed; `blocked` otherwise, while a blocked card is unanswered
+ * (Paseo's Blocked group, not needs you; hosts before it drop the value and group by the turn). `null` leaves the workspace to Paseo's own turn state, as
  * for an answered question. A `done` card counts even when stale: agents skip status_set on
  * turns that change nothing (answering an ask, a reminder), and those turns must not drop the workspace
  * back to Ready to review.
@@ -144,14 +143,17 @@ export function workspaceWorkState(
   const cards = statuses.filter((status) => !status.archived);
   if (cards.length === 0) return null;
   if (cards.some((status) => needsYou(status, backing(status.agentId).running))) return "waiting";
-  if (cards.some((status) => status.state === "blocked" && stillWaiting(status, backing(status.agentId).running))) return "blocked";
-  if (cards.some((status) => status.state === "waiting_on_you" || status.state === "blocked")) return null;
+  const isBlocked = (status: Status) => status.state === "blocked" && stillWaiting(status, backing(status.agentId).running);
+  const blocked = cards.some(isBlocked);
+  if (cards.some((status) => (status.state === "waiting_on_you" || status.state === "blocked") && !isBlocked(status))) return null;
   const heldWorking = cards.some((status) => {
     if (status.state !== "working") return false;
     const { live, lastLiveAt = 0 } = backing(status.agentId);
     return live || now - Math.max(Date.parse(status.updatedAt), lastLiveAt) < WORKING_GRACE_MS;
   });
+  // Work still moving outranks a card waiting on something else.
   if (heldWorking) return "working";
+  if (blocked) return "blocked";
   if (cards.every((status) => status.state === "done")) return "done";
   return null;
 }
