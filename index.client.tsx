@@ -16,7 +16,7 @@ import { STATUS_CARD, StatusCardSchema, statusCardFor, type StatusCard } from ".
 const STATE_ICONS: Record<Status["state"], string> = {
   working: "LoaderCircle",
   waiting_on_you: "Hand",
-  blocked: "OctagonAlert",
+  blocked: "CirclePause",
   done: "CircleCheck",
 };
 

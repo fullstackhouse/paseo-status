@@ -21,3 +21,8 @@ export function useRpc(contract: Contract) {
 export function useAgent<T>(_agentId: string, selector: (agent: { workspaceId: string }) => T): T {
   return selector({ workspaceId: "api" });
 }
+
+/** Settings as stored defaults: every experiment off. */
+export function useSettings(_definition: unknown) {
+  return { status: "ready" as const, values: { blockedGroup: false }, saving: false, saveError: null, revision: "0" };
+}

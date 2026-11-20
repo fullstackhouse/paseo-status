@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { BACKGROUND_SKIP, FALLBACK_PROMPT, readOpenAskOwners, readWaiting, REFRESH_PROMPT, StatusService, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
-import { isAnswered, needsYou, needsYouSince, overviewStatus, rowBadgeLabel, workspaceOverviewStatus, summarize, workspaceWorkState, type Status } from "../shared/status";
+import { isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, rowBadgeLabel, workspaceOverviewStatus, summarize, workspaceWorkState, type Status } from "../shared/status";
 
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
@@ -328,6 +328,22 @@ describe("rowBadgeLabel", () => {
     expect(rowBadgeLabel({ state: "done", waiting: 0 })).toBeNull();
     expect(rowBadgeLabel({ state: "needs_you", waiting: 1 })).toBe("needs you");
     expect(rowBadgeLabel({ state: "needs_you", waiting: 6 })).toBe("needs you (6)");
+  });
+});
+
+describe("stateTone", () => {
+  const card = (state: Status["state"]): Status => ({ agentId: AGENT, workspaceId: WS, state, tldr: "t", done: [], next: [], updatedAt: "2026-11-20T00:00:00Z", turnsSince: 0 });
+
+  it("reads a blocked card calm only with the Blocked group experiment on", () => {
+    expect(stateTone(card("blocked"), false, false)).toBe("warn");
+    expect(stateTone(card("blocked"), false, true)).toBe("muted");
+  });
+
+  it("keeps the other states as they were", () => {
+    expect(stateTone(card("waiting_on_you"), false, true)).toBe("warn");
+    expect(stateTone(card("done"), false, false)).toBe("good");
+    expect(stateTone(card("working"), false, false)).toBe("muted");
+    expect(stateTone(card("waiting_on_you"), true, false)).toBe("muted");
   });
 });
 
