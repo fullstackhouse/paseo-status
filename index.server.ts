@@ -17,10 +17,11 @@ import { experimentSettings } from "./shared/settings";
 export default function contribute(server: PluginServerContext) {
   const experiments = server.registerSettings(experimentSettings);
   /** Settings → Plugins → Status → Experimental: blocked cards go to Paseo's Blocked group instead of needing you. */
-  const blockedGroup = async () => {
-    const state = await experiments.read();
-    return state.status === "ready" && state.values.blockedGroup;
-  };
+  const blockedGroup = (): Promise<boolean> =>
+    experiments.read().then(
+      (state) => state.status === "ready" && state.values.blockedGroup,
+      () => false, // An unreadable setting is the default: off.
+    );
   const dir = dataDir();
   // Sibling plugin's data, read for the "waiting on you" lines when it is installed.
   const asksDir = join(dirname(dir), "asks");
@@ -133,9 +134,9 @@ export default function contribute(server: PluginServerContext) {
     }
     return backing;
   };
-  const workStates = async (api: PaseoApi): Promise<Record<string, WorkState | null>> => {
+  const workStates = async (api: PaseoApi, blocked?: boolean): Promise<Record<string, WorkState | null>> => {
     const backing = await assess(api);
-    const blocked = await blockedGroup();
+    blocked ??= await blockedGroup();
     const byWorkspace = new Map<string, ReturnType<StatusStore["list"]>>();
     for (const status of store.list()) byWorkspace.set(status.workspaceId, [...(byWorkspace.get(status.workspaceId) ?? []), status]);
     const now = Date.now();
@@ -152,8 +153,8 @@ export default function contribute(server: PluginServerContext) {
   const reportSnoozedNeedingYou = async (api: PaseoApi) => {
     const snoozed = await snoozedWorkspaces(api);
     if (snoozed.length === 0) return;
-    const states = await workStates(api);
     const blocked = await blockedGroup();
+    const states = await workStates(api, blocked);
     for (const workspace of snoozed) {
       const agentId = needsYouSince(store.list(workspace.id), states[workspace.id] ?? null, workspace.snoozedAt, blocked);
       if (agentId && (await reportNeedsYou(api, workspace.id, agentId))) {
