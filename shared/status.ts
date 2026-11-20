@@ -67,6 +67,14 @@ export function isAnswered(status: Status, running: boolean): boolean {
   return status.state !== "working" && status.state !== "done" && !stillWaiting(status, running);
 }
 
+/** How loud a card's state badge reads. A blocked card needs you unless the Blocked group experiment is on. */
+export function stateTone(status: Status, answered: boolean, blockedGroup: boolean): "muted" | "warn" | "good" {
+  if (answered) return "muted";
+  if (status.state === "waiting_on_you") return "warn";
+  if (status.state === "blocked") return blockedGroup ? "muted" : "warn";
+  return status.state === "done" ? "good" : "muted";
+}
+
 /** A card as the host's Overview shows it (FSH `PluginWorkspaceSummaryItemState.status`). */
 export interface OverviewStatus {
   state: Status["state"];

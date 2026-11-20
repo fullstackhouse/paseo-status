@@ -24,5 +24,5 @@ export function useAgent<T>(_agentId: string, selector: (agent: { workspaceId: s
 
 /** Settings as stored defaults: every experiment off. */
 export function useSettings(_definition: unknown) {
-  return { status: "ready" as const, values: { blockedGroup: false }, saving: false, revision: 0 };
+  return { status: "ready" as const, values: { blockedGroup: false }, saving: false, saveError: null, revision: "0" };
 }

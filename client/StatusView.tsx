@@ -4,7 +4,7 @@ import { Icon, ScrollView, useToast } from "@getpaseo/plugin/client/react-native
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { isAnswered, listStatuses, refreshAll, refreshStatus, STALE_TURNS, type SilentAgent, type Status, type Waiting } from "../shared/status";
+import { isAnswered, listStatuses, stateTone, refreshAll, refreshStatus, STALE_TURNS, type SilentAgent, type Status, type Waiting } from "../shared/status";
 import { experimentSettings } from "../shared/settings";
 import { isCurrent, type StatusCard as StatusCardData } from "../shared/timeline";
 
@@ -185,17 +185,7 @@ function StatusCard(props: {
   const experiments = useSettings(experimentSettings);
   // With the Blocked group on, blocked waits on someone else: calm, like the host's Blocked group. Off, it needs you.
   const blockedGroup = experiments.status === "ready" && experiments.values.blockedGroup;
-  const stateTone = answered
-    ? styles.muted
-    : status.state === "blocked"
-      ? blockedGroup
-        ? styles.muted
-        : styles.warn
-      : status.state === "waiting_on_you"
-        ? styles.warn
-        : status.state === "done"
-          ? styles.good
-          : styles.muted;
+  const tone = styles[stateTone(status, answered, blockedGroup)];
 
   return (
     <View style={styles.card}>
@@ -204,7 +194,7 @@ function StatusCard(props: {
         <Text style={styles.agent} numberOfLines={1}>
           {heading ?? agent?.title ?? status.agentId}
         </Text>
-        <Text style={[styles.badge, stateTone]}>{answered ? ANSWERED_LABEL : STATE_LABELS[status.state]}</Text>
+        <Text style={[styles.badge, tone]}>{answered ? ANSWERED_LABEL : STATE_LABELS[status.state]}</Text>
       </View>
       {status.goal ? <Line styles={styles} label="Goal" text={status.goal} /> : null}
       <Text style={styles.tldr}>{status.tldr}</Text>
