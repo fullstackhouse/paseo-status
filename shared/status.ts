@@ -61,7 +61,7 @@ export function needsYou(status: Status, running: boolean): boolean {
   return status.state === "waiting_on_you" && stillWaiting(status, running);
 }
 
-/** A waiting or blocked card the human already replied to: a turn started after it was written. */
+/** A waiting or blocked card a turn started after: the human replied, or a child agent reported back. */
 export function isAnswered(status: Status, running: boolean): boolean {
   return status.state !== "working" && status.state !== "done" && !stillWaiting(status, running);
 }

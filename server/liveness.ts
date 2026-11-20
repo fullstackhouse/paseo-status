@@ -133,7 +133,8 @@ export class Liveness {
       if (status.archived) continue;
       const agent = byId.get(status.agentId);
       const running = agent?.running ?? false;
-      if (status.state !== "working") {
+      // Working and blocked cards both wait on what the agent started: track it, and wake the agent once it stops.
+      if (status.state !== "working" && status.state !== "blocked") {
         backing.set(status.agentId, { running, live: running, lastLiveAt: this.lastLive.get(status.agentId) });
         continue;
       }

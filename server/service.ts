@@ -37,7 +37,7 @@ export const REFRESH_PROMPT =
 
 /** Sent once when the last agent a parent started stops while the parent sits idle with a working card. */
 export const WAKE_PROMPT =
-  "[status] Every agent you started has stopped and nothing of yours is running, but your status still says working. Check what your child agents left, carry on if something remains, and call status_set with where things stand.";
+  "[status] Every agent you started has stopped and nothing of yours is running, but your status still says working or blocked. Check what your child agents left, carry on if something remains, and call status_set with where things stand.";
 
 /** For agents created before the plugin was installed: they have no tool, so the status rides in their reply. */
 export const FALLBACK_PROMPT = `[status] The human asked where things stand, for a status card shown outside this chat. End your reply with a fenced code block tagged paseo-status holding one JSON object:
