@@ -16,9 +16,6 @@ const PASEO = join(BIN, "paseo");
 // Recording reads its key from e2e/.env (gitignored) when it is not in the environment.
 if (existsSync(join(E2E, ".env"))) process.loadEnvFile(join(E2E, ".env"));
 
-/** The Paseo host fsh-host.mjs installed: its release tag, or `src:<checkout>` with PASEO_HOST_SRC. */
-export const HOST = existsSync(join(E2E, "node_modules", ".fsh-host")) ? readFileSync(join(E2E, "node_modules", ".fsh-host"), "utf8") : "";
-
 export const MODE: Mode = process.env.E2E_MODE === "record" ? "record" : "replay";
 
 export type Provider = "claude" | "codex";
