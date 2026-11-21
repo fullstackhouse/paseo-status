@@ -15,8 +15,7 @@ export const INSTRUCTIONS = `status_set publishes where your work stands to a st
   - now: what you are doing or waiting on this moment.
   - done: finished steps, each with its proof ("tests pass: 105/105", "PR #22 open, CI green"). Say "not committed" or "not pushed" when that is true.
   - next: what is left, in order. Mark what needs the human.
-  - state: working, waiting_on_you, blocked or done. Use working while you, a heartbeat or a background job still own the next step; waiting_on_you when the human has to act; blocked only when nothing can move until another workspace or another person acts (a child workspace still running, a peer's code review), not for CI, builds, deploys or your own subagents, which are working; done once nothing is left.
-  - blockedBy: with state blocked, what you wait on, each {kind, ref, reason?}: pr (ref "owner/repo#N" or URL), agent (agent id), workspace (workspace id), person (a name) or other.
+  - state: working, waiting_on_you, blocked or done. Use working while you, a heartbeat or a background job still own the next step; waiting_on_you when the human has to act; blocked only when nothing can move until another workspace or another person acts (a child workspace still running, a peer's code review), not for CI, builds, deploys or your own subagents, which are working; done once nothing is left. When blocked, list what blocks you in blockedBy: {kind, ref, reason?} with kind pr (ref "owner/repo#N" or URL), agent (agent id), workspace (workspace id), person (a name) or other.
 - Messages starting with [status] are the human asking for an update: call status_set.`;
 
 const SetInput = StatusInputSchema;
