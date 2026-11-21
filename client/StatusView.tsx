@@ -3,8 +3,8 @@ import { useAgent, useRpc, useSettings } from "@getpaseo/plugin/client";
 import { Icon, ScrollView, useToast } from "@getpaseo/plugin/client/react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
-import { isAnswered, listStatuses, stateTone, refreshAll, refreshStatus, STALE_TURNS, type SilentAgent, type Status, type Waiting } from "../shared/status";
+import { Linking, Pressable, Text, View } from "react-native";
+import { isAnswered, listStatuses, type BlockerView, stateTone, refreshAll, refreshStatus, STALE_TURNS, type SilentAgent, type Status, type Waiting } from "../shared/status";
 import { experimentSettings } from "../shared/settings";
 import { isCurrent, type StatusCard as StatusCardData } from "../shared/timeline";
 
@@ -46,7 +46,7 @@ export function StatusView({ theme, compact, workspaceId, openAgent }: ViewProps
 
   if (query.isPending) return <Message styles={styles} text="Loading status…" />;
   if (query.isError) return <Message styles={styles} text={`Could not load status: ${query.error.message}`} danger />;
-  const { statuses, waiting, silent, agents, workspaces } = query.data;
+  const { statuses, waiting, silent, agents, workspaces, blockers = {} } = query.data;
   const toolbar = <Toolbar styles={styles} workspaceId={workspaceId} statuses={statuses} silent={silent} />;
   if (statuses.length === 0 && silent.length === 0) {
     return (
@@ -70,6 +70,7 @@ export function StatusView({ theme, compact, workspaceId, openAgent }: ViewProps
               status={status}
               agent={agents[status.agentId]}
               waiting={waiting.filter((ask) => ask.agentId === status.agentId)}
+              blockers={blockers[status.agentId]}
               styles={styles}
               theme={theme}
               openAgent={openAgent}
@@ -162,13 +163,15 @@ function StatusCard(props: {
   status: Status;
   agent?: AgentInfo;
   waiting: Waiting[];
+  /** What a blocked card waits on, resolved on the server. */
+  blockers?: BlockerView[];
   styles: Styles;
   theme: PluginTheme;
   openAgent?: (agentId: string) => void;
   /** Replaces the agent's title, e.g. in the agent's own chat where the title is redundant. */
   heading?: string;
 }) {
-  const { status, agent, waiting, styles, theme, openAgent, heading } = props;
+  const { status, agent, waiting, blockers = [], styles, theme, openAgent, heading } = props;
   const refresh = useRpc(refreshStatus);
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -202,6 +205,7 @@ function StatusCard(props: {
       {waiting.map((ask) => (
         <Line key={ask.id} styles={styles} label="Your move" text={`${ask.id} ${ask.title}`} tone={styles.warn} />
       ))}
+      {status.state === "blocked" && blockers.length > 0 && <BlockedBy styles={styles} blockers={blockers} openAgent={openAgent} />}
       {status.done.length > 0 && <List styles={styles} title="DONE" mark="✓" items={status.done} />}
       {status.next.length > 0 && <List styles={styles} title="NEXT" mark="→" items={status.next} />}
       <View style={styles.footer}>
@@ -231,6 +235,41 @@ function Line({ styles, label, text, tone }: { styles: Styles; label: string; te
       <Text style={[styles.label, tone]}>{`${label}: `}</Text>
       {text}
     </Text>
+  );
+}
+
+/** What a blocked card waits on: a PR opens in the browser, an agent opens its chat where the view can. */
+function BlockedBy({ styles, blockers, openAgent }: { styles: Styles; blockers: BlockerView[]; openAgent?: (agentId: string) => void }) {
+  return (
+    <View style={styles.list}>
+      <Text style={styles.sectionTitle}>BLOCKED BY</Text>
+      {blockers.map((blocker, index) => {
+        const open = blocker.url
+          ? () => void Linking.openURL(blocker.url!)
+          : blocker.agentId && openAgent
+            ? () => openAgent(blocker.agentId!)
+            : undefined;
+        const tone = blocker.tone === "success" ? styles.good : blocker.tone === "danger" ? styles.bad : blocker.tone === "warning" ? styles.warn : styles.muted;
+        const row = (
+          <>
+            <Text style={styles.mark}>⊘</Text>
+            <Text style={styles.itemText} numberOfLines={2}>
+              {blocker.label}
+              {blocker.detail ? <Text style={tone}>{` · ${blocker.detail}`}</Text> : null}
+            </Text>
+          </>
+        );
+        return open ? (
+          <Pressable key={index} accessibilityRole="link" accessibilityLabel={blocker.label} onPress={open} style={styles.item}>
+            {row}
+          </Pressable>
+        ) : (
+          <View key={index} style={styles.item}>
+            {row}
+          </View>
+        );
+      })}
+    </View>
   );
 }
 
@@ -278,6 +317,7 @@ export function AgentStatus(props: { theme: PluginTheme; compact: boolean; works
           status={status}
           agent={query.data.agents[agentId]}
           waiting={query.data.waiting.filter((ask) => ask.agentId === agentId)}
+          blockers={query.data.blockers?.[agentId]}
           styles={styles}
           theme={theme}
         />
@@ -305,6 +345,7 @@ export function InlineStatus(props: { theme: PluginTheme; compact: boolean; agen
         status={live}
         agent={query.data?.agents[agentId]}
         waiting={query.data?.waiting.filter((ask) => ask.agentId === agentId) ?? []}
+        blockers={query.data?.blockers?.[agentId]}
         styles={styles}
         theme={theme}
         heading="Status"

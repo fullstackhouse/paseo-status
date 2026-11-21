@@ -5,6 +5,32 @@ export const STATES = ["working", "waiting_on_you", "blocked", "done"] as const;
 /** Turns without an update after which a card counts as stale: flagged, and refreshed when the panel opens. */
 export const STALE_TURNS = 2;
 
+export const BLOCKER_KINDS = ["pr", "agent", "workspace", "person", "other"] as const;
+
+/**
+ * One thing a blocked card waits on, as the agent names it. `ref`: a PR as `owner/repo#N` or its URL,
+ * an agent id (full or a unique prefix), a workspace id, or a person's name.
+ */
+export const BlockerSchema = z.object({
+  kind: z.enum(BLOCKER_KINDS),
+  ref: z.string().trim().min(1).max(300),
+  reason: z.string().max(300).optional(),
+});
+export type Blocker = z.infer<typeof BlockerSchema>;
+
+/** A blocker as the server resolved it for display (FSH `PluginWorkspaceBlocker`). */
+export const BlockerViewSchema = z.object({
+  kind: z.enum(BLOCKER_KINDS),
+  label: z.string(),
+  /** Short facts, such as "open · checks failing", or the agent's reason. */
+  detail: z.string().optional(),
+  url: z.string().optional(),
+  agentId: z.string().optional(),
+  workspaceId: z.string().optional(),
+  tone: z.enum(["success", "warning", "danger", "muted"]).optional(),
+});
+export type BlockerView = z.infer<typeof BlockerViewSchema>;
+
 /** What an agent sends with status_set (or in a paseo-status reply block). */
 export const StatusInputSchema = z.object({
   state: z.enum(STATES),
@@ -14,6 +40,8 @@ export const StatusInputSchema = z.object({
   now: z.string().max(400).optional(),
   done: z.array(z.string().min(1).max(300)).max(12).default([]),
   next: z.array(z.string().min(1).max(300)).max(12).default([]),
+  /** What a blocked card waits on. Replaced on each call; shown only while the state is blocked. */
+  blockedBy: z.array(BlockerSchema).max(8).optional(),
 });
 export type StatusInput = z.infer<typeof StatusInputSchema>;
 
@@ -31,6 +59,8 @@ export const StatusSchema = z.object({
   done: z.array(z.string()),
   /** What is left, in order. */
   next: z.array(z.string()),
+  /** What a blocked card waits on, as the agent named it. */
+  blockedBy: z.array(BlockerSchema).optional(),
   updatedAt: z.string(),
   /** Turns that ended since the agent last called status_set. */
   turnsSince: z.number(),
@@ -92,9 +122,11 @@ export interface OverviewStatus {
   now?: string;
   /** Epoch ms of the card's last update. */
   updatedAt: number;
+  /** What a blocked card waits on, resolved for display. Only while the state is blocked; older hosts drop it. */
+  blockedBy?: BlockerView[];
 }
 
-export function overviewStatus(status: Status, running: boolean, blockedGroup = false): OverviewStatus {
+export function overviewStatus(status: Status, running: boolean, blockedGroup = false, blockers: readonly BlockerView[] = []): OverviewStatus {
   return {
     state: status.state,
     ...(isAnswered(status, running, blockedGroup) ? { answered: true } : {}),
@@ -102,6 +134,7 @@ export function overviewStatus(status: Status, running: boolean, blockedGroup = 
     summary: status.tldr,
     ...(status.now ? { now: status.now } : {}),
     updatedAt: Date.parse(status.updatedAt),
+    ...(status.state === "blocked" && blockers.length > 0 ? { blockedBy: [...blockers] } : {}),
   };
 }
 
@@ -113,10 +146,11 @@ export function workspaceOverviewStatus(
   cards: readonly Status[],
   running: (agentId: string) => boolean,
   blockedGroup = false,
+  blockers: Readonly<Record<string, readonly BlockerView[]>> = {},
 ): OverviewStatus | null {
   const latest = newestCard(cards);
   if (!latest) return null;
-  const status = overviewStatus(latest, running(latest.agentId), blockedGroup);
+  const status = overviewStatus(latest, running(latest.agentId), blockedGroup, blockers[latest.agentId]);
   const goal = newestCard(cards.filter((card) => card.goal))?.goal;
   return goal ? { ...status, goal } : status;
 }
@@ -222,6 +256,8 @@ export const listStatuses = defineRpc({
     workStates: z.record(z.string(), z.enum(WORK_STATES).nullable()).optional(),
     /** The Blocked group experiment, so clients mark blocked cards answered the way the server groups them. Older servers omit it: off. */
     blockedGroup: z.boolean().optional(),
+    /** Per agent whose card is blocked and names what it waits on, resolved on the server (PR state, agent titles). */
+    blockers: z.record(z.string(), z.array(BlockerViewSchema)).optional(),
   }),
 });
 

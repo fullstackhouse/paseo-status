@@ -1,8 +1,9 @@
 import { dirname, join } from "node:path";
 import type { PaseoApi } from "@getpaseo/client";
 import { latestTurn, type PluginServerContext } from "@getpaseo/plugin/server";
-import { listStatuses, needsYouSince, refreshAll, refreshStatus, summarize, summarizeWorkspaces, workspaceWorkState, type SilentAgent, type WorkState } from "./shared/status";
+import { listStatuses, needsYouSince, type BlockerView, type Status, refreshAll, refreshStatus, summarize, summarizeWorkspaces, workspaceWorkState, type SilentAgent, type WorkState } from "./shared/status";
 import { AgentDirectory, pickCaller } from "./server/agents";
+import { BlockerResolver, ghPullRequest, type AgentFacts } from "./server/blockers";
 import { installBridge } from "./server/bridge";
 import { Equipped } from "./server/equipped";
 import { listen } from "./server/listener";
@@ -85,6 +86,33 @@ export default function contribute(server: PluginServerContext) {
   const isRunning = (agent: AgentPayload) => agent.status === "running" || agent.status === "initializing";
   const liveAgents = async (api: PaseoApi): Promise<AgentPayload[]> =>
     (await api.agents.list()).entries.map(({ agent }) => agent).filter((agent) => !agent.archivedAt && !agent.internal);
+
+  const blockerResolver = new BlockerResolver({
+    pullRequest: ghPullRequest,
+    agents: async () => {
+      const api = requirePaseo();
+      const found: AgentFacts[] = [];
+      let cursor: string | undefined;
+      do {
+        const { entries, pageInfo } = await api.agents.list({ includeBackground: true, filter: { includeBackground: true }, page: { limit: 200, cursor } });
+        for (const { agent } of entries) {
+          if (!agent.archivedAt) found.push({ id: agent.id, title: agent.title ?? null, workspaceId: agent.workspaceId ?? null, status: agent.status });
+        }
+        cursor = pageInfo.hasMore ? (pageInfo.nextCursor ?? undefined) : undefined;
+      } while (cursor);
+      return found;
+    },
+    workspace: async (id) => {
+      const workspace = await requirePaseo().workspaces.ref(id).refresh();
+      return workspace ? { id: workspace.id, title: workspace.title || workspace.name || null } : null;
+    },
+  });
+  /** What each blocked card waits on, resolved for display; cards in other states show none. */
+  const resolveBlockers = async (statuses: readonly Status[]): Promise<Record<string, BlockerView[]>> => {
+    const blocked = statuses.filter((status) => status.state === "blocked" && status.blockedBy?.length);
+    const resolved = await Promise.all(blocked.map(async (status) => [status.agentId, await blockerResolver.resolve(status.blockedBy!)] as const));
+    return Object.fromEntries(resolved);
+  };
 
   /** Every non-archived agent on the host, background workspaces included: any can be a descendant. */
   const everyAgent = async (api: PaseoApi): Promise<LiveAgent[]> => {
@@ -218,7 +246,11 @@ export default function contribute(server: PluginServerContext) {
             return undefined;
           })
         : undefined;
-    return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent, agents, workspaces, workStates: states, blockedGroup: await blockedGroup() };
+    const blockers = await resolveBlockers(statuses).catch((error) => {
+      console.error("[status] could not resolve blockers", error);
+      return {};
+    });
+    return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent, agents, workspaces, workStates: states, blockedGroup: await blockedGroup(), blockers };
   });
   server.handle(summarizeWorkspaces, async (_input, { paseo: api }) => {
     capture(api);
@@ -253,6 +285,8 @@ export default function contribute(server: PluginServerContext) {
     },
     // The same Refresh the UI does, for scripts and terminal use.
     "/refresh": async (input) => service.refresh(refreshStatus.input.parse(input).agentId),
+    // What each blocked card waits on, as the Overview shows it, for checking it from a terminal.
+    "/blockers": async () => ({ blockers: await resolveBlockers(store.list()) }),
     // What the sidebar grouping gets per workspace, for checking it from a terminal.
     "/work-states": async () => ({ workStates: await workStates(requirePaseo()) }),
   });
