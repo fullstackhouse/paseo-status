@@ -218,7 +218,7 @@ export default function contribute(server: PluginServerContext) {
             return undefined;
           })
         : undefined;
-    return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent, agents, workspaces, workStates: states };
+    return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent, agents, workspaces, workStates: states, blockedGroup: await blockedGroup() };
   });
   server.handle(summarizeWorkspaces, async (_input, { paseo: api }) => {
     capture(api);

@@ -181,10 +181,10 @@ function StatusCard(props: {
     onError: (error) => toast.error(error instanceof Error ? error.message : String(error)),
   });
   const stale = status.turnsSince >= STALE_TURNS;
-  const answered = isAnswered(status, agent?.running ?? false);
   const experiments = useSettings(experimentSettings);
   // With the Blocked group on, blocked waits on someone else: calm, like the host's Blocked group. Off, it needs you.
   const blockedGroup = experiments.status === "ready" && experiments.values.blockedGroup;
+  const answered = isAnswered(status, agent?.running ?? false, blockedGroup);
   const tone = styles[stateTone(status, answered, blockedGroup)];
 
   return (

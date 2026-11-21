@@ -47,9 +47,12 @@ export type Status = z.infer<typeof StatusSchema>;
 /**
  * A waiting or blocked card no turn has started since: a reply (or any other prompt, such as a
  * child agent reporting back) starts a turn, which answers it even before the agent publishes again.
+ * With the Blocked group experiment on, a blocked card waits on another workspace or person, so no
+ * turn answers it (reminders and ask checks run turns too); only the agent's next `status_set` does.
  */
-function stillWaiting(status: Status, running: boolean): boolean {
+function stillWaiting(status: Status, running: boolean, blockedGroup = false): boolean {
   if (status.state !== "waiting_on_you" && status.state !== "blocked") return false;
+  if (blockedGroup && status.state === "blocked") return true;
   return status.turnsSince === 0 && !(running && !status.setThisTurn);
 }
 
@@ -62,9 +65,12 @@ export function needsYou(status: Status, running: boolean, blockedGroup = false)
   return stillWaiting(status, running);
 }
 
-/** A waiting or blocked card a turn started after: the human replied, or a child agent reported back. */
-export function isAnswered(status: Status, running: boolean): boolean {
-  return status.state !== "working" && status.state !== "done" && !stillWaiting(status, running);
+/**
+ * A waiting or blocked card a turn started after: the human replied, or a child agent reported back.
+ * With the Blocked group experiment on, a blocked card is never answered (see `stillWaiting`).
+ */
+export function isAnswered(status: Status, running: boolean, blockedGroup = false): boolean {
+  return status.state !== "working" && status.state !== "done" && !stillWaiting(status, running, blockedGroup);
 }
 
 /** How loud a card's state badge reads. A blocked card needs you unless the Blocked group experiment is on. */
@@ -88,10 +94,10 @@ export interface OverviewStatus {
   updatedAt: number;
 }
 
-export function overviewStatus(status: Status, running: boolean): OverviewStatus {
+export function overviewStatus(status: Status, running: boolean, blockedGroup = false): OverviewStatus {
   return {
     state: status.state,
-    ...(isAnswered(status, running) ? { answered: true } : {}),
+    ...(isAnswered(status, running, blockedGroup) ? { answered: true } : {}),
     ...(status.goal ? { goal: status.goal } : {}),
     summary: status.tldr,
     ...(status.now ? { now: status.now } : {}),
@@ -103,10 +109,14 @@ export function overviewStatus(status: Status, running: boolean): OverviewStatus
  * The Overview status for a workspace: its newest card, with the newest goal any agent there set,
  * since a helper agent's card often has none.
  */
-export function workspaceOverviewStatus(cards: readonly Status[], running: (agentId: string) => boolean): OverviewStatus | null {
+export function workspaceOverviewStatus(
+  cards: readonly Status[],
+  running: (agentId: string) => boolean,
+  blockedGroup = false,
+): OverviewStatus | null {
   const latest = newestCard(cards);
   if (!latest) return null;
-  const status = overviewStatus(latest, running(latest.agentId));
+  const status = overviewStatus(latest, running(latest.agentId), blockedGroup);
   const goal = newestCard(cards.filter((card) => card.goal))?.goal;
   return goal ? { ...status, goal } : status;
 }
@@ -154,7 +164,7 @@ export function workspaceWorkState(
   const cards = statuses.filter((status) => !status.archived);
   if (cards.length === 0) return null;
   if (cards.some((status) => needsYou(status, backing(status.agentId).running, blockedGroup))) return "waiting";
-  const isBlocked = (status: Status) => status.state === "blocked" && stillWaiting(status, backing(status.agentId).running);
+  const isBlocked = (status: Status) => status.state === "blocked" && stillWaiting(status, backing(status.agentId).running, blockedGroup);
   const blocked = cards.some(isBlocked);
   if (cards.some((status) => (status.state === "waiting_on_you" || status.state === "blocked") && !isBlocked(status))) return null;
   const heldWorking = cards.some((status) => {
@@ -210,6 +220,8 @@ export const listStatuses = defineRpc({
     workspaces: z.record(z.string(), z.string()),
     /** Per workspace with a card, for Paseo's sidebar grouping; only when asked for with `withWorkStates`. */
     workStates: z.record(z.string(), z.enum(WORK_STATES).nullable()).optional(),
+    /** The Blocked group experiment, so clients mark blocked cards answered the way the server groups them. Older servers omit it: off. */
+    blockedGroup: z.boolean().optional(),
   }),
 });
 

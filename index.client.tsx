@@ -51,10 +51,10 @@ function PillPopover({ theme, layout, workspaceId, ...context }: PluginButtonCon
 }
 
 /** The pill's face: the card's state and age, or a nudge when there is no card. */
-function pillFace(status: Status | undefined, running: boolean): { label: string; icon: string } {
+function pillFace(status: Status | undefined, running: boolean, blockedGroup = false): { label: string; icon: string } {
   if (!status) return { label: "No status", icon: "Gauge" };
   const stale = status.turnsSince >= STALE_TURNS ? " · stale" : "";
-  const answered = isAnswered(status, running);
+  const answered = isAnswered(status, running, blockedGroup);
   return {
     label: `${answered ? ANSWERED_LABEL : STATE_LABELS[status.state]} · ${age(status.updatedAt)}${stale}`,
     icon: answered ? "MessageCircleReply" : STATE_ICONS[status.state],
@@ -84,9 +84,9 @@ function contributePills(client: PluginClientContext): () => void {
   };
 
   const refreshFaces = async () => {
-    const { statuses, agents } = await client.rpc(listStatuses, {});
+    const { statuses, agents, blockedGroup = false } = await client.rpc(listStatuses, {});
     const byAgent = new Map(statuses.map((status) => [status.agentId, status]));
-    for (const [agentId, pill] of pills) pill.update(pillFace(byAgent.get(agentId), agents[agentId]?.running ?? false));
+    for (const [agentId, pill] of pills) pill.update(pillFace(byAgent.get(agentId), agents[agentId]?.running ?? false, blockedGroup));
   };
   const timer = setInterval(() => void refreshFaces().catch(() => undefined), POLL_MS * 2);
 
