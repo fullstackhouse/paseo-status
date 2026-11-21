@@ -3,7 +3,7 @@ import type { PaseoApi } from "@getpaseo/client";
 import { latestTurn, type PluginServerContext } from "@getpaseo/plugin/server";
 import { listStatuses, needsYouSince, type BlockerView, type Status, refreshAll, refreshStatus, summarize, summarizeWorkspaces, workspaceWorkState, type SilentAgent, type WorkState } from "./shared/status";
 import { AgentDirectory, pickCaller } from "./server/agents";
-import { BlockerResolver, ghPullRequest } from "./server/blockers";
+import { BlockerResolver, ghPullRequest, type AgentFacts } from "./server/blockers";
 import { installBridge } from "./server/bridge";
 import { Equipped } from "./server/equipped";
 import { listen } from "./server/listener";
@@ -90,11 +90,17 @@ export default function contribute(server: PluginServerContext) {
   const blockerResolver = new BlockerResolver({
     pullRequest: ghPullRequest,
     agents: async () => {
-      const { entries } = await requirePaseo().agents.list({ includeBackground: true, filter: { includeBackground: true }, page: { limit: 500 } });
-      return entries
-        .map(({ agent }) => agent)
-        .filter((agent) => !agent.archivedAt)
-        .map((agent) => ({ id: agent.id, title: agent.title ?? null, workspaceId: agent.workspaceId ?? null, status: agent.status }));
+      const api = requirePaseo();
+      const found: AgentFacts[] = [];
+      let cursor: string | undefined;
+      do {
+        const { entries, pageInfo } = await api.agents.list({ includeBackground: true, filter: { includeBackground: true }, page: { limit: 200, cursor } });
+        for (const { agent } of entries) {
+          if (!agent.archivedAt) found.push({ id: agent.id, title: agent.title ?? null, workspaceId: agent.workspaceId ?? null, status: agent.status });
+        }
+        cursor = pageInfo.hasMore ? (pageInfo.nextCursor ?? undefined) : undefined;
+      } while (cursor);
+      return found;
     },
     workspace: async (id) => {
       const workspace = await requirePaseo().workspaces.ref(id).refresh();

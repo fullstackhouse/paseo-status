@@ -109,7 +109,12 @@ export class BlockerResolver {
 
   async resolve(blockers: readonly Blocker[]): Promise<BlockerView[]> {
     const needAgents = blockers.some((blocker) => blocker.kind === "agent");
-    const agents = needAgents ? this.lookups.agents().catch(() => [] as AgentFacts[]) : Promise.resolve([]);
+    const agents = needAgents
+      ? this.lookups.agents().catch((error) => {
+          console.error("[status] could not list agents for blockers", error);
+          return [] as AgentFacts[];
+        })
+      : Promise.resolve([]);
     return Promise.all(blockers.map((blocker) => this.one(blocker, agents).catch(() => fallback(blocker))));
   }
 

@@ -16,6 +16,8 @@ Status is a [Paseo](https://paseo.sh) plugin. Each agent keeps a short, plain-la
 - **Summary.** One or two sentences on where things stand right now, written for someone who skipped the transcript.
 - **State.** *working*, *waiting on you* (you have to act), *blocked* (nothing can move until another workspace or another person acts, such as a peer's review; CI, builds and the agent's own subagents count as working) or *done*.
 - **Blocked by.** A *blocked* card can name what it waits on: a PR (`owner/repo#N` or its URL), an agent, a workspace, a person or anything else. The card and Paseo's Overview list them: a PR with its state and checks (from `gh`), an agent or workspace by its title. In the Overview, pressing a row opens the PR, agent or workspace (needs an FSH Paseo build with `blockedBy`).
+
+  ![Blocked by in the Overview](docs/blocked-by.png)
 - **Now.** What the agent is doing or waiting on this moment.
 - **Done.** Finished steps, each with its proof: "tests pass: 42/42", "PR #7 merged, CI green", and "not pushed" when that is true.
 - **Next.** What is left, in order, with what needs you marked.
