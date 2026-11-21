@@ -11,7 +11,10 @@ interface SummaryState {
   label?: string;
   panelId?: string;
   workState?: WorkState | null;
-  /** The newest card, shown as the Overview's Status card, with the workspace's newest goal. Older hosts drop the field (and hosts before `goal`, the goal). */
+  /**
+   * The newest card, shown as the Overview's Status card, with the workspace's newest goal and, while
+   * blocked, what it waits on. Older hosts drop the field (and hosts before `goal`/`blockedBy`, those).
+   */
   status?: OverviewStatus | null;
 }
 interface SummaryRegistration {
@@ -38,7 +41,7 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
 
   const refresh = async () => {
     // The server decides the work state: only it sees child agents and background work.
-    const { statuses, agents, workStates = {}, blockedGroup = false } = await client.rpc(listStatuses, { withWorkStates: true });
+    const { statuses, agents, workStates = {}, blockedGroup = false, blockers = {} } = await client.rpc(listStatuses, { withWorkStates: true });
     if (stopped) return;
     const byWorkspace = new Map<string, Status[]>();
     for (const status of statuses) {
@@ -53,7 +56,7 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
         label: latest ? `${STATE_LABELS[latest.state]} · ${age(latest.updatedAt)}` : undefined,
         panelId: "status",
         workState: workStates[workspaceId] ?? null,
-        status: workspaceOverviewStatus(cards, (agentId) => agents[agentId]?.running ?? false, blockedGroup),
+        status: workspaceOverviewStatus(cards, (agentId) => agents[agentId]?.running ?? false, blockedGroup, blockers),
       };
       const item = items.get(workspaceId);
       if (item) item.update(state);

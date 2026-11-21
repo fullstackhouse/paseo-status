@@ -4,7 +4,7 @@ import type { Status } from "../shared/status";
 
 type WorkspaceFile = Record<string, Status>;
 
-export type StatusInput = Pick<Status, "state" | "goal" | "tldr" | "now" | "done" | "next">;
+export type StatusInput = Pick<Status, "state" | "goal" | "tldr" | "now" | "done" | "next" | "blockedBy">;
 
 /** One JSON file per workspace, keyed by agent. Single writer (the plugin process). */
 export class StatusStore {
@@ -36,6 +36,7 @@ export class StatusStore {
     return this.write(workspaceId, agentId, {
       ...input,
       goal,
+      blockedBy: input.blockedBy?.length ? input.blockedBy : undefined,
       agentId,
       workspaceId,
       updatedAt: this.now().toISOString(),
