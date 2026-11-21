@@ -388,6 +388,14 @@ describe("overviewStatus", () => {
     expect(overviewStatus(card({ state: "working", turnsSince: 3 }), false)).not.toHaveProperty("answered");
     expect(overviewStatus(card({ state: "done", turnsSince: 3 }), false)).not.toHaveProperty("answered");
   });
+
+  it("never marks a blocked card answered with the Blocked group experiment on", () => {
+    expect(isAnswered(card({ state: "blocked", turnsSince: 1 }), false, true)).toBe(false);
+    expect(overviewStatus(card({ state: "blocked", turnsSince: 1 }), false, true)).not.toHaveProperty("answered");
+    expect(workspaceOverviewStatus([card({ state: "blocked", turnsSince: 1 })], () => true, true)).not.toHaveProperty("answered");
+    // A question to the human is still answered by the reply.
+    expect(isAnswered(card({ state: "waiting_on_you", turnsSince: 1 }), false, true)).toBe(true);
+  });
 });
 
 describe("readOpenAskOwners", () => {
@@ -478,6 +486,12 @@ describe("workspaceWorkState", () => {
 
     it("lets another agent's live work outrank a blocked card", () => {
       expect(workspaceWorkState([card({ state: "blocked" }), card({ agentId: "b" })], now, (id) => (id === "b" ? live : idle), on)).toBe("working");
+    });
+
+    it("keeps a blocked card blocked across later turns until the agent publishes again", () => {
+      // A reminder or ask-check turn ran after the card; it waits on someone else, so that is no answer.
+      expect(workspaceWorkState([card({ state: "blocked", turnsSince: 2 })], now, undefined, on)).toBe("blocked");
+      expect(workspaceWorkState([card({ state: "blocked" })], now, () => ({ running: true, live: false }), on)).toBe("blocked");
     });
 
     it("still lets a card waiting on the human win", () => {
