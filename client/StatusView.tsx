@@ -1,11 +1,10 @@
 import type { PluginTheme } from "@getpaseo/plugin";
-import { useAgent, useRpc, useSettings } from "@getpaseo/plugin/client";
+import { useAgent, useRpc } from "@getpaseo/plugin/client";
 import { Icon, ScrollView, useToast } from "@getpaseo/plugin/client/react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Linking, Pressable, Text, View } from "react-native";
 import { isAnswered, listStatuses, type BlockerView, stateTone, refreshAll, refreshStatus, STALE_TURNS, type SilentAgent, type Status, type Waiting } from "../shared/status";
-import { experimentSettings } from "../shared/settings";
 import { isCurrent, type StatusCard as StatusCardData } from "../shared/timeline";
 
 export const POLL_MS = 4000;
@@ -184,11 +183,8 @@ function StatusCard(props: {
     onError: (error) => toast.error(error instanceof Error ? error.message : String(error)),
   });
   const stale = status.turnsSince >= STALE_TURNS;
-  const experiments = useSettings(experimentSettings);
-  // With the Blocked group on, blocked waits on someone else: calm, like the host's Blocked group. Off, it needs you.
-  const blockedGroup = experiments.status === "ready" && experiments.values.blockedGroup;
-  const answered = isAnswered(status, agent?.running ?? false, blockedGroup);
-  const tone = styles[stateTone(status, answered, blockedGroup)];
+  const answered = isAnswered(status, agent?.running ?? false);
+  const tone = styles[stateTone(status, answered)];
 
   return (
     <View style={styles.card}>

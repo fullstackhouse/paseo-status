@@ -135,9 +135,9 @@ describe("blockedBy on the card", () => {
 
   it("reaches the Overview only while the card is blocked", () => {
     const card = { agentId: "agent", workspaceId: "ws", ...base, updatedAt: "2026-11-21T10:00:00.000Z", turnsSince: 0 };
-    expect(overviewStatus({ ...card, state: "blocked" }, false, true, view).blockedBy).toEqual(view);
-    expect(overviewStatus({ ...card, state: "working" }, false, true, view).blockedBy).toBeUndefined();
-    expect(overviewStatus({ ...card, state: "blocked" }, false, true, []).blockedBy).toBeUndefined();
-    expect(workspaceOverviewStatus([{ ...card, state: "blocked" }], () => false, true, { agent: view })?.blockedBy).toEqual(view);
+    expect(overviewStatus({ ...card, state: "blocked" }, false, view).blockedBy).toEqual(view);
+    expect(overviewStatus({ ...card, state: "working" }, false, view).blockedBy).toBeUndefined();
+    expect(overviewStatus({ ...card, state: "blocked" }, false, []).blockedBy).toBeUndefined();
+    expect(workspaceOverviewStatus([{ ...card, state: "blocked" }], () => false, { agent: view })?.blockedBy).toEqual(view);
   });
 });

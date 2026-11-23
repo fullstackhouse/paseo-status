@@ -7,7 +7,6 @@ import type {
   PluginWorkspacePanelProps,
 } from "@getpaseo/plugin/client";
 import { contributeRowBadge } from "./client/RowBadge";
-import { SettingsScreen } from "./client/SettingsScreen";
 import { contributeWorkspaceSummaries } from "./client/summary";
 import { age, AgentStatus, ANSWERED_LABEL, InlineStatus, POLL_MS, STATE_LABELS, StatusView } from "./client/StatusView";
 import { isAnswered, listStatuses, refreshStatus, STALE_TURNS, type Status } from "./shared/status";
@@ -51,10 +50,10 @@ function PillPopover({ theme, layout, workspaceId, ...context }: PluginButtonCon
 }
 
 /** The pill's face: the card's state and age, or a nudge when there is no card. */
-function pillFace(status: Status | undefined, running: boolean, blockedGroup = false): { label: string; icon: string } {
+function pillFace(status: Status | undefined, running: boolean): { label: string; icon: string } {
   if (!status) return { label: "No status", icon: "Gauge" };
   const stale = status.turnsSince >= STALE_TURNS ? " · stale" : "";
-  const answered = isAnswered(status, running, blockedGroup);
+  const answered = isAnswered(status, running);
   return {
     label: `${answered ? ANSWERED_LABEL : STATE_LABELS[status.state]} · ${age(status.updatedAt)}${stale}`,
     icon: answered ? "MessageCircleReply" : STATE_ICONS[status.state],
@@ -84,9 +83,9 @@ function contributePills(client: PluginClientContext): () => void {
   };
 
   const refreshFaces = async () => {
-    const { statuses, agents, blockedGroup = false } = await client.rpc(listStatuses, {});
+    const { statuses, agents } = await client.rpc(listStatuses, {});
     const byAgent = new Map(statuses.map((status) => [status.agentId, status]));
-    for (const [agentId, pill] of pills) pill.update(pillFace(byAgent.get(agentId), agents[agentId]?.running ?? false, blockedGroup));
+    for (const [agentId, pill] of pills) pill.update(pillFace(byAgent.get(agentId), agents[agentId]?.running ?? false));
   };
   const timer = setInterval(() => void refreshFaces().catch(() => undefined), POLL_MS * 2);
 
@@ -129,7 +128,6 @@ export default function contribute(client: PluginClientContext) {
     Component: WorkspacePanel,
   });
   client.addScreen({ id: "status", title: "Status", Component: GlobalScreen });
-  client.addSettingsScreen({ id: "status", title: "Status", icon: "Gauge", Component: SettingsScreen });
   client.addCommandCenterItem({
     id: "open-status",
     title: "Open status for this workspace",
