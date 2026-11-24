@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { Text } from "react-native";
 import { CHAT_CARD_OPTIONS, chatCardsOf, chatSettings, type ChatCards } from "../shared/settings";
 import { chatItemsFor, STATUS_CARD, StatusCardSchema, type StatusCard } from "../shared/timeline";
+import { AgentRulesSettings } from "./AgentRulesSettings";
 import { InlineStatus, POLL_MS } from "./StatusView";
 
 const SETTINGS_RPC = settingsRpc(chatSettings.id);
@@ -63,13 +64,16 @@ export function contributeChatCards(client: PluginClientContext): () => void {
     return <InlineStatus theme={theme} compact={layout.compact} agentId={agentId} collapsed={current === "collapsed"} {...item.data} />;
   }
 
-  function ChatSettingsScreen({ theme }: PluginSurfaceProps) {
+  /** The plugin's one settings screen: Chat, then the Agents section. */
+  function SettingsScreen(props: PluginSurfaceProps) {
+    const { theme } = props;
     const settings = useSettings(chatSettings);
     useReportCards(settings.status === "ready" ? settings.values.cards : undefined);
     const muted = { color: theme.colors.foregroundMuted };
     if (settings.status === "loading") return <Text style={muted}>Loading settings…</Text>;
     if (settings.status !== "ready") return <Text style={{ color: theme.colors.statusDanger }}>{settings.error}</Text>;
     return (
+      <>
       <SettingsSection title="Chat">
         <SettingsCard>
           <SettingsSelect
@@ -83,18 +87,20 @@ export function contributeChatCards(client: PluginClientContext): () => void {
           />
         </SettingsCard>
       </SettingsSection>
+      <AgentRulesSettings {...props} />
+      </>
     );
   }
 
   const removeRenderer = client.addTimelineRenderer({ ...STATUS_CARD, schema: StatusCardSchema, Component: TimelineCard });
-  const removeScreen = client.addSettingsScreen({ id: "chat", title: "Chat", icon: "MessageSquare", Component: ChatSettingsScreen });
+  const removeScreen = client.addSettingsScreen({ id: "settings", title: "Settings", icon: "Settings", Component: SettingsScreen });
   const removeCommand = client.addCommandCenterItem({
     id: "chat-settings",
     title: "Status cards in chat: expand, collapse or hide",
     icon: "Settings",
     context: "global",
     keywords: ["status", "chat", "collapse", "hide", "settings"],
-    onSelect: ({ openSettings }) => openSettings("chat"),
+    onSelect: ({ openSettings }) => openSettings("settings"),
   });
 
   return () => {

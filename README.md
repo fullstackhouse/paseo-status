@@ -34,14 +34,14 @@ Status is a [Paseo](https://paseo.sh) plugin. Each agent keeps a short, plain-la
 
 ## Where cards show up
 
-- **inline in the agent's chat**, where it called `status_set`: the latest call is the live card (labels, age, Refresh); earlier calls show what they said then, collapsed as "Earlier status". A status sent as a `paseo-status` reply block stays a code block in the reply. Settings → Plugins → Status → Chat (⌘K: "Status cards in chat") picks how cards show there: **Collapsed** to one line you press to open (the default), **Expanded** to the full card, or **Hidden**, which drops them from the chat. The setting applies to every device connected to that host;
+- **inline in the agent's chat**, where it called `status_set`: the latest call is the live card (labels, age, Refresh); earlier calls show what they said then, collapsed as "Earlier status". A status sent as a `paseo-status` reply block stays a code block in the reply. Settings → Plugins → Status → Settings (⌘K: "Status cards in chat") picks how cards show there: **Collapsed** to one line you press to open (the default), **Expanded** to the full card, or **Hidden**, which drops them from the chat. The setting applies to every device connected to that host;
 - a **pill in each agent's composer**, next to Tasks and Subagents, showing the card's state and age (`waiting on you · 6m`, `working · 52m · stale`). Pressing it shows that agent's card in a popover. Agents without a card show `No status`, and the popover offers **Ask for status**;
 - a **Status** panel in each workspace (⌘K: "Open status for this workspace"), which can also sit in the Explorer next to files and changes;
 - a **Status** screen covering every workspace (⌘K: "Open status across workspaces").
 
 ## Snoozed workspaces
 
-To try your own rules for when and how agents publish status, Settings → Plugins → Status → Agents → **Instructions for agents → Edit** opens the built-in rules to change; **Save** keeps your version and **Use built-in rules** goes back. Claude Code keeps only the first 4096 characters. Agents started after you save get the new rules.
+To try your own rules for when and how agents publish status, Settings → Plugins → Status → Settings → **Instructions for agents → Edit** opens the built-in rules to change; **Save** keeps your version and **Use built-in rules** goes back. Claude Code keeps only the first 4096 characters. Agents started after you save get the new rules.
 
 Snooze a workspace whose agent is waiting on other agents, and it comes back when the work needs you. When a card in a snoozed workspace turns *waiting on you* or *done* after you snoozed it, the plugin tells Paseo the workspace needs you (a *blocked* card waits on someone else, so it doesn't). Paseo treats that like a permission prompt: by default it wakes the workspace and notifies you (host Settings → Workspaces picks wake, count on Snoozed, or stay silent). A workspace you snoozed while it already needed you stays snoozed. Needs a Paseo host with `workspaceAttentionReport` (FSH builds).
 

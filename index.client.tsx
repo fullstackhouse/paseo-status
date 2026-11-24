@@ -5,7 +5,6 @@ import type {
   PluginScreenProps,
   PluginWorkspacePanelProps,
 } from "@getpaseo/plugin/client";
-import { AgentRulesSettings } from "./client/AgentRulesSettings";
 import { contributeChatCards } from "./client/chat-cards";
 import { contributeRowBadge } from "./client/RowBadge";
 import { contributeWorkspaceSummaries } from "./client/summary";
@@ -159,10 +158,7 @@ export default function contribute(client: PluginClientContext) {
   const removePills = contributePills(client);
   // What each card says, for Paseo's Overview tab and its agent-reported sidebar grouping (beta).
   const removeSummaries = contributeWorkspaceSummaries(client);
-  // The status_set rules agents get, replaceable to try new wording without a release.
-  const removeAgentSettings = client.addSettingsScreen({ id: "agents", title: "Agents", icon: "Bot", Component: AgentRulesSettings });
   return () => {
-    removeAgentSettings();
     removeChatCards();
     removeRowBadge();
     removePills();
