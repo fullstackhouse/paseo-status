@@ -40,16 +40,17 @@ describe("status in a real Paseo daemon", () => {
     expect(sandbox.card(publisher)).toMatchObject({ turnsSince: 0 });
   });
 
-  it("Refresh of a running agent waits for its turn to end instead of interrupting it", async () => {
+  it("Refresh of a running agent steers into its turn instead of interrupting it", async () => {
+    // Claude takes a steer on FSH hosts since fullstackhouse/paseo bf0a2e4, so the request goes in mid-turn.
     const agent = await sandbox.run('Run the shell command "sleep 8". Then reply with exactly "Slept." and nothing else.', { wait: false });
     await waitFor("the sleep to start", async () => /sleep 8/.test(await sandbox.timeline(agent)), 60_000);
-    expect(await sandbox.refresh(agent)).toEqual({ sent: false });
+    expect(await sandbox.refresh(agent)).toEqual({ sent: true });
 
     const timeline = await sandbox.waitForTimeline(agent, REFRESHED);
-    // The turn finished on its own; the request came after it.
-    expect(timeline.indexOf("Slept.")).toBeGreaterThan(-1);
-    expect(timeline.indexOf("Slept.")).toBeLessThan(timeline.search(REFRESHED));
-    await waitFor("a card", () => Boolean(sandbox.card(agent)), 30_000);
+    await waitFor("a card", () => Boolean(sandbox.card(agent)), 60_000);
+    // The sleep wasn't cut short: the agent still finished the task.
+    expect(await sandbox.timeline(agent)).toContain("Slept.");
+    expect(timeline).toMatch(/sleep 8/);
   });
 
   it("an agent created before install answers Refresh with a paseo-status block", async () => {
