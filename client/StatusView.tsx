@@ -311,7 +311,7 @@ function Button(props: { styles: Styles; label: string; onPress(): void; disable
   );
 }
 
-/** One agent's card on its own, for the composer pill's popover. */
+/** One agent's card on its own, for the composer pill's popover. The host pads, scrolls and caps the popover; sizing it here again clips it. */
 export function AgentStatus(props: { theme: PluginTheme; compact: boolean; workspaceId: string; agentId: string }) {
   const { theme, compact, workspaceId, agentId } = props;
   const styles = useMemo(() => makeStyles(theme, compact), [theme, compact]);
@@ -320,7 +320,7 @@ export function AgentStatus(props: { theme: PluginTheme; compact: boolean; works
   if (query.isError) return <Message styles={styles} text={`Could not load status: ${query.error.message}`} danger />;
   const status = query.data.statuses.find((candidate) => candidate.agentId === agentId);
   return (
-    <ScrollView style={styles.popover} contentContainerStyle={styles.popoverContent}>
+    <View>
       {status ? (
         <StatusCard
           status={status}
@@ -333,7 +333,7 @@ export function AgentStatus(props: { theme: PluginTheme; compact: boolean; works
       ) : (
         <SilentCard agent={{ agentId, title: query.data.agents[agentId]?.title ?? null }} styles={styles} theme={theme} />
       )}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -493,8 +493,6 @@ function makeStyles(theme: PluginTheme, compact: boolean) {
     item: { flexDirection: "row" as const, gap: 6 },
     mark: { color: colors.foregroundMuted, fontSize: 13, lineHeight: 19 },
     itemText: { color: colors.foreground, fontSize: 13, lineHeight: 19, flex: 1 },
-    popover: { maxHeight: 520, width: compact ? undefined : 420, backgroundColor: colors.surface0 },
-    popoverContent: { padding: 8 },
     toolbar: { flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const, gap: 8 },
     silent: { paddingVertical: compact ? 10 : 8 },
     earlier: { backgroundColor: colors.surface0 },
