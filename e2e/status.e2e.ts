@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Sandbox, waitFor } from "./harness";
 
+const SLEEP_CALL = /^\[[^\]]+\] sleep 8$/m;
+const SLEPT_REPLY = /^Slept\.$/m;
 const REFRESHED = /\[User\] \[status\] The human asked where things stand\. Call status_set/;
 const FALLBACK = /\[User\] \[status\] The human asked where things stand, for a status card/;
 
@@ -43,14 +45,17 @@ describe("status in a real Paseo daemon", () => {
   it("Refresh of a running agent steers into its turn instead of interrupting it", async () => {
     // Claude takes a steer on FSH hosts since fullstackhouse/paseo bf0a2e4, so the request goes in mid-turn.
     const agent = await sandbox.run('Run the shell command "sleep 8". Then reply with exactly "Slept." and nothing else.', { wait: false });
-    await waitFor("the sleep to start", async () => /sleep 8/.test(await sandbox.timeline(agent)), 60_000);
+    // The tool call's own line, not the prompt that mentions it, so the steer lands during the sleep.
+    await waitFor("the sleep to start", async () => SLEEP_CALL.test(await sandbox.timeline(agent)), 60_000);
     expect(await sandbox.refresh(agent)).toEqual({ sent: true });
 
     const timeline = await sandbox.waitForTimeline(agent, REFRESHED);
+    // The agent's own reply is a line of its own; the prompt only quotes it. Waiting for the turn to end
+    // would put the request after that reply, a steer puts it before.
+    expect(timeline.search(REFRESHED)).toBeGreaterThan(timeline.search(SLEEP_CALL));
+    expect(timeline.search(REFRESHED)).toBeLessThan(timeline.search(SLEPT_REPLY));
+    expect(timeline).not.toMatch(/interrupt|\[Error\]/i);
     await waitFor("a card", () => Boolean(sandbox.card(agent)), 60_000);
-    // The sleep wasn't cut short: the agent still finished the task.
-    expect(await sandbox.timeline(agent)).toContain("Slept.");
-    expect(timeline).toMatch(/sleep 8/);
   });
 
   it("an agent created before install answers Refresh with a paseo-status block", async () => {
