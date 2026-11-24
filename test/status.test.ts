@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { BACKGROUND_SKIP, FALLBACK_PROMPT, readOpenAskOwners, readWaiting, REFRESH_PROMPT, StatusService, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
+import { BACKGROUND_SKIP, FALLBACK_PROMPT, HELPER_SKIP, INSTRUCTIONS, readOpenAskOwners, readWaiting, REFRESH_PROMPT, StatusService, TOOLS, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
 import { isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, rowBadgeLabel, workspaceOverviewStatus, summarize, workspaceWorkState, type Status } from "../shared/status";
 
@@ -158,6 +158,37 @@ describe("status", () => {
     // The human opened the run's chat, so it isn't background any more.
     background = false;
     expect((await scoped.callTool(AGENT, "status_set", status)).text).toBe("Status published (working).");
+  });
+
+  describe("a helper agent (started by another agent)", () => {
+    const HELPER = "helper-1";
+    let scoped: StatusService;
+    beforeEach(() => {
+      scoped = new StatusService(store, courier, async () => WS, () => true, undefined, undefined, async (agentId) => agentId === HELPER);
+    });
+
+    it("gets no tool or instructions, while other agents and unknown callers keep them", async () => {
+      expect(await scoped.toolsFor(HELPER)).toEqual({ tools: [] });
+      expect(await scoped.instructionsFor(HELPER)).toEqual({ instructions: undefined });
+      expect(await scoped.toolsFor(AGENT)).toEqual({ tools: TOOLS });
+      expect(await scoped.instructionsFor(null)).toEqual({ instructions: INSTRUCTIONS });
+    });
+
+    it("publishes no card when it calls status_set anyway, and says why", async () => {
+      expect(await scoped.callTool(HELPER, "status_set", status)).toEqual({ text: HELPER_SKIP });
+      expect(store.get(HELPER)).toBeFalsy();
+    });
+
+    it("is left out of Refresh all, cards from before included", async () => {
+      store.set(WS, HELPER, { ...status, state: "working" });
+      await scoped.callTool(AGENT, "status_set", status);
+      for (let turn = 0; turn < 2; turn++) {
+        await scoped.turnEnded(AGENT);
+        await scoped.turnEnded(HELPER);
+      }
+      expect(await scoped.refreshAll(WS, { silent: [HELPER] })).toEqual({ asked: 1 });
+      expect(courier.sent.map((sent) => sent.agentId)).toEqual([AGENT]);
+    });
   });
 
   it("Refresh all leaves out agents in background workspaces", async () => {
