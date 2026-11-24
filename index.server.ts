@@ -13,16 +13,11 @@ import { isStatusPermission } from "./server/permissions";
 import { readOpenAskOwners, readWaiting, StatusService, workspacesOf, type Courier } from "./server/service";
 import { reportNeedsYou, snoozedWorkspaces } from "./server/snooze";
 import { StatusStore } from "./server/store";
-import { agentSettings, chatSettings } from "./shared/settings";
+import { chatSettings } from "./shared/settings";
 
 export default function contribute(server: PluginServerContext) {
   // The Chat setting (status cards in chat expanded, collapsed or hidden) is read and written by clients only.
   server.registerSettings(chatSettings);
-  const agentRules = server.registerSettings(agentSettings);
-  const customInstructions = async () => {
-    const state = await agentRules.read();
-    return state.status === "ready" ? state.values.customInstructions : "";
-  };
   const dir = dataDir();
   // Sibling plugin's data, read for the "waiting on you" lines when it is installed.
   const asksDir = join(dirname(dir), "asks");
@@ -77,7 +72,6 @@ export default function contribute(server: PluginServerContext) {
     undefined,
     isBackground,
     isHelper,
-    customInstructions,
   );
 
   type AgentPayload = Awaited<ReturnType<PaseoApi["agents"]["list"]>>["entries"][number]["agent"];

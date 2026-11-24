@@ -23,11 +23,3 @@ export function chatCardsOf(values: unknown): ChatCards | undefined {
   const parsed = chatSettings.schema.safeParse(values);
   return parsed.success ? parsed.data.cards : undefined;
 }
-
-export const agentSettings = defineSettings({
-  id: "agents",
-  scope: "host",
-  version: 1,
-  // Replaces the built-in status_set rules when non-blank.
-  schema: z.object({ customInstructions: z.string().default("") }),
-});

@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { BACKGROUND_SKIP, FALLBACK_PROMPT, HELPER_SKIP, INSTRUCTIONS, readOpenAskOwners, readWaiting, REFRESH_PROMPT, StatusService, TOOLS, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
-import { INSTRUCTIONS_LIMIT } from "../shared/instructions";
 import { DONE_WITH_NEXT, isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, rowBadgeLabel, workspaceOverviewStatus, summarize, withLiveChildren, workspaceWorkState, type Status } from "../shared/status";
 
 class FakeCourier implements Courier {
@@ -606,18 +605,5 @@ describe("needsYouSince", () => {
     const older = card({ agentId: "a", updatedAt: "2026-11-17T10:30:00Z" });
     const newer = card({ agentId: "b", updatedAt: "2026-11-17T10:45:00Z" });
     expect(needsYouSince([older, newer, card({ agentId: "c", archived: true })], "done", SNOOZED_AT)).toBe("b");
-  });
-});
-
-describe("custom instructions", () => {
-  it("replace the built-in rules when set, and blank ones keep them", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "status-custom-"));
-    const store = new StatusStore(dir);
-    const courier = { state: async () => "idle", send: async () => {} } as unknown as Courier;
-    const withRules = (rules: string) =>
-      new StatusService(store, courier, async () => "ws", () => true, undefined, undefined, async () => false, async () => rules);
-    expect(await withRules("  Update only when done.\n").instructionsFor("a")).toEqual({ instructions: "Update only when done." });
-    expect(await withRules(" \n").instructionsFor("a")).toEqual({ instructions: INSTRUCTIONS });
-    expect(INSTRUCTIONS.length).toBeLessThanOrEqual(INSTRUCTIONS_LIMIT);
   });
 });
