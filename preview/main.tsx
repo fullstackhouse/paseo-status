@@ -48,5 +48,11 @@ createRoot(document.getElementById("root")!).render(
         <InlineStatus theme={theme as any} compact={false} agentId="agent-giftcards" {...statuses[0]!} />
       </View>
     </Frame>
+    <Frame id="chat-collapsed" title="Agent chat · Status in chat: Collapsed" width={620} height={200}>
+      <View style={{ padding: 16, gap: 12, backgroundColor: theme.colors.surface0, flex: 1 }}>
+        <InlineStatus theme={theme as any} compact={false} agentId="agent-giftcards" collapsed {...earlierGiftcards} />
+        <InlineStatus theme={theme as any} compact={false} agentId="agent-giftcards" collapsed {...statuses[0]!} />
+      </View>
+    </Frame>
   </QueryClientProvider>,
 );

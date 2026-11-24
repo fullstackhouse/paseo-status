@@ -13,8 +13,11 @@ import { isStatusPermission } from "./server/permissions";
 import { readOpenAskOwners, readWaiting, StatusService, workspacesOf, type Courier } from "./server/service";
 import { reportNeedsYou, snoozedWorkspaces } from "./server/snooze";
 import { StatusStore } from "./server/store";
+import { chatSettings } from "./shared/settings";
 
 export default function contribute(server: PluginServerContext) {
+  // The Chat setting (status cards in chat expanded, collapsed or hidden) is read and written by clients only.
+  server.registerSettings(chatSettings);
   const dir = dataDir();
   // Sibling plugin's data, read for the "waiting on you" lines when it is installed.
   const asksDir = join(dirname(dir), "asks");

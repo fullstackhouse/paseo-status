@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Status } from "../shared/status";
-import { isCurrent, statusCardFor } from "../shared/timeline";
+import { chatCardsOf } from "../shared/settings";
+import { chatItemsFor, isCurrent, STATUS_CARD, statusCardFor } from "../shared/timeline";
 
 const call = (name: string, status: string, input?: unknown, output?: unknown) => ({
   name,
@@ -53,5 +54,32 @@ describe("isCurrent", () => {
     expect(isCurrent(card, { ...live, next: ["Open PR", "Deploy"] })).toBe(false);
     expect(isCurrent(card, { ...live, now: undefined })).toBe(false);
     expect(isCurrent(card, undefined)).toBe(false);
+  });
+});
+
+describe("chatItemsFor", () => {
+  const published = call("mcp__status__status_set", "completed", input, "Status published (working).");
+
+  it("replaces a published status with the card when cards show, expanded or collapsed", () => {
+    for (const cards of ["expanded", "collapsed"] as const) {
+      expect(chatItemsFor(published, cards)).toEqual({ items: [{ type: "plugin", ...STATUS_CARD, data: input }] });
+    }
+  });
+
+  it("removes the row when cards are hidden from the chat", () => {
+    expect(chatItemsFor(published, "hidden")).toEqual({ items: [] });
+  });
+
+  it("keeps rows that are not a published status, even when cards are hidden", () => {
+    expect(chatItemsFor(call("mcp__status__status_set", "failed", input, "boom"), "hidden")).toBeUndefined();
+    expect(chatItemsFor(call("mcp__asks__ask_create", "completed", input, "Status published"), "hidden")).toBeUndefined();
+  });
+});
+
+describe("chatCardsOf", () => {
+  it("defaults a missing document to expanded and rejects unknown values", () => {
+    expect(chatCardsOf({})).toBe("expanded");
+    expect(chatCardsOf({ cards: "hidden" })).toBe("hidden");
+    expect(chatCardsOf({ cards: "folded" })).toBeUndefined();
   });
 });

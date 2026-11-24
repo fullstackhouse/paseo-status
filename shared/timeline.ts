@@ -1,3 +1,4 @@
+import type { ChatCards } from "./settings";
 import { StatusInputSchema, type Status, type StatusInput } from "./status";
 
 /** The plugin timeline item that stands in for a status_set call: the status that call published. */
@@ -27,6 +28,17 @@ export function statusCardFor(item: ToolCallLike): StatusCard | undefined {
   if (!text.includes(PUBLISHED)) return undefined;
   const parsed = StatusInputSchema.safeParse(input);
   return parsed.success ? parsed.data : undefined;
+}
+
+/**
+ * What replaces a chat row: nothing for rows that aren't a published status, no rows when the
+ * human hid cards from the chat, else the card (collapsed or not is the renderer's choice).
+ */
+export function chatItemsFor(item: ToolCallLike, cards: ChatCards) {
+  const data = statusCardFor(item);
+  if (!data) return undefined;
+  if (cards === "hidden") return { items: [] };
+  return { items: [{ type: "plugin" as const, ...STATUS_CARD, data }] };
 }
 
 /** The live status is still the one this card published, so the card shows it live rather than as history. */

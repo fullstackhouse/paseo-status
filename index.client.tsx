@@ -3,14 +3,13 @@ import type {
   PluginButtonRegistration,
   PluginClientContext,
   PluginScreenProps,
-  PluginTimelineItemProps,
   PluginWorkspacePanelProps,
 } from "@getpaseo/plugin/client";
+import { contributeChatCards } from "./client/chat-cards";
 import { contributeRowBadge } from "./client/RowBadge";
 import { contributeWorkspaceSummaries } from "./client/summary";
-import { age, AgentStatus, ANSWERED_LABEL, InlineStatus, POLL_MS, STATE_LABELS, StatusView } from "./client/StatusView";
+import { age, AgentStatus, ANSWERED_LABEL, POLL_MS, STATE_LABELS, StatusView } from "./client/StatusView";
 import { isAnswered, listStatuses, refreshStatus, STALE_TURNS, type Status } from "./shared/status";
-import { STATUS_CARD, StatusCardSchema, statusCardFor, type StatusCard } from "./shared/timeline";
 
 const STATE_ICONS: Record<Status["state"], string> = {
   working: "LoaderCircle",
@@ -38,10 +37,6 @@ function GlobalScreen({ theme, layout, navigation }: PluginScreenProps) {
       openAgent={navigation ? (agentId) => navigation.openAgent({ agentId }) : undefined}
     />
   );
-}
-
-function TimelineCard({ theme, layout, agentId, item }: PluginTimelineItemProps<StatusCard>) {
-  return <InlineStatus theme={theme} compact={layout.compact} agentId={agentId} {...item.data} />;
 }
 
 function PillPopover({ theme, layout, workspaceId, ...context }: PluginButtonContentProps) {
@@ -155,22 +150,16 @@ export default function contribute(client: PluginClientContext) {
       openPanel("status");
     },
   });
-  // A status_set call in the chat becomes the status it published, so it can be read in place.
-  client.addTimelineTransformer({
-    id: "status-cards",
-    query: { itemType: "tool_call" },
-    transform: ({ item }) => {
-      const data = statusCardFor(item);
-      return data && { items: [{ type: "plugin", ...STATUS_CARD, data }] };
-    },
-  });
-  client.addTimelineRenderer({ ...STATUS_CARD, schema: StatusCardSchema, Component: TimelineCard });
+  // A status_set call in the chat becomes the status it published, so it can be read in place,
+  // expanded, collapsed or hidden per the Chat setting.
+  const removeChatCards = contributeChatCards(client);
   // Where each workspace stands, on its sidebar row; Paseo's own status only sees agents stop.
   const removeRowBadge = contributeRowBadge(client);
   const removePills = contributePills(client);
   // What each card says, for Paseo's Overview tab and its agent-reported sidebar grouping (beta).
   const removeSummaries = contributeWorkspaceSummaries(client);
   return () => {
+    removeChatCards();
     removeRowBadge();
     removePills();
     removeSummaries();
