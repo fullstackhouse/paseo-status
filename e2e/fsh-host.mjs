@@ -10,8 +10,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const TAG = "fsh-cli-0.15.3-0bd77c5";
-const SHA256 = "f92c0f6c8704b889bf4ecfd97e831fb086d55a7c440765aaecb6d5b57c8864df";
+const TAG = "fsh-cli-0.15.3-56100a6";
+const SHA256 = "30034d861113917b21c94947bdb69707e980698e9190ccb7d7ca46f81c9ce4b0";
 const URL = `https://github.com/fullstackhouse/paseo/releases/download/${TAG}/paseo-${TAG}.tgz`;
 
 // The packages the FSH bundle holds, in its pack order (.github/workflows/fsh-cli.yml in fullstackhouse/paseo).
