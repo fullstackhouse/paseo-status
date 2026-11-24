@@ -46,7 +46,7 @@ export const WAKE_PROMPT =
 /** For agents created before the plugin was installed: they have no tool, so the status rides in their reply. */
 export const FALLBACK_PROMPT = `[status] The human asked where things stand, for a status card shown outside this chat. End your reply with a fenced code block tagged paseo-status holding one JSON object:
 \`\`\`paseo-status
-{"state": "working | waiting_on_you | blocked | done (only once next is empty)", "goal": "one or two plain sentences: the whole job and its overall progress", "tldr": "one or two plain sentences: where things stand right now", "now": "what you are doing or waiting on", "done": ["finished step, with its proof"], "next": ["what is left, in order; mark what needs the human"]}
+{"state": "working | waiting_on_you | blocked | done", "goal": "one or two plain sentences: the whole job and its overall progress", "tldr": "one or two plain sentences: where things stand right now", "now": "what you are doing or waiting on", "done": ["finished step, with its proof"], "next": ["what is left, in order; mark what needs the human"]}
 \`\`\`
 Write for someone who skipped the transcript. Say "not committed" or "not pushed" when that is true. Then carry on with what you were doing, if anything.`;
 
