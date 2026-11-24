@@ -536,8 +536,8 @@ describe("withLiveChildren", () => {
     expect(workspaceWorkState([card("waiting_on_you")], Date.now(), held)).toBe("waiting");
   });
 
-  it("does the same for a done card", () => {
-    expect(withLiveChildren([card("done")], held, () => false)[0]?.state).toBe("blocked");
+  it("leaves a done card alone: work handed off for good runs on its own", () => {
+    expect(withLiveChildren([card("done")], held, () => false)[0]?.state).toBe("done");
   });
 
   it("keeps the card when the agent has an open ask: the human still has something to do", () => {

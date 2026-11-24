@@ -45,7 +45,7 @@ describe("Liveness", () => {
     expect((await look(tree({}))).backing.get("parent")?.live).toBe(true);
   });
 
-  it("names an idle waiting or done parent's live children in other workspaces, not helpers in its own", async () => {
+  it("names an idle waiting parent's live children in other workspaces, not helpers in its own", async () => {
     const { busy, look } = setup();
     const tree = (fields: Partial<LiveAgent> = {}) => [
       agent("parent", { workspaceId: "wks_1", ...fields }),
@@ -53,11 +53,10 @@ describe("Liveness", () => {
       agent("helper", { parentAgentId: "parent", workspaceId: "wks_1", running: true }),
       agent("idle", { parentAgentId: "parent", workspaceId: "wks_3" }),
     ];
-    for (const state of ["waiting_on_you", "done"] as const) {
-      expect((await look(tree(), [card("parent", state)])).backing.get("parent")?.liveChildren).toEqual(["child"]);
-      // Running, the parent sees its children itself.
-      expect((await look(tree({ running: true }), [card("parent", state)])).backing.get("parent")?.liveChildren).toBeUndefined();
-    }
+    expect((await look(tree(), [card("parent", "waiting_on_you")])).backing.get("parent")?.liveChildren).toEqual(["child"]);
+    // Running, the parent sees its children itself; done, it handed the work off.
+    expect((await look(tree({ running: true }), [card("parent", "waiting_on_you")])).backing.get("parent")?.liveChildren).toBeUndefined();
+    expect((await look(tree(), [card("parent", "done")])).backing.get("parent")?.liveChildren).toBeUndefined();
     busy.add("idle");
     expect((await look(tree(), [card("parent", "waiting_on_you")])).backing.get("parent")?.liveChildren).toEqual(["child", "idle"]);
   });

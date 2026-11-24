@@ -150,8 +150,8 @@ export class Liveness {
       const running = agent?.running ?? false;
       // Working and blocked cards both wait on what the agent started: track it, and wake the agent once it stops.
       if (status.state !== "working" && status.state !== "blocked") {
-        // A waiting or done card is a snapshot: a child the human set going again since makes it stale.
-        const liveChildren = running ? [] : await liveElsewhere(status.agentId, agent?.workspaceId ?? status.workspaceId);
+        // A waiting card is a snapshot: a child the human set going again since makes it stale.
+        const liveChildren = running || status.state !== "waiting_on_you" ? [] : await liveElsewhere(status.agentId, agent?.workspaceId ?? status.workspaceId);
         backing.set(status.agentId, {
           running,
           live: running,
