@@ -41,7 +41,7 @@ Status is a [Paseo](https://paseo.sh) plugin. Each agent keeps a short, plain-la
 
 ## Snoozed workspaces
 
-To try your own rules for when and how agents publish status, Settings → Plugins → Status → Agents → **Custom instructions** replaces the built-in ones (**Fill** starts from them, **Reset** goes back). Claude Code keeps only the first 4096 characters. Agents started after you save get the new rules.
+To try your own rules for when and how agents publish status, Settings → Plugins → Status → Agents → **Instructions for agents → Edit** opens the built-in rules to change; **Save** keeps your version and **Use built-in rules** goes back. Claude Code keeps only the first 4096 characters. Agents started after you save get the new rules.
 
 Snooze a workspace whose agent is waiting on other agents, and it comes back when the work needs you. When a card in a snoozed workspace turns *waiting on you* or *done* after you snoozed it, the plugin tells Paseo the workspace needs you (a *blocked* card waits on someone else, so it doesn't). Paseo treats that like a permission prompt: by default it wakes the workspace and notifies you (host Settings → Workspaces picks wake, count on Snoozed, or stay silent). A workspace you snoozed while it already needed you stays snoozed. Needs a Paseo host with `workspaceAttentionReport` (FSH builds).
 
