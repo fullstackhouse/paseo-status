@@ -87,14 +87,14 @@ export function contributeChatCards(client: PluginClientContext): () => void {
   }
 
   const removeRenderer = client.addTimelineRenderer({ ...STATUS_CARD, schema: StatusCardSchema, Component: TimelineCard });
-  const removeScreen = client.addSettingsScreen({ id: "chat", title: "Chat", icon: "MessageSquare", Component: ChatSettingsScreen });
+  const removeScreen = client.addSettingsScreen({ id: "settings", title: "Settings", icon: "Settings", Component: ChatSettingsScreen });
   const removeCommand = client.addCommandCenterItem({
     id: "chat-settings",
     title: "Status cards in chat: expand, collapse or hide",
     icon: "Settings",
     context: "global",
     keywords: ["status", "chat", "collapse", "hide", "settings"],
-    onSelect: ({ openSettings }) => openSettings("chat"),
+    onSelect: ({ openSettings }) => openSettings("settings"),
   });
 
   return () => {
