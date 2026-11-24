@@ -16,11 +16,12 @@ const SETTINGS_RPC = settingsRpc(chatSettings.id);
  * transformer, since a renderer that draws nothing still leaves its row's gap. Paseo caches a
  * transformer's output per row, so a change to or from Hidden registers the transformer again:
  * that is what makes Paseo redo rows it already showed. The transformer learns the setting from a
- * read at startup, from any mounted card or settings screen (pushed on save), and from a poll for
- * saves on other devices while no card is mounted to hear them.
+ * read at startup, from any mounted card or settings screen (pushed on save), and from a poll that
+ * runs while the plugin is loaded. The poll catches saves on other devices when no card is mounted
+ * to hear them, as when cards are hidden; the read is cheap, so it keeps running while cards show.
  */
 export function contributeChatCards(client: PluginClientContext): () => void {
-  let cards: ChatCards = "expanded";
+  let cards: ChatCards = "collapsed";
   let removeTransformer = addTransformer();
   let disposed = false;
 

@@ -15,7 +15,7 @@ export const chatSettings = defineSettings({
   id: "chat",
   scope: "host",
   version: 1,
-  schema: z.object({ cards: ChatCardsSchema.default("expanded") }),
+  schema: z.object({ cards: ChatCardsSchema.default("collapsed") }),
 });
 
 /** The stored choice, or undefined when the document is missing a valid value. */

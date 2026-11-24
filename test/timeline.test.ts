@@ -77,8 +77,8 @@ describe("chatItemsFor", () => {
 });
 
 describe("chatCardsOf", () => {
-  it("defaults a missing document to expanded and rejects unknown values", () => {
-    expect(chatCardsOf({})).toBe("expanded");
+  it("defaults a missing document to collapsed and rejects unknown values", () => {
+    expect(chatCardsOf({})).toBe("collapsed");
     expect(chatCardsOf({ cards: "hidden" })).toBe("hidden");
     expect(chatCardsOf({ cards: "folded" })).toBeUndefined();
   });
