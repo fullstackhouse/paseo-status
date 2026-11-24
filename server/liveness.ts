@@ -15,6 +15,8 @@ export interface LiveAgent {
   id: string;
   running: boolean;
   parentAgentId: string | null;
+  /** The agent's workspace, when the host reports one. */
+  workspaceId?: string | null;
   /**
    * Paseo shows the agent's workspace as running. The host counts provider subagents (Claude's background
    * Task agents) and background work there, and plugin code cannot see provider subagents any other way.
@@ -125,6 +127,19 @@ export class Liveness {
       return found;
     };
 
+    /**
+     * Descendants live in another workspace than the agent's. Ones in its own workspace are helpers (an
+     * asks check after each turn) whose short runs would flip the card back and forth.
+     */
+    const liveElsewhere = async (agentId: string, workspaceId: string) => {
+      const ids = descendantsOf(agentId).filter((id) => {
+        const other = byId.get(id)?.workspaceId;
+        return !!other && other !== workspaceId;
+      });
+      const live = await Promise.all(ids.map(async (id) => visiblyLive(id) || (await busy(id))));
+      return ids.filter((_, index) => live[index]);
+    };
+
     const now = this.now();
     const backing = new Map<string, Backing>();
     const wake: string[] = [];
@@ -135,7 +150,14 @@ export class Liveness {
       const running = agent?.running ?? false;
       // Working and blocked cards both wait on what the agent started: track it, and wake the agent once it stops.
       if (status.state !== "working" && status.state !== "blocked") {
-        backing.set(status.agentId, { running, live: running, lastLiveAt: this.lastLive.get(status.agentId) });
+        // A waiting or done card is a snapshot: a child the human set going again since makes it stale.
+        const liveChildren = running ? [] : await liveElsewhere(status.agentId, agent?.workspaceId ?? status.workspaceId);
+        backing.set(status.agentId, {
+          running,
+          live: running,
+          lastLiveAt: this.lastLive.get(status.agentId),
+          ...(liveChildren.length > 0 ? { liveChildren } : {}),
+        });
         continue;
       }
       tracked.add(status.agentId);

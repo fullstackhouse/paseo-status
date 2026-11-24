@@ -171,6 +171,30 @@ export interface Backing {
   live: boolean;
   /** When live work was last seen for this agent (epoch ms), if it was. */
   lastLiveAt?: number;
+  /** For an idle agent with a waiting or done card: its descendants live in other workspaces. */
+  liveChildren?: string[];
+}
+
+/**
+ * A waiting or done card whose agent sits idle while a child it started works in another workspace,
+ * and that has no open ask, is stale: nothing gave the parent a turn when the human set the child going
+ * again. Reads as blocked on those children until they stop; the card itself is never rewritten.
+ */
+export function withLiveChildren(
+  statuses: readonly Status[],
+  backing: (agentId: string) => Backing,
+  hasOpenAsk: (status: Status) => boolean,
+): Status[] {
+  return statuses.map((status) => {
+    if (status.state !== "waiting_on_you" && status.state !== "done") return status;
+    const children = backing(status.agentId).liveChildren ?? [];
+    if (children.length === 0 || hasOpenAsk(status)) return status;
+    return {
+      ...status,
+      state: "blocked",
+      blockedBy: children.slice(0, 8).map((ref) => ({ kind: "agent" as const, ref, reason: "Working on this right now" })),
+    };
+  });
 }
 
 export const WORK_STATES = ["waiting", "blocked", "working", "done"] as const;

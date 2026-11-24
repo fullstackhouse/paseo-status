@@ -1,7 +1,7 @@
 import { dirname, join } from "node:path";
 import type { PaseoApi } from "@getpaseo/client";
 import { latestTurn, type PluginServerContext } from "@getpaseo/plugin/server";
-import { listStatuses, needsYouSince, type BlockerView, type Status, refreshAll, refreshStatus, summarize, summarizeWorkspaces, workspaceWorkState, type SilentAgent, type WorkState } from "./shared/status";
+import { listStatuses, needsYouSince, type BlockerView, type Status, refreshAll, refreshStatus, summarize, summarizeWorkspaces, withLiveChildren, workspaceWorkState, type SilentAgent, type WorkState } from "./shared/status";
 import { AgentDirectory, pickCaller } from "./server/agents";
 import { BlockerResolver, ghPullRequest, type AgentFacts } from "./server/blockers";
 import { installBridge } from "./server/bridge";
@@ -137,6 +137,7 @@ export default function contribute(server: PluginServerContext) {
           id: agent.id,
           running: isRunning(agent),
           parentAgentId: parentOf(agent),
+          workspaceId: agent.workspaceId ?? null,
           workspaceBusy: !!agent.workspaceId && busyWorkspaces.has(agent.workspaceId),
         });
       }
@@ -167,8 +168,21 @@ export default function contribute(server: PluginServerContext) {
     }
     return { backing, cards };
   };
+  /**
+   * Cards the last work-state pass read differently (`withLiveChildren`), so the cheap row-badge summary
+   * agrees with the grouping without probing every agent itself. As fresh as the grouping's poll.
+   */
+  let lastDerived = new Map<string, Status>();
   const assessWorkStates = async (api: PaseoApi) => {
-    const { backing, cards } = await assess(api);
+    const { backing, cards: shown } = await assess(api);
+    const idleBacking = { running: false, live: false };
+    const openAsks = readOpenAskOwners(asksDir);
+    const cards = withLiveChildren(
+      shown,
+      (agentId) => backing.get(agentId) ?? idleBacking,
+      (status) => openAsks[status.workspaceId]?.includes(status.agentId) ?? false,
+    );
+    lastDerived = new Map(cards.filter((card, index) => card !== shown[index]).map((card) => [card.agentId, card]));
     const byWorkspace = new Map<string, Status[]>();
     for (const status of cards) byWorkspace.set(status.workspaceId, [...(byWorkspace.get(status.workspaceId) ?? []), status]);
     const now = Date.now();
@@ -176,7 +190,7 @@ export default function contribute(server: PluginServerContext) {
     const states: Record<string, WorkState | null> = Object.fromEntries(
       [...byWorkspace].map(([workspaceId, shown]) => [workspaceId, workspaceWorkState(shown, now, (agentId) => backing.get(agentId) ?? idle)]),
     );
-    return { states, byWorkspace };
+    return { states, byWorkspace, cards };
   };
   const workStates = async (api: PaseoApi) => (await assessWorkStates(api)).states;
 
@@ -235,7 +249,7 @@ export default function contribute(server: PluginServerContext) {
   server.handle(listStatuses, async ({ workspaceId, withWorkStates }, { paseo: api }) => {
     capture(api);
     const live = await liveAgents(api);
-    const statuses = visibleCards(helpersAmong(live.map((agent) => ({ id: agent.id, parentAgentId: parentOf(agent) }))), workspaceId).sort((a, b) =>
+    let statuses = visibleCards(helpersAmong(live.map((agent) => ({ id: agent.id, parentAgentId: parentOf(agent) }))), workspaceId).sort((a, b) =>
       b.updatedAt.localeCompare(a.updatedAt),
     );
     const agents = Object.fromEntries(
@@ -246,13 +260,19 @@ export default function contribute(server: PluginServerContext) {
       : Object.fromEntries((await api.workspaces.list()).entries.map((workspace) => [workspace.id, workspace.title || workspace.name]));
     const silent = workspaceId ? silentAgents(live, workspaceId) : [];
     // Only the sidebar grouping asks: it lists and probes every agent on the host.
-    const states =
+    const assessed =
       withWorkStates && !workspaceId
-        ? await workStates(api).catch((error) => {
+        ? await assessWorkStates(api).catch((error) => {
             console.error("[status] could not work out work states", error);
             return undefined;
           })
         : undefined;
+    const states = assessed?.states;
+    if (assessed) {
+      // The same cards the grouping used: a stale waiting card reads as blocked on its live children.
+      const derived = new Map(assessed.cards.map((card) => [card.agentId, card]));
+      statuses = statuses.map((status) => derived.get(status.agentId) ?? status);
+    }
     const blockers = await resolveBlockers(statuses).catch((error) => {
       console.error("[status] could not resolve blockers", error);
       return {};
@@ -264,7 +284,9 @@ export default function contribute(server: PluginServerContext) {
     const live = await liveAgents(api);
     const running = new Set(live.filter(isRunning).map((agent) => agent.id));
     const workspaces = summarize({
-      statuses: visibleCards(helpersAmong(live.map((agent) => ({ id: agent.id, parentAgentId: parentOf(agent) })))),
+      statuses: visibleCards(helpersAmong(live.map((agent) => ({ id: agent.id, parentAgentId: parentOf(agent) })))).map(
+        (status) => (lastDerived.get(status.agentId)?.updatedAt === status.updatedAt ? lastDerived.get(status.agentId)! : status),
+      ),
       openAsks: readOpenAskOwners(asksDir),
       agents: live.flatMap((agent) => (agent.workspaceId ? [{ workspaceId: agent.workspaceId, running: running.has(agent.id) }] : [])),
       running: (agentId) => running.has(agentId),

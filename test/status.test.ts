@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { BACKGROUND_SKIP, FALLBACK_PROMPT, HELPER_SKIP, INSTRUCTIONS, readOpenAskOwners, readWaiting, REFRESH_PROMPT, StatusService, TOOLS, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
-import { isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, rowBadgeLabel, workspaceOverviewStatus, summarize, workspaceWorkState, type Status } from "../shared/status";
+import { isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, rowBadgeLabel, workspaceOverviewStatus, summarize, withLiveChildren, workspaceWorkState, type Status } from "../shared/status";
 
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
@@ -519,6 +519,35 @@ describe("workspaceWorkState", () => {
     expect(workspaceWorkState([card({ state: "waiting_on_you", turnsSince: 1 })], now)).toBeNull();
     expect(workspaceWorkState([card({ archived: true })], now)).toBeNull();
     expect(workspaceWorkState([], now)).toBeNull();
+  });
+});
+
+describe("withLiveChildren", () => {
+  const card = (state: Status["state"], fields: Partial<Status> = {}): Status => ({
+    agentId: AGENT, workspaceId: WS, state, tldr: "t", done: [], next: [], updatedAt: "2026-11-24T10:00:00Z", turnsSince: 0, ...fields,
+  });
+  const held = () => ({ running: false, live: false, liveChildren: ["child-1"] });
+  const quiet = () => ({ running: false, live: false });
+
+  it("reads a waiting card as blocked on its live child, which groups it Blocked instead of needs you", () => {
+    const [derived] = withLiveChildren([card("waiting_on_you")], held, () => false);
+    expect(derived).toMatchObject({ state: "blocked", blockedBy: [{ kind: "agent", ref: "child-1" }] });
+    expect(workspaceWorkState([derived], Date.now(), held)).toBe("blocked");
+    expect(workspaceWorkState([card("waiting_on_you")], Date.now(), held)).toBe("waiting");
+  });
+
+  it("does the same for a done card", () => {
+    expect(withLiveChildren([card("done")], held, () => false)[0]?.state).toBe("blocked");
+  });
+
+  it("keeps the card when the agent has an open ask: the human still has something to do", () => {
+    expect(withLiveChildren([card("waiting_on_you")], held, () => true)[0]?.state).toBe("waiting_on_you");
+  });
+
+  it("keeps the card when no child is live, and leaves working and blocked cards alone", () => {
+    expect(withLiveChildren([card("waiting_on_you")], quiet, () => false)[0]?.state).toBe("waiting_on_you");
+    const own = card("blocked", { blockedBy: [{ kind: "pr", ref: "o/r#1" }] });
+    expect(withLiveChildren([own, card("working")], held, () => false)).toEqual([own, card("working")]);
   });
 });
 
