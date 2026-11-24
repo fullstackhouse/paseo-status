@@ -169,8 +169,10 @@ function StatusCard(props: {
   openAgent?: (agentId: string) => void;
   /** Replaces the agent's title, e.g. in the agent's own chat where the title is redundant. */
   heading?: string;
+  /** In a chat that shows cards collapsed: the header folds the card back to one line. */
+  onCollapse?: () => void;
 }) {
-  const { status, agent, waiting, blockers = [], styles, theme, openAgent, heading } = props;
+  const { status, agent, waiting, blockers = [], styles, theme, openAgent, heading, onCollapse } = props;
   const refresh = useRpc(refreshStatus);
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -186,15 +188,26 @@ function StatusCard(props: {
   const answered = isAnswered(status, agent?.running ?? false);
   const tone = styles[stateTone(status, answered)];
 
+  const header = (
+    <>
+      <Icon name="Bot" size={16} color={theme.colors.foregroundMuted} />
+      <Text style={styles.agent} numberOfLines={1}>
+        {heading ?? agent?.title ?? status.agentId}
+      </Text>
+      <Text style={[styles.badge, tone]}>{answered ? ANSWERED_LABEL : STATE_LABELS[status.state]}</Text>
+      {onCollapse ? <Icon name="ChevronUp" size={14} color={theme.colors.foregroundMuted} /> : null}
+    </>
+  );
+
   return (
     <View style={styles.card}>
-      <View style={styles.header}>
-        <Icon name="Bot" size={16} color={theme.colors.foregroundMuted} />
-        <Text style={styles.agent} numberOfLines={1}>
-          {heading ?? agent?.title ?? status.agentId}
-        </Text>
-        <Text style={[styles.badge, tone]}>{answered ? ANSWERED_LABEL : STATE_LABELS[status.state]}</Text>
-      </View>
+      {onCollapse ? (
+        <Pressable accessibilityRole="button" accessibilityState={{ expanded: true }} accessibilityLabel="Collapse status" onPress={onCollapse} style={styles.header}>
+          {header}
+        </Pressable>
+      ) : (
+        <View style={styles.header}>{header}</View>
+      )}
       {status.goal ? <Line styles={styles} label="Goal" text={status.goal} /> : null}
       <Text style={styles.tldr}>{status.tldr}</Text>
       {status.now ? <Line styles={styles} label="Now" text={status.now} /> : null}
@@ -327,40 +340,93 @@ export function AgentStatus(props: { theme: PluginTheme; compact: boolean; works
 /**
  * A status shown in the agent chat where the agent published it. The latest one is the live card;
  * older ones show what that call said, collapsed, since a newer status has replaced them.
+ * `collapsed` (the Chat setting) folds every card to one line until it is pressed.
  */
-export function InlineStatus(props: { theme: PluginTheme; compact: boolean; agentId: string } & StatusCardData) {
-  const { theme, compact, agentId, ...card } = props;
+export function InlineStatus(props: { theme: PluginTheme; compact: boolean; agentId: string; collapsed?: boolean } & StatusCardData) {
+  const { theme, compact, agentId, collapsed = false, ...card } = props;
   const styles = useMemo(() => makeStyles(theme, compact), [theme, compact]);
+  const [opened, setOpened] = useState(false);
   const workspaceId = useAgent(agentId, (agent) => agent.workspaceId);
   // Same query as the panel and the pill popover, so every card in a chat shares one poll.
   const query = useStatuses(workspaceId ?? undefined);
   const live = query.data?.statuses.find((status) => status.agentId === agentId);
-  if (live && isCurrent(card, live)) {
+  const current = live && isCurrent(card, live) ? live : undefined;
+  const onCollapse = collapsed ? () => setOpened(false) : undefined;
+
+  if (collapsed && !opened) {
+    const answered = current ? isAnswered(current, query.data?.agents[agentId]?.running ?? false) : false;
+    return (
+      <CollapsedStatus
+        card={card}
+        label={answered ? ANSWERED_LABEL : STATE_LABELS[card.state]}
+        tone={current ? styles[stateTone(current, answered)] : styles.muted}
+        earlier={!current && query.isSuccess}
+        styles={styles}
+        theme={theme}
+        onPress={() => setOpened(true)}
+      />
+    );
+  }
+  if (current) {
     return (
       <StatusCard
-        status={live}
+        status={current}
         agent={query.data?.agents[agentId]}
         waiting={query.data?.waiting.filter((ask) => ask.agentId === agentId) ?? []}
         blockers={query.data?.blockers?.[agentId]}
         styles={styles}
         theme={theme}
         heading="Status"
+        onCollapse={onCollapse}
       />
     );
   }
   // Until the list loads, the card cannot tell whether it is the latest: show it open, unlabelled.
-  return <EarlierStatus card={card} styles={styles} theme={theme} earlier={query.isSuccess} />;
+  return <EarlierStatus card={card} styles={styles} theme={theme} earlier={query.isSuccess} onCollapse={onCollapse} />;
 }
 
-function EarlierStatus(props: { card: StatusCardData; styles: Styles; theme: PluginTheme; earlier: boolean }) {
-  const { card, styles, theme, earlier } = props;
+/** A card folded to one line: heading, summary, state. Pressing it opens the full card. */
+function CollapsedStatus(props: {
+  card: StatusCardData;
+  label: string;
+  tone: { color: string };
+  earlier: boolean;
+  styles: Styles;
+  theme: PluginTheme;
+  onPress(): void;
+}) {
+  const { card, label, tone, earlier, styles, theme, onPress } = props;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ expanded: false }}
+      accessibilityLabel={`${earlier ? "Earlier status" : "Status"}: ${card.tldr}`}
+      onPress={onPress}
+      style={[styles.card, styles.collapsed, earlier && styles.earlier]}
+    >
+      <View style={styles.header}>
+        <Icon name={earlier ? "History" : "Bot"} size={16} color={theme.colors.foregroundMuted} />
+        <Text style={styles.collapsedHeading}>{earlier ? "Earlier status" : "Status"}</Text>
+        <Text style={[styles.collapsedTldr, earlier && styles.muted]} numberOfLines={1}>
+          {card.tldr}
+        </Text>
+        <Text style={[styles.badge, tone]}>{label}</Text>
+        <Icon name="ChevronDown" size={14} color={theme.colors.foregroundMuted} />
+      </View>
+    </Pressable>
+  );
+}
+
+function EarlierStatus(props: { card: StatusCardData; styles: Styles; theme: PluginTheme; earlier: boolean; onCollapse?: () => void }) {
+  const { card, styles, theme, earlier, onCollapse } = props;
   const [toggled, setToggled] = useState<boolean | null>(null);
-  const expanded = toggled ?? !earlier;
+  // Opened from a collapsed chat row: shown in full, and pressing it folds it back to that row.
+  const expanded = onCollapse ? true : (toggled ?? !earlier);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ expanded }}
-      onPress={() => setToggled(!expanded)}
+      onPress={onCollapse ?? (() => setToggled(!expanded))}
       style={[styles.card, earlier && styles.earlier]}
     >
       <View style={styles.header}>
@@ -432,6 +498,9 @@ function makeStyles(theme: PluginTheme, compact: boolean) {
     toolbar: { flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const, gap: 8 },
     silent: { paddingVertical: compact ? 10 : 8 },
     earlier: { backgroundColor: colors.surface0 },
+    collapsed: { paddingVertical: compact ? 10 : 8 },
+    collapsedHeading: { color: colors.foregroundMuted, fontSize: 12 },
+    collapsedTldr: { color: colors.foreground, fontSize: 13, flex: 1 },
     footer: {
       flexDirection: compact ? ("column" as const) : ("row" as const),
       alignItems: compact ? ("flex-start" as const) : ("center" as const),
