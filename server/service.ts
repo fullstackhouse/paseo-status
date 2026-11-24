@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { AgentTimelineItem } from "@getpaseo/protocol/agent-types";
 import { z } from "zod";
-import { STALE_TURNS, StatusInputSchema, type Status, type Waiting } from "../shared/status";
+import { DONE_WITH_NEXT, isDoneWithNext, STALE_TURNS, StatusInputSchema, type Status, type Waiting } from "../shared/status";
 import type { StatusStore } from "./store";
 
 export const INSTRUCTIONS = `status_set publishes where your work stands to a status card the human reads in Paseo instead of asking you "where are we?".
@@ -15,7 +15,7 @@ export const INSTRUCTIONS = `status_set publishes where your work stands to a st
   - now: what you are doing or waiting on this moment.
   - done: finished steps, each with its proof ("tests pass: 105/105", "PR #22 open, CI green"). Say "not committed" or "not pushed" when that is true.
   - next: what is left, in order. Mark what needs the human.
-  - state: working, waiting_on_you, blocked or done. Use working while you, a heartbeat or a background job still own the next step; waiting_on_you when the human has to act; blocked only when nothing can move until another workspace or another person acts (a child workspace still running, a peer's code review), not for CI, builds, deploys or your own subagents, which are working; done once nothing is left. When blocked, list what blocks you in blockedBy: {kind, ref, reason?} with kind pr (ref "owner/repo#N" or URL), agent (agent id), workspace (workspace id), person (a name) or other.
+  - state: working, waiting_on_you, blocked or done. Use working while you, a heartbeat or a background job still own the next step; waiting_on_you when the human has to act; blocked only when nothing can move until another workspace or another person acts (a child workspace still running, a peer's code review), not for CI, builds, deploys or your own subagents, which are working; done once nothing is left for you or the human, so next is empty. Finished work that waits on the human to test, review or merge it is waiting_on_you, not done. When blocked, list what blocks you in blockedBy: {kind, ref, reason?} with kind pr (ref "owner/repo#N" or URL), agent (agent id), workspace (workspace id), person (a name) or other.
 - Messages starting with [status] are the human asking for an update: call status_set.`;
 
 const SetInput = StatusInputSchema;
@@ -109,7 +109,9 @@ export class StatusService {
       if (!workspaceId) throw new Error(`Agent ${agentId} has no workspace`);
       if (await this.isBackground(workspaceId).catch(() => false)) return { text: BACKGROUND_SKIP };
       if (await this.helper(agentId)) return { text: HELPER_SKIP };
-      const status = this.store.set(workspaceId, agentId, SetInput.parse(args));
+      const input = SetInput.parse(args);
+      if (isDoneWithNext(input)) return { text: DONE_WITH_NEXT, isError: true };
+      const status = this.store.set(workspaceId, agentId, input);
       return { text: `Status published (${status.state}).` };
     } catch (error) {
       const text = error instanceof z.ZodError ? z.prettifyError(error) : error instanceof Error ? error.message : String(error);
@@ -197,7 +199,9 @@ export class StatusService {
     try {
       const workspaceId = await this.workspaceOf(agentId);
       if (!workspaceId) return;
-      this.store.set(workspaceId, agentId, SetInput.parse(JSON.parse(raw)));
+      const input = SetInput.parse(JSON.parse(raw));
+      // No tool call to reject here: steps left at the end of a turn wait on the human.
+      this.store.set(workspaceId, agentId, isDoneWithNext(input) ? { ...input, state: "waiting_on_you" } : input);
     } catch (error) {
       console.error(`[status] unreadable paseo-status block from ${agentId}`, error);
     }

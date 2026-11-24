@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { BACKGROUND_SKIP, FALLBACK_PROMPT, HELPER_SKIP, INSTRUCTIONS, readOpenAskOwners, readWaiting, REFRESH_PROMPT, StatusService, TOOLS, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
-import { isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, rowBadgeLabel, workspaceOverviewStatus, summarize, withLiveChildren, workspaceWorkState, type Status } from "../shared/status";
+import { DONE_WITH_NEXT, isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, rowBadgeLabel, workspaceOverviewStatus, summarize, withLiveChildren, workspaceWorkState, type Status } from "../shared/status";
 
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
@@ -36,10 +36,18 @@ describe("status", () => {
 
   it("publishes one status per agent, replaced on each call, and persists it", async () => {
     expect((await service.callTool(AGENT, "status_set", status)).isError).toBeFalsy();
-    await service.callTool(AGENT, "status_set", { ...status, state: "done", tldr: "Shipped." });
+    await service.callTool(AGENT, "status_set", { ...status, state: "done", tldr: "Shipped.", next: [] });
     const reloaded = new StatusStore(dir).list(WS);
     expect(reloaded).toHaveLength(1);
     expect(reloaded[0]).toMatchObject({ agentId: AGENT, state: "done", tldr: "Shipped.", turnsSince: 0 });
+  });
+
+  it("rejects done while next still lists steps, so Archive isn't offered for untested work", async () => {
+    // The human still has to test it: the card must say waiting_on_you, not done.
+    const result = await service.callTool(AGENT, "status_set", { ...status, state: "done", next: ["You: test it before the PR"] });
+    expect(result).toEqual({ text: DONE_WITH_NEXT, isError: true });
+    expect(store.list(WS)).toHaveLength(0);
+    expect((await service.callTool(AGENT, "status_set", { ...status, state: "waiting_on_you", next: ["You: test it before the PR"] })).isError).toBeFalsy();
   });
 
   it("keeps the goal across updates that leave it out, and clears it on an empty one", async () => {
@@ -227,6 +235,12 @@ describe("status", () => {
       { type: "assistant_message", text: `${block}\n\`\`\`` },
     ] as any);
     expect(store.get("old-agent")).toMatchObject({ state: "blocked", tldr: "Waiting on API keys.", turnsSince: 0 });
+  });
+
+  it("publishes a done block with steps left as waiting on the human", async () => {
+    const block = JSON.stringify({ state: "done", tldr: "Fix committed.", done: [], next: ["You: test it"] });
+    await service.turnEnded(AGENT, [{ type: "assistant_message", text: `\`\`\`paseo-status\n${block}\n\`\`\`` }] as any);
+    expect(store.get(AGENT)).toMatchObject({ state: "waiting_on_you", next: ["You: test it"] });
   });
 
   it("ignores an unreadable paseo-status block", async () => {
