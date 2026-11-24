@@ -24,6 +24,10 @@ const SetInput = StatusInputSchema;
 export const BACKGROUND_SKIP =
   "Skipped: this workspace runs in the background (an automated run hidden from the sidebar), so nobody reads its status. Put what you have in your final reply. status_set works again once the human opens this chat.";
 
+/** What a helper agent gets back if it calls status_set from a tool list fetched before helpers stopped getting it. */
+export const HELPER_SKIP =
+  "Skipped: another agent started you, and that agent reports status for the work. Put what you have in your final reply and don't call status_set again.";
+
 export const TOOLS = [
   {
     name: "status_set",
@@ -76,7 +80,26 @@ export class StatusService {
      * the run over later.
      */
     private readonly isBackground: (workspaceId: string) => Promise<boolean> = async () => false,
+    /**
+     * Helpers (agents another agent started, by `paseo.parent-agent-id`) get no tool and no card: the agent that
+     * started them reports status for the work. Their tool list comes empty, since the MCP server itself can't be
+     * dropped (the create hook doesn't see labels).
+     */
+    private readonly isHelper: (agentId: string) => Promise<boolean> = async () => false,
   ) {}
+
+  async instructionsFor(agentId: string | null): Promise<{ instructions: string | undefined }> {
+    return { instructions: (await this.helper(agentId)) ? undefined : INSTRUCTIONS };
+  }
+
+  async toolsFor(agentId: string | null): Promise<{ tools: typeof TOOLS }> {
+    return { tools: (await this.helper(agentId)) ? [] : TOOLS };
+  }
+
+  /** Unknown callers (Codex on hosts without its agent ID) and failed lookups keep the tool. */
+  private async helper(agentId: string | null): Promise<boolean> {
+    return agentId ? this.isHelper(agentId).catch(() => false) : false;
+  }
 
   async callTool(agentId: string | null, name: string, args: unknown): Promise<ToolResult> {
     try {
@@ -85,6 +108,7 @@ export class StatusService {
       const workspaceId = await this.workspaceOf(agentId);
       if (!workspaceId) throw new Error(`Agent ${agentId} has no workspace`);
       if (await this.isBackground(workspaceId).catch(() => false)) return { text: BACKGROUND_SKIP };
+      if (await this.helper(agentId)) return { text: HELPER_SKIP };
       const status = this.store.set(workspaceId, agentId, SetInput.parse(args));
       return { text: `Status published (${status.state}).` };
     } catch (error) {
@@ -135,7 +159,7 @@ export class StatusService {
     };
     let asked = 0;
     for (const { agentId, workspaceId: targetWorkspace } of targets) {
-      if (await hidden(targetWorkspace)) continue;
+      if ((await hidden(targetWorkspace)) || (await this.helper(agentId))) continue;
       try {
         if (!(await this.refresh(agentId, { auto })).skipped) asked += 1;
       } catch (error) {

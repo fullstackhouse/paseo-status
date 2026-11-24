@@ -25,7 +25,7 @@ async function handle(m) {
   if (m.id === undefined) return;
   try {
     if (m.method === "initialize") {
-      const { instructions } = await call("/instructions", {}).catch(() => ({ instructions: undefined }));
+      const { instructions } = await call("/instructions", { agentId }).catch(() => ({ instructions: undefined }));
       return send({ jsonrpc: "2.0", id: m.id, result: {
         protocolVersion: m.params?.protocolVersion ?? "2025-06-18",
         capabilities: { tools: {} },
@@ -34,7 +34,7 @@ async function handle(m) {
       } });
     }
     if (m.method === "ping") return send({ jsonrpc: "2.0", id: m.id, result: {} });
-    if (m.method === "tools/list") return send({ jsonrpc: "2.0", id: m.id, result: await call("/tools", {}) });
+    if (m.method === "tools/list") return send({ jsonrpc: "2.0", id: m.id, result: await call("/tools", { agentId }) });
     if (m.method === "tools/call") {
       const r = await call("/call", { agentId, cwd: process.cwd(), name: m.params.name, arguments: m.params.arguments ?? {} });
       return send({ jsonrpc: "2.0", id: m.id, result: { content: [{ type: "text", text: r.text }], isError: Boolean(r.isError) } });

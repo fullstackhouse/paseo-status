@@ -10,7 +10,7 @@ import { listen } from "./server/listener";
 import { hasBackgroundWork, Liveness, PARENT_AGENT_ID_LABEL, type LiveAgent } from "./server/liveness";
 import { dataDir } from "./server/paths";
 import { isStatusPermission } from "./server/permissions";
-import { INSTRUCTIONS, readOpenAskOwners, readWaiting, StatusService, TOOLS, workspacesOf, type Courier } from "./server/service";
+import { readOpenAskOwners, readWaiting, StatusService, workspacesOf, type Courier } from "./server/service";
 import { reportNeedsYou, snoozedWorkspaces } from "./server/snooze";
 import { StatusStore } from "./server/store";
 
@@ -60,6 +60,7 @@ export default function contribute(server: PluginServerContext) {
   const equipped = new Equipped(dir);
   const isBackground = async (workspaceId: string) =>
     (await requirePaseo().workspaces.ref(workspaceId).refresh())?.background === true;
+  const isHelper = async (agentId: string) => !!(await requirePaseo().agents.ref(agentId).refresh())?.agent.labels?.[PARENT_AGENT_ID_LABEL];
   const service = new StatusService(
     store,
     courier,
@@ -67,13 +68,20 @@ export default function contribute(server: PluginServerContext) {
     (agentId) => equipped.has(agentId),
     undefined,
     isBackground,
+    isHelper,
   );
 
   type AgentPayload = Awaited<ReturnType<PaseoApi["agents"]["list"]>>["entries"][number]["agent"];
+  /** Agents another agent started: the agent that started them reports status, so their cards from before stay hidden. */
+  const helpersAmong = (agents: readonly { id: string; parentAgentId: string | null }[]) =>
+    new Set(agents.filter((agent) => agent.parentAgentId).map((agent) => agent.id));
+  const parentOf = (agent: AgentPayload) => agent.labels?.[PARENT_AGENT_ID_LABEL] ?? null;
+  const visibleCards = (helpers: ReadonlySet<string>, workspaceId?: string) =>
+    store.list(workspaceId).filter((status) => !helpers.has(status.agentId));
   /** Live agents in a workspace that have never published a status. */
   const silentAgents = (live: AgentPayload[], workspaceId: string): SilentAgent[] =>
     live
-      .filter((agent) => agent.workspaceId === workspaceId && !store.get(agent.id))
+      .filter((agent) => agent.workspaceId === workspaceId && !parentOf(agent) && !store.get(agent.id))
       .map((agent) => ({ agentId: agent.id, title: agent.title ?? null }));
   const isRunning = (agent: AgentPayload) => agent.status === "running" || agent.status === "initializing";
   const liveAgents = async (api: PaseoApi): Promise<AgentPayload[]> =>
@@ -128,7 +136,7 @@ export default function contribute(server: PluginServerContext) {
         found.push({
           id: agent.id,
           running: isRunning(agent),
-          parentAgentId: agent.labels?.[PARENT_AGENT_ID_LABEL] ?? null,
+          parentAgentId: parentOf(agent),
           workspaceBusy: !!agent.workspaceId && busyWorkspaces.has(agent.workspaceId),
         });
       }
@@ -142,9 +150,14 @@ export default function contribute(server: PluginServerContext) {
     (agentId) => void service.wake(agentId).catch((error) => console.error(`[status] could not wake ${agentId}`, error)),
   );
   let wakeTimer: ReturnType<typeof setTimeout> | undefined;
-  /** What backs each card now (sending the wake-ups that fell due), and arms a timer for the next one. */
+  /** What backs each shown card now (sending the wake-ups that fell due), and arms a timer for the next one. */
   const assess = async (api: PaseoApi) => {
-    const { backing } = await liveness.assess(async () => ({ agents: await everyAgent(api), statuses: store.list() }));
+    let cards: Status[] = [];
+    const { backing } = await liveness.assess(async () => {
+      const agents = await everyAgent(api);
+      cards = visibleCards(helpersAmong(agents));
+      return { agents, statuses: cards };
+    });
     const due = liveness.nextWakeAt();
     if (due !== undefined && !wakeTimer) {
       wakeTimer = setTimeout(() => {
@@ -152,18 +165,20 @@ export default function contribute(server: PluginServerContext) {
         void assess(api).catch((error) => console.error("[status] wake check failed", error));
       }, Math.max(0, due - Date.now()) + 1000);
     }
-    return backing;
+    return { backing, cards };
   };
-  const workStates = async (api: PaseoApi): Promise<Record<string, WorkState | null>> => {
-    const backing = await assess(api);
-    const byWorkspace = new Map<string, ReturnType<StatusStore["list"]>>();
-    for (const status of store.list()) byWorkspace.set(status.workspaceId, [...(byWorkspace.get(status.workspaceId) ?? []), status]);
+  const assessWorkStates = async (api: PaseoApi) => {
+    const { backing, cards } = await assess(api);
+    const byWorkspace = new Map<string, Status[]>();
+    for (const status of cards) byWorkspace.set(status.workspaceId, [...(byWorkspace.get(status.workspaceId) ?? []), status]);
     const now = Date.now();
     const idle = { running: false, live: false };
-    return Object.fromEntries(
-      [...byWorkspace].map(([workspaceId, cards]) => [workspaceId, workspaceWorkState(cards, now, (agentId) => backing.get(agentId) ?? idle)]),
+    const states: Record<string, WorkState | null> = Object.fromEntries(
+      [...byWorkspace].map(([workspaceId, shown]) => [workspaceId, workspaceWorkState(shown, now, (agentId) => backing.get(agentId) ?? idle)]),
     );
+    return { states, byWorkspace };
   };
+  const workStates = async (api: PaseoApi) => (await assessWorkStates(api)).states;
 
   /**
    * Reports snoozed workspaces whose work came back to the human after the snooze began: a card
@@ -172,9 +187,9 @@ export default function contribute(server: PluginServerContext) {
   const reportSnoozedNeedingYou = async (api: PaseoApi) => {
     const snoozed = await snoozedWorkspaces(api);
     if (snoozed.length === 0) return;
-    const states = await workStates(api);
+    const { states, byWorkspace } = await assessWorkStates(api);
     for (const workspace of snoozed) {
-      const agentId = needsYouSince(store.list(workspace.id), states[workspace.id] ?? null, workspace.snoozedAt);
+      const agentId = needsYouSince(byWorkspace.get(workspace.id) ?? [], states[workspace.id] ?? null, workspace.snoozedAt);
       if (agentId && (await reportNeedsYou(api, workspace.id, agentId))) {
         console.log(`[status] woke snoozed workspace ${workspace.id}: it needs you`);
       }
@@ -219,8 +234,10 @@ export default function contribute(server: PluginServerContext) {
 
   server.handle(listStatuses, async ({ workspaceId, withWorkStates }, { paseo: api }) => {
     capture(api);
-    const statuses = store.list(workspaceId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     const live = await liveAgents(api);
+    const statuses = visibleCards(helpersAmong(live.map((agent) => ({ id: agent.id, parentAgentId: parentOf(agent) }))), workspaceId).sort((a, b) =>
+      b.updatedAt.localeCompare(a.updatedAt),
+    );
     const agents = Object.fromEntries(
       live.map((agent) => [agent.id, { title: agent.title ?? null, running: isRunning(agent) }]),
     );
@@ -247,7 +264,7 @@ export default function contribute(server: PluginServerContext) {
     const live = await liveAgents(api);
     const running = new Set(live.filter(isRunning).map((agent) => agent.id));
     const workspaces = summarize({
-      statuses: store.list(),
+      statuses: visibleCards(helpersAmong(live.map((agent) => ({ id: agent.id, parentAgentId: parentOf(agent) })))),
       openAsks: readOpenAskOwners(asksDir),
       agents: live.flatMap((agent) => (agent.workspaceId ? [{ workspaceId: agent.workspaceId, running: running.has(agent.id) }] : [])),
       running: (agentId) => running.has(agentId),
@@ -265,8 +282,9 @@ export default function contribute(server: PluginServerContext) {
   });
 
   const listening = listen(dir, {
-    "/instructions": async () => ({ instructions: INSTRUCTIONS }),
-    "/tools": async () => ({ tools: TOOLS }),
+    // The bridge sends its agent ID: helpers get neither.
+    "/instructions": async ({ agentId }) => service.instructionsFor(agentId ?? null),
+    "/tools": async ({ agentId }) => service.toolsFor(agentId ?? null),
     "/call": async ({ agentId, cwd, name, arguments: args }) => {
       const result = await service.callTool(agentId ?? (cwd ? await callerIn(cwd) : null), name, args);
       if (paseo) afterStatusChange(paseo);
