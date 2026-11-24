@@ -45,6 +45,17 @@ export const StatusInputSchema = z.object({
 });
 export type StatusInput = z.infer<typeof StatusInputSchema>;
 
+/**
+ * A done card with steps still in `next` isn't done. The app reads done as "the work shipped" and offers
+ * Archive, so a card that still waits on the human to test or merge must say waiting_on_you.
+ */
+export const DONE_WITH_NEXT =
+  "state is done, but next still lists steps. done means nothing is left for you or the human. Use waiting_on_you if the human has to act (test, review, merge, a manual step), working if a step is still yours. If nothing is actually left, send next empty.";
+
+export function isDoneWithNext(input: Pick<StatusInput, "state" | "next">): boolean {
+  return input.state === "done" && input.next.length > 0;
+}
+
 export const StatusSchema = z.object({
   agentId: z.string(),
   workspaceId: z.string(),
