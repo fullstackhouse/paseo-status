@@ -360,6 +360,7 @@ export function InlineStatus(props: { theme: PluginTheme; compact: boolean; agen
         label={answered ? ANSWERED_LABEL : STATE_LABELS[card.state]}
         tone={current ? styles[stateTone(current, answered)] : styles.muted}
         earlier={!current && query.isSuccess}
+        quiet={!current || stateTone(current, answered) !== "warn"}
         styles={styles}
         theme={theme}
         onPress={() => setOpened(true)}
@@ -389,18 +390,20 @@ function CollapsedStatus(props: {
   label: string;
   tone: { color: string };
   earlier: boolean;
+  /** Not waiting on the human: drawn flat so it does not compete with cards that are. */
+  quiet: boolean;
   styles: Styles;
   theme: PluginTheme;
   onPress(): void;
 }) {
-  const { card, label, tone, earlier, styles, theme, onPress } = props;
+  const { card, label, tone, earlier, quiet, styles, theme, onPress } = props;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ expanded: false }}
       accessibilityLabel={`${earlier ? "Earlier status" : "Status"}: ${card.tldr}`}
       onPress={onPress}
-      style={[styles.card, styles.collapsed, earlier && styles.earlier]}
+      style={[styles.card, styles.collapsed, quiet && styles.earlier]}
     >
       <View style={styles.header}>
         <Icon name={earlier ? "History" : "Bot"} size={16} color={theme.colors.foregroundMuted} />

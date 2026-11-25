@@ -46,6 +46,7 @@ createRoot(document.getElementById("root")!).render(
       <View style={{ padding: 16, gap: 12, backgroundColor: theme.colors.surface0, flex: 1 }}>
         <InlineStatus theme={theme as any} compact={false} agentId="agent-giftcards" {...earlierGiftcards} />
         <InlineStatus theme={theme as any} compact={false} agentId="agent-giftcards" {...statuses[0]!} />
+        <InlineStatus theme={theme as any} compact={false} agentId={statuses[1]!.agentId} {...statuses[1]!} />
       </View>
     </Frame>
   </QueryClientProvider>,
