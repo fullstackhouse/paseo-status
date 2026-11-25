@@ -169,7 +169,7 @@ function StatusCard(props: {
   openAgent?: (agentId: string) => void;
   /** Replaces the agent's title, e.g. in the agent's own chat where the title is redundant. */
   heading?: string;
-  /** In a chat that shows cards collapsed: the header folds the card back to one line. */
+  /** In the chat: the header folds the card back to one line. */
   onCollapse?: () => void;
 }) {
   const { status, agent, waiting, blockers = [], styles, theme, openAgent, heading, onCollapse } = props;
@@ -338,12 +338,11 @@ export function AgentStatus(props: { theme: PluginTheme; compact: boolean; works
 }
 
 /**
- * A status shown in the agent chat where the agent published it. The latest one is the live card;
- * older ones show what that call said, collapsed, since a newer status has replaced them.
- * `collapsed` (the Chat setting) folds every card to one line until it is pressed.
+ * A status shown in the agent chat where the agent published it, folded to one line until pressed.
+ * The latest one opens to the live card; older ones open to what that call said, since a newer status has replaced them.
  */
-export function InlineStatus(props: { theme: PluginTheme; compact: boolean; agentId: string; collapsed?: boolean } & StatusCardData) {
-  const { theme, compact, agentId, collapsed = false, ...card } = props;
+export function InlineStatus(props: { theme: PluginTheme; compact: boolean; agentId: string } & StatusCardData) {
+  const { theme, compact, agentId, ...card } = props;
   const styles = useMemo(() => makeStyles(theme, compact), [theme, compact]);
   const [opened, setOpened] = useState(false);
   const workspaceId = useAgent(agentId, (agent) => agent.workspaceId);
@@ -351,9 +350,9 @@ export function InlineStatus(props: { theme: PluginTheme; compact: boolean; agen
   const query = useStatuses(workspaceId ?? undefined);
   const live = query.data?.statuses.find((status) => status.agentId === agentId);
   const current = live && isCurrent(card, live) ? live : undefined;
-  const onCollapse = collapsed ? () => setOpened(false) : undefined;
+  const collapse = () => setOpened(false);
 
-  if (collapsed && !opened) {
+  if (!opened) {
     const answered = current ? isAnswered(current, query.data?.agents[agentId]?.running ?? false) : false;
     return (
       <CollapsedStatus
@@ -377,12 +376,11 @@ export function InlineStatus(props: { theme: PluginTheme; compact: boolean; agen
         styles={styles}
         theme={theme}
         heading="Status"
-        onCollapse={onCollapse}
+        onCollapse={collapse}
       />
     );
   }
-  // Until the list loads, the card cannot tell whether it is the latest: show it open, unlabelled.
-  return <EarlierStatus card={card} styles={styles} theme={theme} earlier={query.isSuccess} onCollapse={onCollapse} />;
+  return <EarlierStatus card={card} styles={styles} theme={theme} earlier={query.isSuccess} onCollapse={collapse} />;
 }
 
 /** A card folded to one line: heading, summary, state. Pressing it opens the full card. */
@@ -417,31 +415,24 @@ function CollapsedStatus(props: {
   );
 }
 
-function EarlierStatus(props: { card: StatusCardData; styles: Styles; theme: PluginTheme; earlier: boolean; onCollapse?: () => void }) {
+/** An opened chat card whose status is no longer the live one; pressing it folds it back. */
+function EarlierStatus(props: { card: StatusCardData; styles: Styles; theme: PluginTheme; earlier: boolean; onCollapse(): void }) {
   const { card, styles, theme, earlier, onCollapse } = props;
-  const [toggled, setToggled] = useState<boolean | null>(null);
-  // Opened from a collapsed chat row: shown in full, and pressing it folds it back to that row.
-  const expanded = onCollapse ? true : (toggled ?? !earlier);
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ expanded }}
-      onPress={onCollapse ?? (() => setToggled(!expanded))}
-      style={[styles.card, earlier && styles.earlier]}
-    >
+    <Pressable accessibilityRole="button" accessibilityState={{ expanded: true }} onPress={onCollapse} style={[styles.card, earlier && styles.earlier]}>
       <View style={styles.header}>
         <Icon name="History" size={16} color={theme.colors.foregroundMuted} />
         <Text style={styles.agent} numberOfLines={1}>
           {earlier ? "Earlier status" : "Status"}
         </Text>
         <Text style={[styles.badge, styles.muted]}>{STATE_LABELS[card.state]}</Text>
-        <Icon name={expanded ? "ChevronUp" : "ChevronDown"} size={14} color={theme.colors.foregroundMuted} />
+        <Icon name="ChevronUp" size={14} color={theme.colors.foregroundMuted} />
       </View>
-      {expanded && card.goal ? <Line styles={styles} label="Goal" text={card.goal} /> : null}
+      {card.goal ? <Line styles={styles} label="Goal" text={card.goal} /> : null}
       <Text style={[styles.tldr, earlier && styles.muted]}>{card.tldr}</Text>
-      {expanded && card.now ? <Line styles={styles} label="Now" text={card.now} /> : null}
-      {expanded && card.done.length > 0 && <List styles={styles} title="DONE" mark="✓" items={card.done} />}
-      {expanded && card.next.length > 0 && <List styles={styles} title="NEXT" mark="→" items={card.next} />}
+      {card.now ? <Line styles={styles} label="Now" text={card.now} /> : null}
+      {card.done.length > 0 && <List styles={styles} title="DONE" mark="✓" items={card.done} />}
+      {card.next.length > 0 && <List styles={styles} title="NEXT" mark="→" items={card.next} />}
     </Pressable>
   );
 }
