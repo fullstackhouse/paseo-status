@@ -171,8 +171,10 @@ function StatusCard(props: {
   heading?: string;
   /** In the chat: the header folds the card back to one line. */
   onCollapse?: () => void;
+  /** In the chat, not waiting on the human: keeps the flat look it had while folded. */
+  quiet?: boolean;
 }) {
-  const { status, agent, waiting, blockers = [], styles, theme, openAgent, heading, onCollapse } = props;
+  const { status, agent, waiting, blockers = [], styles, theme, openAgent, heading, onCollapse, quiet } = props;
   const refresh = useRpc(refreshStatus);
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -200,7 +202,7 @@ function StatusCard(props: {
   );
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, quiet && styles.earlier]}>
       {onCollapse ? (
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: true }} accessibilityLabel="Collapse status" onPress={onCollapse} style={styles.header}>
           {header}
@@ -351,16 +353,18 @@ export function InlineStatus(props: { theme: PluginTheme; compact: boolean; agen
   const live = query.data?.statuses.find((status) => status.agentId === agentId);
   const current = live && isCurrent(card, live) ? live : undefined;
   const collapse = () => setOpened(false);
+  const answered = current ? isAnswered(current, query.data?.agents[agentId]?.running ?? false) : false;
+  // Not waiting on the human: flat, folded or open, like an ask card that isn't open.
+  const quiet = !current || stateTone(current, answered) !== "warn";
 
   if (!opened) {
-    const answered = current ? isAnswered(current, query.data?.agents[agentId]?.running ?? false) : false;
     return (
       <CollapsedStatus
         card={card}
         label={answered ? ANSWERED_LABEL : STATE_LABELS[card.state]}
         tone={current ? styles[stateTone(current, answered)] : styles.muted}
         earlier={!current && query.isSuccess}
-        quiet={!current || stateTone(current, answered) !== "warn"}
+        quiet={quiet}
         styles={styles}
         theme={theme}
         onPress={() => setOpened(true)}
@@ -378,6 +382,7 @@ export function InlineStatus(props: { theme: PluginTheme; compact: boolean; agen
         theme={theme}
         heading="Status"
         onCollapse={collapse}
+        quiet={quiet}
       />
     );
   }
