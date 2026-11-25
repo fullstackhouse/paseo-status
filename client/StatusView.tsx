@@ -131,7 +131,14 @@ function Toolbar(props: { styles: Styles; workspaceId?: string; statuses: Status
   );
 }
 
-function SilentCard({ agent, styles, theme }: { agent: SilentAgent; styles: Styles; theme: PluginTheme }) {
+function SilentCard(props: {
+  agent: SilentAgent;
+  styles: Styles;
+  theme: PluginTheme;
+  /** Drawn without its own frame, where the surface around it already is one. */
+  frameless?: boolean;
+}) {
+  const { agent, styles, theme, frameless = false } = props;
   const refresh = useRpc(refreshStatus);
   const toast = useToast();
   const mutation = useMutation({
@@ -140,7 +147,7 @@ function SilentCard({ agent, styles, theme }: { agent: SilentAgent; styles: Styl
     onError: (error) => toast.error(error instanceof Error ? error.message : String(error)),
   });
   return (
-    <View style={[styles.card, styles.silent]}>
+    <View style={frameless ? styles.frameless : [styles.card, styles.silent]}>
       <View style={styles.header}>
         <Icon name="Bot" size={16} color={theme.colors.foregroundMuted} />
         <Text style={styles.agent} numberOfLines={1}>
@@ -173,8 +180,10 @@ function StatusCard(props: {
   onCollapse?: () => void;
   /** In the chat, not waiting on the human: keeps the flat look it had while folded. */
   quiet?: boolean;
+  /** Drawn without its own frame, where the surface around it already is one. */
+  frameless?: boolean;
 }) {
-  const { status, agent, waiting, blockers = [], styles, theme, openAgent, heading, onCollapse, quiet } = props;
+  const { status, agent, waiting, blockers = [], styles, theme, openAgent, heading, onCollapse, quiet, frameless = false } = props;
   const refresh = useRpc(refreshStatus);
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -202,7 +211,7 @@ function StatusCard(props: {
   );
 
   return (
-    <View style={[styles.card, quiet && styles.earlier]}>
+    <View style={frameless ? styles.frameless : [styles.card, quiet && styles.earlier]}>
       {onCollapse ? (
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: true }} accessibilityLabel="Collapse status" onPress={onCollapse} style={styles.header}>
           {header}
@@ -313,7 +322,7 @@ function Button(props: { styles: Styles; label: string; onPress(): void; disable
   );
 }
 
-/** One agent's card on its own, for the composer pill's popover. The host pads, scrolls and caps the popover; sizing it here again clips it. */
+/** One agent's card on its own, for the composer pill's popover. The host frames, pads, scrolls and caps the popover, so the card is frameless and unsized. */
 export function AgentStatus(props: { theme: PluginTheme; compact: boolean; workspaceId: string; agentId: string }) {
   const { theme, compact, workspaceId, agentId } = props;
   const styles = useMemo(() => makeStyles(theme, compact), [theme, compact]);
@@ -331,9 +340,10 @@ export function AgentStatus(props: { theme: PluginTheme; compact: boolean; works
           blockers={query.data.blockers?.[agentId]}
           styles={styles}
           theme={theme}
+          frameless
         />
       ) : (
-        <SilentCard agent={{ agentId, title: query.data.agents[agentId]?.title ?? null }} styles={styles} theme={theme} />
+        <SilentCard agent={{ agentId, title: query.data.agents[agentId]?.title ?? null }} styles={styles} theme={theme} frameless />
       )}
     </View>
   );
@@ -481,6 +491,7 @@ function makeStyles(theme: PluginTheme, compact: boolean) {
       padding: compact ? 12 : 14,
       gap: 10,
     },
+    frameless: { gap: 10 },
     header: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8 },
     agent: { color: colors.foregroundMuted, fontSize: 12, flex: 1 },
     badge: { fontSize: 11 },
