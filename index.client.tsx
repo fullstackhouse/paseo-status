@@ -150,8 +150,7 @@ export default function contribute(client: PluginClientContext) {
       openPanel("status");
     },
   });
-  // A status_set call in the chat becomes the status it published, so it can be read in place,
-  // expanded, collapsed or hidden per the Chat setting.
+  // A status_set call in the chat becomes the status it published, folded to one line, so it can be read in place.
   const removeChatCards = contributeChatCards(client);
   // Where each workspace stands, on its sidebar row; Paseo's own status only sees agents stop.
   const removeRowBadge = contributeRowBadge(client);

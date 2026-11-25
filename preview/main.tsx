@@ -42,16 +42,10 @@ createRoot(document.getElementById("root")!).render(
     <Frame id="popover" title="Pill popover" width={440} height={560}>
       <AgentStatus theme={theme as any} compact={false} workspaceId="api" agentId="agent-giftcards" />
     </Frame>
-    <Frame id="chat" title="Agent chat" width={620} height={700}>
+    <Frame id="chat" title="Agent chat" width={620} height={200}>
       <View style={{ padding: 16, gap: 12, backgroundColor: theme.colors.surface0, flex: 1 }}>
         <InlineStatus theme={theme as any} compact={false} agentId="agent-giftcards" {...earlierGiftcards} />
         <InlineStatus theme={theme as any} compact={false} agentId="agent-giftcards" {...statuses[0]!} />
-      </View>
-    </Frame>
-    <Frame id="chat-collapsed" title="Agent chat · Status in chat: Collapsed" width={620} height={200}>
-      <View style={{ padding: 16, gap: 12, backgroundColor: theme.colors.surface0, flex: 1 }}>
-        <InlineStatus theme={theme as any} compact={false} agentId="agent-giftcards" collapsed {...earlierGiftcards} />
-        <InlineStatus theme={theme as any} compact={false} agentId="agent-giftcards" collapsed {...statuses[0]!} />
       </View>
     </Frame>
   </QueryClientProvider>,
