@@ -9,6 +9,7 @@ export const agents: Record<string, string> = {
   "agent-giftcards": "Gift-card checkout",
   "agent-search": "Search ranking fix",
   "agent-images": "Product image resizing",
+  "agent-coordinator": "Pause the overnight UI migration",
 };
 
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
@@ -49,6 +50,16 @@ export const statuses: Status[] = [
     done: ["PR #7 merged, CI green", "Deployed; home page 38% lighter"],
     next: [],
     updatedAt: ago(180),
+    turnsSince: 0,
+  },
+  {
+    agentId: "agent-coordinator",
+    workspaceId: "web",
+    state: "waiting_on_you",
+    tldr: "The second cleanup round is merged. Still waiting on you: merge #1543 and the list-pages scout's A205 and A207.",
+    done: ["Round 2 merged: #1551, #1553, #1556"],
+    next: ["You: merge #1543", "You: answer A205 and A207"],
+    updatedAt: ago(20),
     turnsSince: 0,
   },
 ];

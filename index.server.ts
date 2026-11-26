@@ -1,7 +1,8 @@
+import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { PaseoApi } from "@getpaseo/client";
 import { latestTurn, type PluginServerContext } from "@getpaseo/plugin/server";
-import { listStatuses, needsYouSince, type BlockerView, type Status, refreshAll, refreshStatus, summarize, summarizeWorkspaces, withLiveChildren, workspaceWorkState, type SilentAgent, type WorkState } from "./shared/status";
+import { listStatuses, needsYouSince, type BlockerView, type Status, refreshAll, refreshStatus, summarize, syncAsks, summarizeWorkspaces, withLiveChildren, workspaceWorkState, type SilentAgent, type WorkState } from "./shared/status";
 import { AgentDirectory, pickCaller } from "./server/agents";
 import { BlockerResolver, ghPullRequest, type AgentFacts } from "./server/blockers";
 import { installBridge } from "./server/bridge";
@@ -277,7 +278,8 @@ export default function contribute(server: PluginServerContext) {
       console.error("[status] could not resolve blockers", error);
       return {};
     });
-    return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent, agents, workspaces, workStates: states, blockers };
+    const asks = existsSync(join(asksDir, "workspaces"));
+    return { statuses, waiting: readWaiting(asksDir, workspacesOf(statuses)), silent, agents, workspaces, workStates: states, blockers, asks };
   });
   server.handle(summarizeWorkspaces, async (_input, { paseo: api }) => {
     capture(api);
@@ -301,6 +303,10 @@ export default function contribute(server: PluginServerContext) {
   server.handle(refreshStatus, ({ agentId }, { paseo: api }) => {
     capture(api);
     return service.refresh(agentId);
+  });
+  server.handle(syncAsks, ({ agentId }, { paseo: api }) => {
+    capture(api);
+    return service.syncAsks(agentId);
   });
 
   const listening = listen(dir, {

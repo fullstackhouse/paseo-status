@@ -1,6 +1,8 @@
+import type { PluginTheme } from "@getpaseo/plugin";
 import type { PluginClientContext } from "@getpaseo/plugin/client";
+import type { ComponentType } from "react";
 import { listStatuses, newestCard, workspaceOverviewStatus, type OverviewStatus, type Status, type WorkState } from "../shared/status";
-import { age, POLL_MS, STATE_LABELS } from "./StatusView";
+import { age, POLL_MS, STATE_LABELS, SyncAsksEntry, unrecordedIn } from "./StatusView";
 
 // COMPAT(workspaceSummaryItem): FSH hosts have addWorkspaceSummaryItem (and `workState` from
 // fullstackhouse/paseo's agent-reported grouping, `status` from its Overview v2), but the npm SDK pin
@@ -16,6 +18,16 @@ interface SummaryState {
    * blocked, what it waits on. Older hosts drop the field (and hosts before `goal`/`blockedBy`, those).
    */
   status?: OverviewStatus | null;
+  /** FSH Overview v2: Your move rows, each rendered by the item's `EntryComponent`. */
+  needsYou?: boolean;
+  key?: string;
+  entries?: { id: string; title: string; detail?: string }[];
+}
+/** What an Overview v2 host passes to `EntryComponent`. */
+interface EntryProps {
+  theme: PluginTheme;
+  layout: { compact: boolean };
+  entryId: string;
 }
 interface SummaryRegistration {
   update(patch: SummaryState): void;
@@ -23,7 +35,7 @@ interface SummaryRegistration {
 }
 type SummaryHost = {
   addWorkspaceSummaryItem?: (
-    contribution: SummaryState & { id: string; workspaceId: string; title: string },
+    contribution: SummaryState & { id: string; workspaceId: string; title: string; EntryComponent?: ComponentType<EntryProps> },
   ) => SummaryRegistration;
 };
 
@@ -37,12 +49,16 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
   const add = host.addWorkspaceSummaryItem;
   if (!add) return () => undefined;
   const items = new Map<string, SummaryRegistration>();
+  // A second item per workspace, only while a card waits on the human with no open ask: its Your move row offers Sync asks.
+  const gaps = new Map<string, SummaryRegistration>();
   let stopped = false;
 
   const refresh = async () => {
     // The server decides the work state: only it sees child agents and background work.
-    const { statuses, agents, workStates = {}, blockers = {} } = await client.rpc(listStatuses, { withWorkStates: true });
+    const list = await client.rpc(listStatuses, { withWorkStates: true });
+    const { statuses, agents, workStates = {}, blockers = {} } = list;
     if (stopped) return;
+    const unrecorded = unrecordedIn(list);
     const byWorkspace = new Map<string, Status[]>();
     for (const status of statuses) {
       if (status.archived) continue;
@@ -67,6 +83,33 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
       item.remove();
       items.delete(workspaceId);
     }
+    const gapCards = new Map<string, Status[]>();
+    for (const [workspaceId, cards] of byWorkspace) {
+      const missing = cards.filter((card) => unrecorded.has(card.agentId));
+      if (missing.length > 0) gapCards.set(workspaceId, missing);
+    }
+    for (const [workspaceId, cards] of gapCards) {
+      const state: SummaryState = {
+        label: "No ask for what waits on you",
+        panelId: "status",
+        needsYou: true,
+        // A new card is new attention; the same card staying unrecorded is not.
+        key: cards.map((card) => `${card.agentId}:${card.updatedAt}`).join(","),
+        entries: cards.map((card) => ({
+          id: card.agentId,
+          title: "Status waits on you, but no ask says what",
+          detail: agents[card.agentId]?.title ?? undefined,
+        })),
+      };
+      const item = gaps.get(workspaceId);
+      if (item) item.update(state);
+      else gaps.set(workspaceId, add.call(host, { id: "sync-asks", workspaceId, title: "Status", EntryComponent: SyncAsksEntry, ...state }));
+    }
+    for (const [workspaceId, item] of gaps) {
+      if (gapCards.has(workspaceId)) continue;
+      item.remove();
+      gaps.delete(workspaceId);
+    }
   };
 
   void refresh().catch(() => undefined);
@@ -74,7 +117,8 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
   return () => {
     stopped = true;
     clearInterval(timer);
-    for (const item of items.values()) item.remove();
+    for (const item of [...items.values(), ...gaps.values()]) item.remove();
     items.clear();
+    gaps.clear();
   };
 }

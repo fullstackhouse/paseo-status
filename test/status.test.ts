@@ -2,9 +2,9 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { BACKGROUND_SKIP, FALLBACK_PROMPT, HELPER_SKIP, INSTRUCTIONS, readOpenAskOwners, readWaiting, REFRESH_PROMPT, StatusService, TOOLS, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
+import { BACKGROUND_SKIP, FALLBACK_PROMPT, HELPER_SKIP, INSTRUCTIONS, readOpenAskOwners, readWaiting, REFRESH_PROMPT, StatusService, SYNC_ASKS_PROMPT, TOOLS, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
-import { DONE_WITH_NEXT, isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, rowBadgeLabel, workspaceOverviewStatus, summarize, withLiveChildren, workspaceWorkState, type Status } from "../shared/status";
+import { DONE_WITH_NEXT, isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, rowBadgeLabel, workspaceOverviewStatus, summarize, unrecordedWaits, withLiveChildren, workspaceWorkState, type Status } from "../shared/status";
 
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
@@ -80,6 +80,14 @@ describe("status", () => {
   it("sends a refresh at once to an idle agent", async () => {
     expect(await service.refresh(AGENT)).toEqual({ sent: true });
     expect(courier.sent).toEqual([{ agentId: AGENT, text: REFRESH_PROMPT }]);
+  });
+
+  it("asks an idle agent to sync its asks with its card", async () => {
+    await service.callTool(AGENT, "status_set", { ...status, state: "waiting_on_you" });
+    await service.turnEnded(AGENT);
+    expect(await service.syncAsks(AGENT)).toEqual({ sent: true });
+    expect(courier.sent).toEqual([{ agentId: AGENT, text: SYNC_ASKS_PROMPT }]);
+    expect(store.get(AGENT)?.refreshRequestedAt).toBeDefined();
   });
 
   it("holds a refresh for a running agent until its turn ends, then sends it once", async () => {
@@ -359,6 +367,34 @@ describe("summarize", () => {
       running: () => true,
     });
     expect(result).toEqual({ "ws-a": { state: "working", waiting: 0 }, "ws-b": { state: "done", waiting: 0 } });
+  });
+});
+
+describe("unrecordedWaits", () => {
+  const card = (agentId: string, state: Status["state"], turnsSince = 0): Status => ({
+    agentId,
+    workspaceId: WS,
+    state,
+    tldr: "t",
+    done: [],
+    next: ["You: merge #1543"],
+    updatedAt: "2026-11-26T00:00:00Z",
+    turnsSince,
+  });
+  const idle = () => false;
+
+  it("lists agents whose card waits on the human with no open ask of theirs", () => {
+    expect(unrecordedWaits([card("a1", "waiting_on_you")], [], idle)).toEqual(["a1"]);
+  });
+
+  it("leaves out an agent that owns an open ask, but not one whose sibling does", () => {
+    const waiting = [{ id: "A3", title: "Merge PR #12", agentId: "a1" }];
+    expect(unrecordedWaits([card("a1", "waiting_on_you"), card("a2", "waiting_on_you")], waiting, idle)).toEqual(["a2"]);
+  });
+
+  it("leaves out answered, blocked, working and done cards", () => {
+    const cards = [card("a1", "waiting_on_you", 1), card("a2", "blocked"), card("a3", "working"), card("a4", "done")];
+    expect(unrecordedWaits(cards, [], idle)).toEqual([]);
   });
 });
 
