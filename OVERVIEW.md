@@ -9,11 +9,11 @@ Every agent created after the plugin is installed gets a `status` MCP server wit
 - Inline in the agent's chat, where it called `status_set`: the latest one is the live card, earlier ones show what they said then, collapsed.
 - A pill in each agent's composer with the card's state and age. Pressing it shows the card in a popover.
 - A **Status** row in the sidebar with how many agents are waiting on you, opening a screen with every workspace's cards.
-- A **Status** row in each workspace's Overview tab. Paseo's experimental agent-reported grouping (sidebar display menu, Grouping) uses it to keep a workspace in Working while its card says working and live work backs it, in Blocked while the card says blocked, until the agent publishes again, and in Done once the card says done, even after later turns that didn't update it.
+- A **Status** row in each workspace's Overview tab. Paseo also gets every card as facts (state, when it was written, whether you already replied, and what live work backs it) and decides from them, together with your open asks, whether the workspace needs you, is working, blocked or done. When a card says it waits on you but no ask records what, the Overview names the agent under Your move with **Sync asks**.
 - A **Status** panel in each workspace, with one card per agent, as a tab or in the Explorer.
 - `/paseo-status` in an agent's composer asks that agent to update its card and opens the panel.
 
-Each card says how long ago it was updated and how many turns have ended since, so a status the agent forgot to update is visible as such. Opening the panel asks agents with stale cards for an update, once per update. **Refresh** asks every agent whose card is behind, including agents with no card yet. If an agent is in the middle of a turn, the request joins that turn when its provider allows it, and otherwise waits until the turn ends, so it never interrupts. If the Asks plugin is installed, the card also lists that agent's open asks as "Your move".
+Each card says how long ago it was updated and how many turns have ended since, so a status the agent forgot to update is visible as such. Opening the panel asks agents with stale cards for an update, once per update. **Refresh** asks every agent whose card is behind, including agents with no card yet. If an agent is in the middle of a turn, the request joins that turn when its provider allows it, and otherwise waits until the turn ends, so it never interrupts.
 
 ## Limits
 

@@ -6,7 +6,6 @@ import type {
   PluginWorkspacePanelProps,
 } from "@getpaseo/plugin/client";
 import { contributeChatCards } from "./client/chat-cards";
-import { contributeRowBadge } from "./client/RowBadge";
 import { contributeWorkspaceSummaries } from "./client/summary";
 import { age, AgentStatus, ANSWERED_LABEL, POLL_MS, STATE_LABELS, StatusView } from "./client/StatusView";
 import { isAnswered, listStatuses, refreshStatus, STALE_TURNS, type Status } from "./shared/status";
@@ -152,14 +151,11 @@ export default function contribute(client: PluginClientContext) {
   });
   // A status_set call in the chat becomes the status it published, folded to one line, so it can be read in place.
   const removeChatCards = contributeChatCards(client);
-  // Where each workspace stands, on its sidebar row; Paseo's own status only sees agents stop.
-  const removeRowBadge = contributeRowBadge(client);
   const removePills = contributePills(client);
-  // What each card says, for Paseo's Overview tab and its agent-reported sidebar grouping (beta).
+  // What each card says, for Paseo's Overview tab and, as facts, its workspace attention (sidebar grouping).
   const removeSummaries = contributeWorkspaceSummaries(client);
   return () => {
     removeChatCards();
-    removeRowBadge();
     removePills();
     removeSummaries();
   };
