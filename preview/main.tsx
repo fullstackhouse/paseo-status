@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 import { Text, View } from "react-native";
-import { AgentStatus, InlineStatus, StatusView } from "../client/StatusView";
+import { AgentStatus, InlineStatus, StatusView, SyncAsksEntry } from "../client/StatusView";
 import { earlierGiftcards, statuses } from "./fixtures";
 
 const theme = {
@@ -41,6 +41,16 @@ createRoot(document.getElementById("root")!).render(
     </Frame>
     <Frame id="popover" title="Pill popover" width={440} height={560}>
       <AgentStatus theme={theme as any} compact={false} workspaceId="api" agentId="agent-giftcards" />
+    </Frame>
+    <Frame id="popover-unrecorded" title="Pill popover: waiting, no ask" width={440} height={420}>
+      <View style={{ padding: 16 }}>
+        <AgentStatus theme={theme as any} compact={false} workspaceId="web" agentId="agent-coordinator" />
+      </View>
+    </Frame>
+    <Frame id="overview-entry" title="Overview · Your move" width={440} height={180}>
+      <View style={{ padding: 16 }}>
+        <SyncAsksEntry theme={theme as any} layout={{ compact: false }} entryId="agent-coordinator" />
+      </View>
     </Frame>
     <Frame id="chat" title="Agent chat" width={620} height={200}>
       <View style={{ padding: 16, gap: 12, backgroundColor: theme.colors.surface0, flex: 1 }}>

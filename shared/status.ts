@@ -265,6 +265,18 @@ export function needsYouSince(statuses: readonly Status[], state: WorkState | nu
 export const WaitingSchema = z.object({ id: z.string(), title: z.string(), agentId: z.string() });
 export type Waiting = z.infer<typeof WaitingSchema>;
 
+/**
+ * Agents whose card still waits on the human (`needsYou`) while they own no open ask: nothing the
+ * human can answer records what they wait on. Often it lives in another workspace's asks, or it is
+ * already settled. Another agent's ask doesn't count; it records that agent's request.
+ */
+export function unrecordedWaits(statuses: readonly Status[], waiting: readonly Waiting[], running: (agentId: string) => boolean): string[] {
+  const owners = new Set(waiting.map((ask) => ask.agentId));
+  return statuses
+    .filter((status) => !status.archived && needsYou(status, running(status.agentId)) && !owners.has(status.agentId))
+    .map((status) => status.agentId);
+}
+
 /** A live agent in the workspace that has not published a status. */
 export const SilentAgentSchema = z.object({ agentId: z.string(), title: z.string().nullable() });
 export type SilentAgent = z.infer<typeof SilentAgentSchema>;
@@ -287,7 +299,18 @@ export const listStatuses = defineRpc({
     workStates: z.record(z.string(), z.enum(WORK_STATES).nullable()).optional(),
     /** Per agent whose card is blocked and names what it waits on, resolved on the server (PR state, agent titles). */
     blockers: z.record(z.string(), z.array(BlockerViewSchema)).optional(),
+    /** The asks plugin keeps data on this host, so `waiting` is real and a waiting card without an ask is a gap. */
+    asks: z.boolean().optional(),
   }),
+});
+
+export type StatusList = z.infer<typeof listStatuses.output>;
+
+/** Ask an agent whose card waits on the human without an open ask to bring its asks and card in line. */
+export const syncAsks = defineRpc({
+  name: "status.sync-asks",
+  input: z.object({ agentId: z.string() }),
+  output: z.object({ sent: z.boolean() }),
 });
 
 /** Ask an agent to update its status. Sent now if it is idle or can take a steer, otherwise when its turn ends. */

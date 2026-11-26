@@ -39,6 +39,10 @@ export const TOOLS = [
 export const REFRESH_PROMPT =
   "[status] The human asked where things stand. Call status_set with your current status, then carry on with what you were doing, if anything.";
 
+/** The Sync asks button: the card waits on the human, but no open ask of the agent's records what. */
+export const SYNC_ASKS_PROMPT =
+  "[status] Your status says you are waiting on the human, but no open ask of yours records what, so they have nothing to answer here. Run ask_list with scope mine. Create an ask for each thing still waiting on them that has none, and ask_update or ask_resolve the ones that are out of date. An ask in another workspace shows only there: don't copy it, and if everything you wait on lives elsewhere, set blocked on that workspace. Then call status_set with where things stand and reply in one line.";
+
 /** Sent once when the last agent a parent started stops while the parent sits idle with a working or blocked card. */
 export const WAKE_PROMPT =
   "[status] Every agent you started has stopped and nothing of yours is running, but your status still says working or blocked. Check what your child agents left, carry on if something remains, and call status_set with where things stand.";
@@ -139,6 +143,11 @@ export class StatusService {
     }
     await this.courier.send(agentId, prompt ?? this.prompt(agentId));
     return { sent: true };
+  }
+
+  /** Sync asks: like a refresh, with the prompt that has the agent record what its card waits on. */
+  syncAsks(agentId: string): Promise<{ sent: boolean }> {
+    return this.refresh(agentId, { prompt: SYNC_ASKS_PROMPT });
   }
 
   /**

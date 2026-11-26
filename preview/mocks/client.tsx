@@ -11,6 +11,7 @@ export function useRpc(contract: Contract) {
         silent: input.workspaceId === "api" ? silent : [],
         agents: Object.fromEntries(Object.entries(agents).map(([id, title]) => [id, { title, running: id === "agent-search" }])),
         workspaces,
+        asks: true,
       };
     }
     if (contract.name === "status.refresh-all") return { asked: 0 };

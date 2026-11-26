@@ -22,6 +22,7 @@ Status is a [Paseo](https://paseo.sh) plugin. Each agent keeps a short, plain-la
 - **Done.** Finished steps, each with its proof: "tests pass: 42/42", "PR #7 merged, CI green", and "not pushed" when that is true.
 - **Next.** What is left, in order, with what needs you marked.
 - **Your move.** The agent's open asks, when [paseo-asks](https://github.com/fullstackhouse/paseo-asks) is installed.
+- **Sync asks.** A card that says *waiting on you* while its agent owns no open ask leaves you nothing to answer: what it waits on often lives in another workspace's asks, or is already settled. The card says so and offers **Sync asks**, which tells the agent to record each thing it waits on as an ask, close the stale ones, and correct its status. On FSH Paseo the Overview lists it under Your move with the same button.
 - **Staleness.** How long ago the card was updated and how many turns have ended since. After two turns without an update it turns amber, so a card the agent forgot to update shows that it is out of date.
 
 ## Keeping cards current
