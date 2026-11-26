@@ -1,6 +1,6 @@
 import type { PaseoApi } from "@getpaseo/client";
 import { latestTurn, type PluginServerContext } from "@getpaseo/plugin/server";
-import { type Backing, listStatuses, needsYouSince, type BlockerView, type Status, refreshAll, refreshStatus, syncAsks, type SilentAgent } from "./shared/status";
+import { answersCard, type Backing, runsReply, turnPrompt, listStatuses, needsYouSince, type BlockerView, type Status, refreshAll, refreshStatus, syncAsks, type SilentAgent } from "./shared/status";
 import { AgentDirectory, pickCaller } from "./server/agents";
 import { BlockerResolver, ghPullRequest, type AgentFacts } from "./server/blockers";
 import { installBridge } from "./server/bridge";
@@ -168,7 +168,7 @@ export default function contribute(server: PluginServerContext) {
   /** What backs each shown card now, for Paseo's workspace attention; Paseo decides what it means. */
   const backingOf = async (api: PaseoApi): Promise<Record<string, Backing>> => {
     const { backing, cards } = await assess(api);
-    return Object.fromEntries(cards.flatMap((card) => (backing.has(card.agentId) ? [[card.agentId, backing.get(card.agentId)!] as const] : [])));
+    return Object.fromEntries(cards.flatMap((card) => (backing.has(card.agentId) ? [[card.agentId, withPluginTurn(card.agentId, backing.get(card.agentId)!)] as const] : [])));
   };
 
   /**
@@ -179,7 +179,7 @@ export default function contribute(server: PluginServerContext) {
     const snoozed = await snoozedWorkspaces(api);
     if (snoozed.length === 0) return;
     const { backing, cards } = await assess(api);
-    const running = (agentId: string) => backing.get(agentId)?.running ?? false;
+    const running = (agentId: string) => runsReply(withPluginTurn(agentId, backing.get(agentId) ?? { running: false, live: false }));
     for (const workspace of snoozed) {
       const agentId = needsYouSince(
         cards.filter((card) => card.workspaceId === workspace.id),
@@ -207,8 +207,22 @@ export default function contribute(server: PluginServerContext) {
     equipped.add(agent.id);
     if (agent.workspaceId) agents.remember(agent.id, agent.workspaceId);
   });
+  // Turns a plugin's own prompt started (an Asks check, a reminder, a Refresh): they answer no card while they run.
+  const pluginTurns = new Set<string>();
+  const withPluginTurn = <T extends { running: boolean }>(agentId: string, agent: T): T =>
+    agent.running && pluginTurns.has(agentId) ? { ...agent, pluginTurn: true } : agent;
+  server.on("agent.turn_started", ({ agent }, { paseo: api }) => {
+    capture(api);
+    void latestTurn(api.agents.ref(agent.id).timeline)
+      .then((turn) => {
+        if (answersCard(turnPrompt(turn))) pluginTurns.delete(agent.id);
+        else pluginTurns.add(agent.id);
+      })
+      .catch((error) => console.error("[status] could not read the turn's prompt", error));
+  });
   server.on("agent.turn_ended", ({ agent }, { paseo: api }) => {
     capture(api);
+    pluginTurns.delete(agent.id);
     liveness.turnEnded(agent.id);
     void latestTurn(api.agents.ref(agent.id).timeline)
       .then((timeline) => service.turnEnded(agent.id, timeline))
@@ -235,7 +249,7 @@ export default function contribute(server: PluginServerContext) {
       b.updatedAt.localeCompare(a.updatedAt),
     );
     const agents = Object.fromEntries(
-      live.map((agent) => [agent.id, { title: agent.title ?? null, running: isRunning(agent) }]),
+      live.map((agent) => [agent.id, withPluginTurn(agent.id, { title: agent.title ?? null, running: isRunning(agent) })]),
     );
     const workspaces = workspaceId
       ? {}

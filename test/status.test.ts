@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { BACKGROUND_SKIP, FALLBACK_PROMPT, HELPER_SKIP, INSTRUCTIONS, REFRESH_PROMPT, StatusService, SYNC_ASKS_PROMPT, TOOLS, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
-import { agentCard, DONE_WITH_NEXT, isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, workspaceOverviewStatus, type Status } from "../shared/status";
+import { agentCard, answersCard, runsReply, DONE_WITH_NEXT, isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, workspaceOverviewStatus, type Status } from "../shared/status";
 
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
@@ -425,5 +425,47 @@ describe("needsYouSince", () => {
     const older = card({ agentId: "a", updatedAt: "2026-11-17T10:30:00Z" });
     const newer = card({ agentId: "b", updatedAt: "2026-11-17T10:45:00Z" });
     expect(needsYouSince([older, newer, card({ agentId: "c", archived: true })], SNOOZED_AT, idle)).toBe("b");
+  });
+});
+
+describe("turns plugins start", () => {
+  const userTurn = (text: string) => [{ type: "user_message", text }, { type: "assistant_message", text: "ok" }] as any;
+  const ASKS_CHECK = "[asks] A check found that your last reply leaves something for the human (a question), and no ask records it.";
+  const STUCK = "[asks] Your turn ended with A4 (Merge PR #40) in progress, so the human sees no buttons on it. For each: leave it.";
+  const PR_UPDATE = "[asks] A8 (Request review on PR #268) PR #268 checks passing.";
+  const NOTHING_MOVING = "[asks] A3 (Deploy) shows nothing moving: update it or hand it back.";
+  const ASK_ANSWER = '[asks] A3 (Merge PR #98?) "Merge with --admin": Merge it. When it is done, call ask_resolve for A3.';
+
+  it("tells a human or child prompt from a plugin's check, reminder or watcher message", () => {
+    for (const text of [ASKS_CHECK, STUCK, PR_UPDATE, NOTHING_MOVING, REFRESH_PROMPT, SYNC_ASKS_PROMPT, WAKE_PROMPT, FALLBACK_PROMPT, "[asks] The human wants your asks up to date. Run ask_list."])
+      expect(answersCard(text), text).toBe(false);
+    for (const text of ["merge it", ASK_ANSWER, "[asks] A3 (Pick) reply from the human: \"red\". Update or resolve A3 accordingly.", `${STUCK}\n${ASK_ANSWER}`, undefined])
+      expect(answersCard(text), String(text)).toBe(true);
+  });
+
+  it("a waiting card stays unanswered through an Asks check turn, and a human reply answers it", async () => {
+    const store = new StatusStore(mkdtempSync(join(tmpdir(), "status-")));
+    const service = new StatusService(store, new FakeCourier(), async () => WS);
+    await service.callTool(AGENT, "status_set", { ...status, state: "waiting_on_you" });
+    await service.turnEnded(AGENT); // the turn that set it
+    await service.turnEnded(AGENT, userTurn(ASKS_CHECK));
+    await service.turnEnded(AGENT, userTurn(STUCK));
+    expect(needsYou(store.get(AGENT)!, false)).toBe(true);
+    expect(isAnswered(store.get(AGENT)!, false)).toBe(false);
+    expect(store.get(AGENT)!.turnsSince).toBe(2); // still stale for Refresh's count
+    await service.turnEnded(AGENT, userTurn("merged, thanks"));
+    expect(isAnswered(store.get(AGENT)!, false)).toBe(true);
+  });
+
+  it("a plugin's turn still running doesn't answer the card; a person's does", async () => {
+    const store = new StatusStore(mkdtempSync(join(tmpdir(), "status-")));
+    const service = new StatusService(store, new FakeCourier(), async () => WS);
+    await service.callTool(AGENT, "status_set", { ...status, state: "waiting_on_you" });
+    await service.turnEnded(AGENT);
+    const card = store.get(AGENT)!;
+    expect(agentCard(card, { running: true, pluginTurn: true, live: true })).not.toHaveProperty("answered");
+    expect(agentCard(card, { running: true, live: true })).toHaveProperty("answered", true);
+    expect(runsReply({ running: true, pluginTurn: true })).toBe(false);
+    expect(runsReply(undefined)).toBe(false);
   });
 });

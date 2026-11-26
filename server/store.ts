@@ -41,23 +41,29 @@ export class StatusStore {
       workspaceId,
       updatedAt: this.now().toISOString(),
       turnsSince: 0,
+      repliesSince: 0,
       setThisTurn: true,
       refreshPending: previous?.refreshPending,
     });
   }
 
   /** Bookkeeping that does not count as the agent updating its status. */
-  patch(agentId: string, patch: Partial<Pick<Status, "turnsSince" | "setThisTurn" | "refreshPending" | "refreshRequestedAt" | "archived">>): Status | undefined {
+  patch(agentId: string, patch: Partial<Pick<Status, "turnsSince" | "repliesSince" | "setThisTurn" | "refreshPending" | "refreshRequestedAt" | "archived">>): Status | undefined {
     const current = this.get(agentId);
     if (!current) return undefined;
     return this.write(current.workspaceId, agentId, { ...current, ...patch });
   }
 
-  /** Counts the turn as stale unless the agent set its status during it. */
-  turnEnded(agentId: string): Status | undefined {
+  /**
+   * Counts the turn as stale unless the agent set its status during it, and as a reply when `answers`
+   * (a person or child agent started it, not a plugin's own prompt).
+   */
+  turnEnded(agentId: string, answers = true): Status | undefined {
     const current = this.get(agentId);
     if (!current) return undefined;
-    return this.patch(agentId, current.setThisTurn ? { setThisTurn: false } : { turnsSince: current.turnsSince + 1 });
+    if (current.setThisTurn) return this.patch(agentId, { setThisTurn: false });
+    const replies = current.repliesSince ?? current.turnsSince;
+    return this.patch(agentId, { turnsSince: current.turnsSince + 1, repliesSince: answers ? replies + 1 : replies });
   }
 
   private write(workspaceId: string, agentId: string, status: Status): Status {
