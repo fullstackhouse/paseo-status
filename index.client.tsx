@@ -8,7 +8,7 @@ import type {
 import { contributeChatCards } from "./client/chat-cards";
 import { contributeWorkspaceSummaries } from "./client/summary";
 import { age, AgentStatus, ANSWERED_LABEL, POLL_MS, STATE_LABELS, StatusView } from "./client/StatusView";
-import { isAnswered, listStatuses, refreshStatus, STALE_TURNS, type Status } from "./shared/status";
+import { isAnswered, listStatuses, refreshStatus, STALE_TURNS, type Status, type TurnState } from "./shared/status";
 
 const STATE_ICONS: Record<Status["state"], string> = {
   working: "LoaderCircle",
@@ -44,10 +44,10 @@ function PillPopover({ theme, layout, workspaceId, ...context }: PluginButtonCon
 }
 
 /** The pill's face: the card's state and age, or a nudge when there is no card. */
-function pillFace(status: Status | undefined, running: boolean): { label: string; icon: string } {
+function pillFace(status: Status | undefined, agent: TurnState): { label: string; icon: string } {
   if (!status) return { label: "No status", icon: "Gauge" };
   const stale = status.turnsSince >= STALE_TURNS ? " · stale" : "";
-  const answered = isAnswered(status, running);
+  const answered = isAnswered(status, agent);
   return {
     label: `${answered ? ANSWERED_LABEL : STATE_LABELS[status.state]} · ${age(status.updatedAt)}${stale}`,
     icon: answered ? "MessageCircleReply" : STATE_ICONS[status.state],
@@ -67,7 +67,7 @@ function contributePills(client: PluginClientContext): () => void {
         id: "status",
         workspaceId: agent.workspaceId,
         agentId: agent.id,
-        button: { title: "Status", ...pillFace(undefined, false), behavior: { kind: "popover", Content: PillPopover } },
+        button: { title: "Status", ...pillFace(undefined, undefined), behavior: { kind: "popover", Content: PillPopover } },
       }),
     );
   };
@@ -79,7 +79,7 @@ function contributePills(client: PluginClientContext): () => void {
   const refreshFaces = async () => {
     const { statuses, agents } = await client.rpc(listStatuses, {});
     const byAgent = new Map(statuses.map((status) => [status.agentId, status]));
-    for (const [agentId, pill] of pills) pill.update(pillFace(byAgent.get(agentId), agents[agentId]?.running ?? false));
+    for (const [agentId, pill] of pills) pill.update(pillFace(byAgent.get(agentId), agents[agentId]));
   };
   const timer = setInterval(() => void refreshFaces().catch(() => undefined), POLL_MS * 2);
 

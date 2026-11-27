@@ -91,13 +91,12 @@ export type Status = z.infer<typeof StatusSchema>;
  * A waiting or blocked card no answering turn has started since: a reply (or a child agent reporting
  * back) starts a turn, which answers a waiting card even before the agent publishes again. Turns a
  * plugin starts on its own (`answersCard`) don't. A blocked card waits on another workspace or
- * person, so no turn answers it; only the agent's next `status_set` does. `running` means the agent
- * runs a turn that answers.
+ * person, so no turn answers it; only the agent's next `status_set` does.
  */
-function stillWaiting(status: Status, running: boolean): boolean {
+function stillWaiting(status: Status, agent: TurnState): boolean {
   if (status.state === "blocked") return true;
   if (status.state !== "waiting_on_you") return false;
-  return (status.repliesSince ?? status.turnsSince) === 0 && !(running && !status.setThisTurn);
+  return (status.repliesSince ?? status.turnsSince) === 0 && !(runsReply(agent) && !status.setThisTurn);
 }
 
 // Prompts that plugins send on their own, not on the human's behalf: the fixed texts paseo-status
@@ -152,8 +151,15 @@ export function answersTurn(prompt: { text?: string; origin?: TurnOrigin } | und
   return (prompt.text ?? "").split(BATCHED).some((part) => ASK_EVENT.test(part) && answersCard(part));
 }
 
+/**
+ * An agent's current turn as the answered rule needs it. Every surface passes this, never a bare
+ * `running` flag: a running turn a plugin started (an Asks check, a reminder) answers no card, and a
+ * caller that passed `agent.running` made the chat pill read "answered" while Overview read waiting.
+ */
+export type TurnState = { running: boolean; pluginTurn?: boolean } | undefined;
+
 /** The agent runs a turn that answers its card: one a person or child agent started, not a plugin. */
-export function runsReply(agent: { running: boolean; pluginTurn?: boolean } | undefined): boolean {
+export function runsReply(agent: TurnState): boolean {
   return !!agent?.running && !agent.pluginTurn;
 }
 
@@ -169,17 +175,17 @@ export function turnPrompt(
  * The card asks for the human and is still unanswered. A blocked card waits on another workspace or
  * another person instead, so it never needs you.
  */
-export function needsYou(status: Status, running: boolean): boolean {
+export function needsYou(status: Status, agent: TurnState): boolean {
   if (status.state !== "waiting_on_you") return false;
-  return stillWaiting(status, running);
+  return stillWaiting(status, agent);
 }
 
 /**
  * A waiting card a turn started after: the human replied, or a child agent reported back.
  * A blocked card is never answered (see `stillWaiting`).
  */
-export function isAnswered(status: Status, running: boolean): boolean {
-  return status.state !== "working" && status.state !== "done" && !stillWaiting(status, running);
+export function isAnswered(status: Status, agent: TurnState): boolean {
+  return status.state !== "working" && status.state !== "done" && !stillWaiting(status, agent);
 }
 
 /** How loud a card's state badge reads. A blocked card waits on someone else, so it reads calm. */
@@ -204,10 +210,10 @@ export interface OverviewStatus {
   blockedBy?: BlockerView[];
 }
 
-export function overviewStatus(status: Status, running: boolean, blockers: readonly BlockerView[] = []): OverviewStatus {
+export function overviewStatus(status: Status, agent: TurnState, blockers: readonly BlockerView[] = []): OverviewStatus {
   return {
     state: status.state,
-    ...(isAnswered(status, running) ? { answered: true } : {}),
+    ...(isAnswered(status, agent) ? { answered: true } : {}),
     ...(status.goal ? { goal: status.goal } : {}),
     summary: status.tldr,
     ...(status.now ? { now: status.now } : {}),
@@ -222,12 +228,12 @@ export function overviewStatus(status: Status, running: boolean, blockers: reado
  */
 export function workspaceOverviewStatus(
   cards: readonly Status[],
-  running: (agentId: string) => boolean,
+  agentOf: (agentId: string) => TurnState,
   blockers: Readonly<Record<string, readonly BlockerView[]>> = {},
 ): OverviewStatus | null {
   const latest = newestCard(cards);
   if (!latest) return null;
-  const status = overviewStatus(latest, running(latest.agentId), blockers[latest.agentId]);
+  const status = overviewStatus(latest, agentOf(latest.agentId), blockers[latest.agentId]);
   const goal = newestCard(cards.filter((card) => card.goal))?.goal;
   return goal ? { ...status, goal } : status;
 }
@@ -273,7 +279,7 @@ export function agentCard(status: Status, backing: Backing): AgentCard {
   return {
     agentId: status.agentId,
     state: status.state,
-    ...(isAnswered(status, runsReply(backing)) ? { answered: true } : {}),
+    ...(isAnswered(status, backing) ? { answered: true } : {}),
     updatedAt: Date.parse(status.updatedAt),
     ...(backing.live ? { live: true } : {}),
     ...(backing.lastLiveAt !== undefined ? { lastLiveAt: backing.lastLiveAt } : {}),
@@ -296,13 +302,13 @@ export const BackingSchema = z.object({
  * needed you when it was snoozed stays snoozed; the human snoozed it knowing that. A blocked card waits on
  * someone else, so it never wakes one. Only a trigger: Paseo decides how the workspace groups.
  */
-export function needsYouSince(statuses: readonly Status[], snoozedAt: string, running: (agentId: string) => boolean): string | null {
+export function needsYouSince(statuses: readonly Status[], snoozedAt: string, agentOf: (agentId: string) => TurnState): string | null {
   const cards = statuses.filter((status) => !status.archived);
   const allDone = cards.length > 0 && cards.every((status) => status.state === "done");
   const since = Date.parse(snoozedAt);
   const newest = cards
     .filter((status) => Date.parse(status.updatedAt) > since)
-    .filter((status) => (allDone ? true : needsYou(status, running(status.agentId))))
+    .filter((status) => (allDone ? true : needsYou(status, agentOf(status.agentId))))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
   return newest?.agentId ?? null;
 }

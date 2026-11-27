@@ -1,6 +1,6 @@
 import type { PaseoApi } from "@getpaseo/client";
 import { latestTurn, type PluginServerContext } from "@getpaseo/plugin/server";
-import { answersTurn, type Backing, type TurnOrigin, runsReply, turnPrompt, listStatuses, needsYouSince, type BlockerView, type Status, refreshAll, refreshStatus, syncAsks, type SilentAgent } from "./shared/status";
+import { answersTurn, type Backing, type TurnOrigin, turnPrompt, listStatuses, needsYouSince, type BlockerView, type Status, refreshAll, refreshStatus, syncAsks, type SilentAgent } from "./shared/status";
 import { AgentDirectory, pickCaller } from "./server/agents";
 import { BlockerResolver, ghPullRequest, type AgentFacts } from "./server/blockers";
 import { installBridge } from "./server/bridge";
@@ -179,12 +179,12 @@ export default function contribute(server: PluginServerContext) {
     const snoozed = await snoozedWorkspaces(api);
     if (snoozed.length === 0) return;
     const { backing, cards } = await assess(api);
-    const running = (agentId: string) => runsReply(withPluginTurn(agentId, backing.get(agentId) ?? { running: false, live: false }));
+    const agentOf = (agentId: string) => withPluginTurn(agentId, backing.get(agentId) ?? { running: false, live: false });
     for (const workspace of snoozed) {
       const agentId = needsYouSince(
         cards.filter((card) => card.workspaceId === workspace.id),
         workspace.snoozedAt,
-        running,
+        agentOf,
       );
       if (agentId && (await reportNeedsYou(api, workspace.id, agentId))) {
         console.log(`[status] woke snoozed workspace ${workspace.id}: it needs you`);

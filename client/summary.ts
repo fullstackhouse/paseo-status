@@ -1,7 +1,7 @@
 import type { PluginTheme } from "@getpaseo/plugin";
 import type { PluginClientContext } from "@getpaseo/plugin/client";
 import type { ComponentType } from "react";
-import { agentCard, type Backing, listStatuses, runsReply, newestCard, workspaceOverviewStatus, type AgentCard, type OverviewStatus, type Status } from "../shared/status";
+import { agentCard, type Backing, listStatuses, newestCard, workspaceOverviewStatus, type AgentCard, type OverviewStatus, type Status } from "../shared/status";
 import { age, POLL_MS, STATE_LABELS, SyncAsksEntry } from "./StatusView";
 
 // COMPAT(workspaceSummaryItem): FSH hosts have addWorkspaceSummaryItem (`status` from fullstackhouse/paseo's
@@ -52,7 +52,7 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
     // Only the server sees what backs a card: child agents and background work.
     const { statuses, agents, backing = {}, blockers = {} } = await client.rpc(listStatuses, { withBacking: true });
     if (stopped) return;
-    const running = (agentId: string) => runsReply(agents[agentId]);
+    const agentOf = (agentId: string) => agents[agentId];
     const byWorkspace = new Map<string, Status[]>();
     for (const status of statuses) {
       if (status.archived) continue;
@@ -65,7 +65,7 @@ export function contributeWorkspaceSummaries(client: PluginClientContext): () =>
       const state: SummaryState = {
         label: latest ? `${STATE_LABELS[latest.state]} · ${age(latest.updatedAt)}` : undefined,
         panelId: "status",
-        status: workspaceOverviewStatus(cards, running, blockers),
+        status: workspaceOverviewStatus(cards, agentOf, blockers),
         cards: cards.map((card) => agentCard(card, backing[card.agentId] ?? fallbackBacking(agents[card.agentId]))),
       };
       const item = items.get(workspaceId);
