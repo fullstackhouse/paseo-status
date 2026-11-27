@@ -1,6 +1,7 @@
 import type { AgentTimelineItem } from "@getpaseo/protocol/agent-types";
 import { z } from "zod";
 import { answersTurn, DONE_WITH_NEXT, isDoneWithNext, STALE_TURNS, StatusInputSchema, turnPrompt, type Status, type TurnOrigin } from "../shared/status";
+import { chatTitle } from "./chat-title";
 import type { StatusStore } from "./store";
 
 export const INSTRUCTIONS = `status_set publishes where your work stands to a status card the human reads in Paseo instead of asking you "where are we?".
@@ -9,6 +10,7 @@ export const INSTRUCTIONS = `status_set publishes where your work stands to a st
 - Each call replaces the whole status, so send every field every time, except goal.
 - Write for someone who skipped the transcript: plain words, no internal jargon, no file paths unless they matter.
   - goal: one or two sentences on the whole job and its overall progress, so someone opening this workspace cold knows what it is for ("Ship the record-page redesign from #966 as 7 stacked PRs; 4 merged, QA fixes next"). Send it on your first call and again when the job or its overall progress changes; leaving it out keeps the last one.
+  - title: a few words, at most 60 characters, naming what this chat is about ("Gift-card checkout"). Send it on your first call and again when the chat's subject changes.
   - tldr: one or two sentences. Where things stand right now.
   - now: what you are doing or waiting on this moment.
   - done: finished steps, each with its proof ("tests pass: 105/105", "PR #22 open, CI green"). Say "not committed" or "not pushed" when that is true.
@@ -88,6 +90,8 @@ export class StatusService {
      * dropped (the create hook doesn't see labels).
      */
     private readonly isHelper: (agentId: string) => Promise<boolean> = async () => false,
+    /** Names the agent's chat from its card's title (`setAutomaticTitle` in `server/chat-title.ts`); resolves to whether it landed. */
+    private readonly nameChat: (agentId: string, title: string) => Promise<boolean> = async () => false,
   ) {}
 
   async instructionsFor(agentId: string | null): Promise<{ instructions: string | undefined }> {
@@ -114,6 +118,10 @@ export class StatusService {
       const input = SetInput.parse(args);
       if (isDoneWithNext(input)) return { text: DONE_WITH_NEXT, isError: true };
       const status = this.store.set(workspaceId, agentId, input);
+      if (input.title) {
+        // A host that can't take the title (or refuses it) must not fail the card.
+        await this.nameChat(agentId, chatTitle(input.title, input.blockedBy)).catch((error) => console.error(`[status] could not name the chat of ${agentId}`, error));
+      }
       return { text: `Status published (${status.state}).` };
     } catch (error) {
       const text = error instanceof z.ZodError ? z.prettifyError(error) : error instanceof Error ? error.message : String(error);

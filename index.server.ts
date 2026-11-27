@@ -4,6 +4,7 @@ import { answersTurn, type Backing, type TurnOrigin, turnPrompt, listStatuses, n
 import { AgentDirectory, pickCaller } from "./server/agents";
 import { BlockerResolver, ghPullRequest, type AgentFacts } from "./server/blockers";
 import { installBridge } from "./server/bridge";
+import { setAutomaticTitle } from "./server/chat-title";
 import { Equipped } from "./server/equipped";
 import { listen } from "./server/listener";
 import { hasBackgroundWork, Liveness, PARENT_AGENT_ID_LABEL, type LiveAgent } from "./server/liveness";
@@ -66,6 +67,7 @@ export default function contribute(server: PluginServerContext) {
     undefined,
     isBackground,
     isHelper,
+    (agentId, title) => setAutomaticTitle(requirePaseo(), agentId, title),
   );
 
   type AgentPayload = Awaited<ReturnType<PaseoApi["agents"]["list"]>>["entries"][number]["agent"];

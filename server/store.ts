@@ -29,7 +29,8 @@ export class StatusStore {
     return workspaceId ? this.read(workspaceId)[agentId] : undefined;
   }
 
-  set(workspaceId: string, agentId: string, input: StatusInput): Status {
+  /** A `title` in the input named the chat; it isn't part of the card. */
+  set(workspaceId: string, agentId: string, { title: _title, ...input }: StatusInput & { title?: string }): Status {
     const previous = this.get(agentId);
     // The goal is sticky: agents send it when the job or its overall progress changes, not every call.
     const goal = input.goal === undefined ? previous?.goal : input.goal.trim() || undefined;
