@@ -75,6 +75,8 @@ export const StatusSchema = z.object({
   updatedAt: z.string(),
   /** Turns that ended since the agent last called status_set. */
   turnsSince: z.number(),
+  /** Turns since status_set that a person or a child agent started (`answersCard`); absent on cards written before it was counted. */
+  repliesSince: z.number().optional(),
   /** status_set was called during the turn now running; cleared when it ends. */
   setThisTurn: z.boolean().optional(),
   /** The human pressed Refresh while the agent was mid-turn; the request goes out when it ends. */
@@ -86,15 +88,48 @@ export const StatusSchema = z.object({
 export type Status = z.infer<typeof StatusSchema>;
 
 /**
- * A waiting or blocked card no turn has started since: a reply (or any other prompt, such as a
- * child agent reporting back) starts a turn, which answers a waiting card even before the agent
- * publishes again. A blocked card waits on another workspace or person, so no turn answers it
- * (reminders and ask checks run turns too); only the agent's next `status_set` does.
+ * A waiting or blocked card no answering turn has started since: a reply (or a child agent reporting
+ * back) starts a turn, which answers a waiting card even before the agent publishes again. Turns a
+ * plugin starts on its own (`answersCard`) don't. A blocked card waits on another workspace or
+ * person, so no turn answers it; only the agent's next `status_set` does. `running` means the agent
+ * runs a turn that answers.
  */
 function stillWaiting(status: Status, running: boolean): boolean {
   if (status.state === "blocked") return true;
   if (status.state !== "waiting_on_you") return false;
-  return status.turnsSince === 0 && !(running && !status.setThisTurn);
+  return (status.repliesSince ?? status.turnsSince) === 0 && !(running && !status.setThisTurn);
+}
+
+// Prompts that plugins send on their own, not on the human's behalf. The host tags no prompt with its
+// sender, so these match the fixed texts paseo-status (server/service.ts) and paseo-asks (shared/prompts.ts,
+// server/watcher.ts) send. An `[asks]` message for a button press or reply is the human answering, so it counts.
+const PLUGIN_PROMPTS: readonly RegExp[] = [
+  /^\[status\] /,
+  /^\[asks\] A check found that your last reply /,
+  /^\[asks\] The human wants your asks up to date\./,
+  /^\[asks\] Your turn ended with /,
+  /^\[asks\] A\d+ \([\s\S]*?\) shows nothing moving: update it or hand it back\.$/,
+  /^\[asks\] A\d+ \([\s\S]*?\) PR #\d+ [^.]*\.$/,
+];
+
+/**
+ * Whether a turn started by `prompt` answers a waiting card: anything a person or a child agent sent
+ * does; a plugin's own check, reminder, refresh or PR update doesn't. Batched `[asks]` messages are
+ * read one by one, and any human one answers. Unknown (no prompt found) answers, as before.
+ */
+export function answersCard(prompt: string | undefined): boolean {
+  if (prompt === undefined) return true;
+  return prompt.split(/\n(?=\[(?:asks|status)\] )/).some((part) => !PLUGIN_PROMPTS.some((re) => re.test(part)));
+}
+
+/** The agent runs a turn that answers its card: one a person or child agent started, not a plugin. */
+export function runsReply(agent: { running: boolean; pluginTurn?: boolean } | undefined): boolean {
+  return !!agent?.running && !agent.pluginTurn;
+}
+
+/** The prompt that started a turn, from `latestTurn`'s items. */
+export function turnPrompt(turn: readonly { type: string; text?: string }[]): string | undefined {
+  return turn.find((item) => item.type === "user_message")?.text;
 }
 
 /**
@@ -172,6 +207,8 @@ export function newestCard(cards: readonly Status[]): Status | undefined {
 export interface Backing {
   /** The agent itself is mid-turn. */
   running: boolean;
+  /** The running turn was started by a plugin's own prompt (`answersCard`), so it answers no card. */
+  pluginTurn?: boolean;
   /** The agent, its background work (shells, watches), or a descendant agent (or its background work) is live. */
   live: boolean;
   /** When live work was last seen for this agent (epoch ms), if it was. */
@@ -203,7 +240,7 @@ export function agentCard(status: Status, backing: Backing): AgentCard {
   return {
     agentId: status.agentId,
     state: status.state,
-    ...(isAnswered(status, backing.running) ? { answered: true } : {}),
+    ...(isAnswered(status, runsReply(backing)) ? { answered: true } : {}),
     updatedAt: Date.parse(status.updatedAt),
     ...(backing.live ? { live: true } : {}),
     ...(backing.lastLiveAt !== undefined ? { lastLiveAt: backing.lastLiveAt } : {}),
@@ -213,6 +250,8 @@ export function agentCard(status: Status, backing: Backing): AgentCard {
 
 export const BackingSchema = z.object({
   running: z.boolean(),
+  /** The running turn was started by a plugin's own prompt (`answersCard`), so it answers no card. */
+  pluginTurn: z.boolean().optional(),
   live: z.boolean(),
   lastLiveAt: z.number().optional(),
   liveChildren: z.array(z.string()).optional(),
@@ -250,7 +289,7 @@ export const listStatuses = defineRpc({
     statuses: z.array(StatusSchema),
     silent: z.array(SilentAgentSchema),
     /** Looked up on the server: Paseo's state hooks only work inside a workspace panel, not on screens or popovers. */
-    agents: z.record(z.string(), z.object({ title: z.string().nullable(), running: z.boolean() })),
+    agents: z.record(z.string(), z.object({ title: z.string().nullable(), running: z.boolean(), pluginTurn: z.boolean().optional() })),
     workspaces: z.record(z.string(), z.string()),
     /** Per agent with a card: what backs it, for Paseo's workspace attention; only when asked for with `withBacking`. */
     backing: z.record(z.string(), BackingSchema).optional(),

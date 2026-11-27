@@ -1,6 +1,6 @@
 import type { AgentTimelineItem } from "@getpaseo/protocol/agent-types";
 import { z } from "zod";
-import { DONE_WITH_NEXT, isDoneWithNext, STALE_TURNS, StatusInputSchema, type Status } from "../shared/status";
+import { answersCard, DONE_WITH_NEXT, isDoneWithNext, STALE_TURNS, StatusInputSchema, turnPrompt, type Status } from "../shared/status";
 import type { StatusStore } from "./store";
 
 export const INSTRUCTIONS = `status_set publishes where your work stands to a status card the human reads in Paseo instead of asking you "where are we?".
@@ -180,7 +180,7 @@ export class StatusService {
 
   async turnEnded(agentId: string, timeline: readonly AgentTimelineItem[] = []): Promise<void> {
     await this.captureFromReply(agentId, timeline);
-    const status = this.store.turnEnded(agentId);
+    const status = this.store.turnEnded(agentId, answersCard(turnPrompt(timeline)));
     const pending = status?.refreshPending || this.pendingWithoutStatus.delete(agentId);
     if (!pending) return;
     if (status) this.store.patch(agentId, { refreshPending: false });

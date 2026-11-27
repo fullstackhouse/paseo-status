@@ -4,7 +4,7 @@ import { Icon, ScrollView, useToast } from "@getpaseo/plugin/client/react-native
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Linking, Pressable, Text, View } from "react-native";
-import { isAnswered, listStatuses, type BlockerView, stateTone, refreshAll, refreshStatus, STALE_TURNS, syncAsks, type SilentAgent, type Status } from "../shared/status";
+import { isAnswered, runsReply, listStatuses, type BlockerView, stateTone, refreshAll, refreshStatus, STALE_TURNS, syncAsks, type SilentAgent, type Status } from "../shared/status";
 import { isCurrent, type StatusCard as StatusCardData } from "../shared/timeline";
 
 export const POLL_MS = 4000;
@@ -209,7 +209,7 @@ function StatusCard(props: {
     onError: (error) => toast.error(error instanceof Error ? error.message : String(error)),
   });
   const stale = status.turnsSince >= STALE_TURNS;
-  const answered = isAnswered(status, agent?.running ?? false);
+  const answered = isAnswered(status, runsReply(agent));
   const tone = styles[stateTone(status, answered)];
 
   const header = (
@@ -372,7 +372,7 @@ export function InlineStatus(props: { theme: PluginTheme; compact: boolean; agen
   const live = query.data?.statuses.find((status) => status.agentId === agentId);
   const current = live && isCurrent(card, live) ? live : undefined;
   const collapse = () => setOpened(false);
-  const answered = current ? isAnswered(current, query.data?.agents[agentId]?.running ?? false) : false;
+  const answered = current ? isAnswered(current, runsReply(query.data?.agents[agentId])) : false;
 
   if (!opened) {
     return (
