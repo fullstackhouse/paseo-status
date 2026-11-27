@@ -42,7 +42,10 @@ export const StatusInputSchema = z.object({
   next: z.array(z.string().min(1).max(300)).max(12).default([]),
   /** What a blocked card waits on. Replaced on each call; shown only while the state is blocked. */
   blockedBy: z.array(BlockerSchema).max(8).optional(),
-  /** A few words naming what the chat is about. Names the chat on hosts that allow it; not stored on the card. */
+  /**
+   * A few words naming what the chat is about. Offered only to agents created while "Name chats from the status card"
+   * is on (`TITLED_TOOLS`); optional so every call parses. Not stored on the card.
+   */
   title: z.string().trim().max(60).optional(),
 });
 export type StatusInput = z.infer<typeof StatusInputSchema>;

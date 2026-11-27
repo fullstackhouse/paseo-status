@@ -1,6 +1,6 @@
 import type { PaseoApi } from "@getpaseo/client";
 import { describe, expect, it } from "vitest";
-import { chatTitle, HOST_TITLE_MAX, setAutomaticTitle } from "../server/chat-title";
+import { chatNamer, hostNamesChats, setAutomaticTitle } from "../server/chat-title";
 
 function hostWith(handle: object) {
   const refs: string[] = [];
@@ -35,20 +35,30 @@ describe("setAutomaticTitle", () => {
   });
 });
 
-describe("chatTitle", () => {
-  const pr = (ref: string) => ({ kind: "pr" as const, ref });
-
-  it("counts the same PR named twice as one", () => {
-    expect(chatTitle("Review", [pr("a/b#7"), pr("https://github.com/a/b/pull/7")])).toBe("Review · PR 7");
+describe("hostNamesChats", () => {
+  it("is true on a host whose handles have setAutomaticTitle", () => {
+    expect(hostNamesChats(hostWith({ async setAutomaticTitle() {} }).api)).toBe(true);
   });
 
-  it("ignores refs that aren't PRs", () => {
-    expect(chatTitle("Review", [pr("the login PR")])).toBe("Review");
+  it("is false on an older host", () => {
+    expect(hostNamesChats(hostWith({}).api)).toBe(false);
+  });
+});
+
+describe("chatNamer", () => {
+  it("rejects, rather than throws, when there is no daemon session yet", async () => {
+    const nameChat = chatNamer(() => {
+      throw new Error("No daemon session yet");
+    });
+    let result: Promise<boolean> | undefined;
+    expect(() => {
+      result = nameChat("agent-1", "Gift-card checkout");
+    }).not.toThrow();
+    await expect(result).rejects.toThrow("No daemon session yet");
   });
 
-  it("drops the PR when the title would pass the host's limit", () => {
-    const long = "x".repeat(HOST_TITLE_MAX - 5);
-    expect(chatTitle(long, [pr("a/b#7")])).toBe(long);
-    expect(chatTitle("x".repeat(HOST_TITLE_MAX - 7), [pr("a/b#7")])).toBe(`${"x".repeat(HOST_TITLE_MAX - 7)} · PR 7`);
+  it("names the chat through the session it is given", async () => {
+    const { api } = hostWith({ setAutomaticTitle: async () => ({ applied: true }) });
+    expect(await chatNamer(() => api)("agent-1", "Gift-card checkout")).toBe(true);
   });
 });

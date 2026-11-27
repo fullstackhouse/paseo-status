@@ -6,6 +6,7 @@ import type {
   PluginWorkspacePanelProps,
 } from "@getpaseo/plugin/client";
 import { contributeChatCards } from "./client/chat-cards";
+import { ChatTitleSettings } from "./client/settings";
 import { contributeWorkspaceSummaries } from "./client/summary";
 import { age, AgentStatus, ANSWERED_LABEL, POLL_MS, STATE_LABELS, StatusView } from "./client/StatusView";
 import { isAnswered, listStatuses, refreshStatus, STALE_TURNS, type Status, type TurnState } from "./shared/status";
@@ -122,6 +123,7 @@ export default function contribute(client: PluginClientContext) {
     Component: WorkspacePanel,
   });
   client.addScreen({ id: "status", title: "Status", Component: GlobalScreen });
+  client.addSettingsScreen({ id: "chat-titles", title: "Chat titles", icon: "MessageSquareText", Component: ChatTitleSettings });
   client.addCommandCenterItem({
     id: "open-status",
     title: "Open status for this workspace",
