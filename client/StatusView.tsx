@@ -4,7 +4,7 @@ import { Icon, ScrollView, useToast } from "@getpaseo/plugin/client/react-native
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Linking, Pressable, Text, View } from "react-native";
-import { isAnswered, listStatuses, type BlockerView, stateTone, refreshAll, refreshStatus, STALE_TURNS, syncAsks, unrecordedWaits, type SilentAgent, type StatusList, type Status, type Waiting } from "../shared/status";
+import { isAnswered, listStatuses, type BlockerView, stateTone, refreshAll, refreshStatus, STALE_TURNS, syncAsks, type SilentAgent, type Status } from "../shared/status";
 import { isCurrent, type StatusCard as StatusCardData } from "../shared/timeline";
 
 export const POLL_MS = 4000;
@@ -29,12 +29,6 @@ interface ViewProps {
   openAgent?: (agentId: string) => void;
 }
 
-/** Agents whose card waits on the human with no open ask of theirs; none when the asks plugin isn't on this host. */
-export function unrecordedIn(data: Pick<StatusList, "statuses" | "waiting" | "agents" | "asks">): Set<string> {
-  if (!data.asks) return new Set();
-  return new Set(unrecordedWaits(data.statuses, data.waiting, (agentId) => data.agents[agentId]?.running ?? false));
-}
-
 /** The Sync asks button: has the agent record what its card waits on as asks, or correct the card. */
 function useSyncAsks(agentId: string) {
   const sync = useRpc(syncAsks);
@@ -49,9 +43,6 @@ function useSyncAsks(agentId: string) {
     onError: (error) => toast.error(error instanceof Error ? error.message : String(error)),
   });
 }
-
-/** Why a card offers Sync asks. */
-const UNRECORDED_TEXT = "says waiting on you, but no open ask records what, so there is nothing to answer.";
 
 function useStatuses(workspaceId?: string) {
   const list = useRpc(listStatuses);
@@ -69,8 +60,7 @@ export function StatusView({ theme, compact, workspaceId, openAgent }: ViewProps
 
   if (query.isPending) return <Message styles={styles} text="Loading status…" />;
   if (query.isError) return <Message styles={styles} text={`Could not load status: ${query.error.message}`} danger />;
-  const { statuses, waiting, silent, agents, workspaces, blockers = {} } = query.data;
-  const unrecorded = unrecordedIn(query.data);
+  const { statuses, silent, agents, workspaces, blockers = {} } = query.data;
   const toolbar = <Toolbar styles={styles} workspaceId={workspaceId} statuses={statuses} silent={silent} />;
   if (statuses.length === 0 && silent.length === 0) {
     return (
@@ -93,9 +83,7 @@ export function StatusView({ theme, compact, workspaceId, openAgent }: ViewProps
               key={status.agentId}
               status={status}
               agent={agents[status.agentId]}
-              waiting={waiting.filter((ask) => ask.agentId === status.agentId)}
               blockers={blockers[status.agentId]}
-              unrecorded={unrecorded.has(status.agentId)}
               styles={styles}
               theme={theme}
               openAgent={openAgent}
@@ -194,11 +182,8 @@ function SilentCard(props: {
 function StatusCard(props: {
   status: Status;
   agent?: AgentInfo;
-  waiting: Waiting[];
   /** What a blocked card waits on, resolved on the server. */
   blockers?: BlockerView[];
-  /** The card waits on the human, but the agent owns no open ask: offer Sync asks. */
-  unrecorded?: boolean;
   styles: Styles;
   theme: PluginTheme;
   openAgent?: (agentId: string) => void;
@@ -211,8 +196,7 @@ function StatusCard(props: {
   /** Drawn without its own frame, where the surface around it already is one. */
   frameless?: boolean;
 }) {
-  const { status, agent, waiting, blockers = [], unrecorded = false, styles, theme, openAgent, heading, onCollapse, quiet, frameless = false } = props;
-  const sync = useSyncAsks(status.agentId);
+  const { status, agent, blockers = [], styles, theme, openAgent, heading, onCollapse, quiet, frameless = false } = props;
   const refresh = useRpc(refreshStatus);
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -251,10 +235,6 @@ function StatusCard(props: {
       {status.goal ? <Line styles={styles} label="Goal" text={status.goal} /> : null}
       <Text style={styles.tldr}>{status.tldr}</Text>
       {status.now ? <Line styles={styles} label="Now" text={status.now} /> : null}
-      {waiting.map((ask) => (
-        <Line key={ask.id} styles={styles} label="Your move" text={`${ask.id} ${ask.title}`} tone={styles.warn} />
-      ))}
-      {unrecorded ? <Line styles={styles} label="No ask" text={`This card ${UNRECORDED_TEXT}`} tone={styles.warn} /> : null}
       {status.state === "blocked" && blockers.length > 0 && <BlockedBy styles={styles} blockers={blockers} openAgent={openAgent} />}
       {status.done.length > 0 && <List styles={styles} title="DONE" mark="✓" items={status.done} />}
       {status.next.length > 0 && <List styles={styles} title="NEXT" mark="→" items={status.next} />}
@@ -266,14 +246,6 @@ function StatusCard(props: {
           {agent?.running ? " · running" : ""}
         </Text>
         <View style={styles.buttons}>
-          {unrecorded && (
-            <Button
-              styles={styles}
-              label={sync.isPending ? "Asking…" : "Sync asks"}
-              disabled={sync.isPending || sync.isSuccess || status.refreshPending}
-              onPress={() => sync.mutate()}
-            />
-          )}
           <Button
             styles={styles}
             label={mutation.isPending ? "Asking…" : "Refresh"}
@@ -374,9 +346,7 @@ export function AgentStatus(props: { theme: PluginTheme; compact: boolean; works
         <StatusCard
           status={status}
           agent={query.data.agents[agentId]}
-          waiting={query.data.waiting.filter((ask) => ask.agentId === agentId)}
           blockers={query.data.blockers?.[agentId]}
-          unrecorded={unrecordedIn(query.data).has(agentId)}
           styles={styles}
           theme={theme}
           frameless
@@ -421,9 +391,7 @@ export function InlineStatus(props: { theme: PluginTheme; compact: boolean; agen
       <StatusCard
         status={current}
         agent={query.data?.agents[agentId]}
-        waiting={query.data?.waiting.filter((ask) => ask.agentId === agentId) ?? []}
         blockers={query.data?.blockers?.[agentId]}
-        unrecorded={query.data ? unrecordedIn(query.data).has(agentId) : false}
         styles={styles}
         theme={theme}
         heading="Status"
@@ -489,16 +457,19 @@ function EarlierStatus(props: { card: StatusCardData; styles: Styles; theme: Plu
 }
 
 /**
- * The Overview's Your move row for an agent whose card waits on the human with no open ask
- * (`entryId` is the agent): what's wrong, and Sync asks.
+ * The Overview's Your move row Paseo shows for an agent whose card waits on the human while no ask records
+ * what (`entryId` is the agent): which agent, what's wrong, and Sync asks. Paseo decides when; this draws it.
  */
 export function SyncAsksEntry(props: { theme: PluginTheme; layout: { compact: boolean }; entryId: string }) {
   const { theme, layout, entryId } = props;
   const styles = useMemo(() => makeStyles(theme, layout.compact), [theme, layout.compact]);
   const sync = useSyncAsks(entryId);
+  // Names come from the server: `useAgent` throws outside a workspace panel. Same query as the global screen.
+  const query = useStatuses();
+  const name = query.data?.agents[entryId]?.title ?? "This agent";
   return (
     <View style={styles.frameless}>
-      <Text style={styles.line}>{`The status ${UNRECORDED_TEXT} Sync asks has the agent record each thing it waits on as an ask, or correct its status.`}</Text>
+      <Text style={styles.line}>{unrecordedText(name)}</Text>
       <View style={styles.buttons}>
         <Button
           styles={styles}
@@ -509,6 +480,11 @@ export function SyncAsksEntry(props: { theme: PluginTheme; layout: { compact: bo
       </View>
     </View>
   );
+}
+
+/** Why Paseo offers Sync asks for an agent. */
+export function unrecordedText(agentName: string): string {
+  return `${agentName} says it waits on you, but no open ask records what. Sync asks has it record each thing as an ask, or correct its status.`;
 }
 
 function Message({ styles, text, danger }: { styles: Styles; text: string; danger?: boolean }) {

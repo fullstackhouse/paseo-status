@@ -168,12 +168,6 @@ export function newestCard(cards: readonly Status[]): Status | undefined {
   return cards.reduce<Status | undefined>((latest, card) => (!latest || card.updatedAt > latest.updatedAt ? card : latest), undefined);
 }
 
-/**
- * How long a `working` card keeps an idle workspace in Paseo's Working group once nothing live backs it:
- * counted from the card's update or the last live work it saw, whichever is later. Covers gaps between turns.
- */
-export const WORKING_GRACE_MS = 5 * 60 * 1000;
-
 /** What backs one agent's card right now, as the server sees it. */
 export interface Backing {
   /** The agent itself is mid-turn. */
@@ -187,94 +181,58 @@ export interface Backing {
 }
 
 /**
- * A waiting card whose agent sits idle while a child it started works in another workspace, and that
- * has no open ask, is stale: nothing gave the parent a turn when the human set the child going again.
- * Reads as blocked on those children until they stop; the card itself is never rewritten. A done card
- * is left alone: the agent said its part is over, and work it handed off for good runs on its own.
- * An agent that waits on a child's result says so itself with a blocked card.
+ * One agent's card as facts for Paseo's workspace attention (FSH `PluginWorkspaceAgentCard`). Paseo decides
+ * from these whether the workspace needs you, works, is blocked or is done; this plugin only reports them.
  */
-export function withLiveChildren(
-  statuses: readonly Status[],
-  backing: (agentId: string) => Backing,
-  hasOpenAsk: (status: Status) => boolean,
-): Status[] {
-  return statuses.map((status) => {
-    if (status.state !== "waiting_on_you") return status;
-    const children = backing(status.agentId).liveChildren ?? [];
-    if (children.length === 0 || hasOpenAsk(status)) return status;
-    return {
-      ...status,
-      state: "blocked",
-      blockedBy: children.slice(0, 8).map((ref) => ({ kind: "agent" as const, ref, reason: "Working on this right now" })),
-    };
-  });
+export interface AgentCard {
+  agentId: string;
+  state: Status["state"];
+  /** A turn started after the card was written: the human replied, or a child reported back. */
+  answered?: boolean;
+  /** Epoch ms of the card's last update. */
+  updatedAt: number;
+  /** The agent, its background work, or a descendant agent is live right now. */
+  live?: boolean;
+  /** When live work was last seen for this agent (epoch ms). */
+  lastLiveAt?: number;
+  /** Descendant agents live in other workspaces, for an idle agent with a waiting card. */
+  liveChildren?: string[];
 }
 
-export const WORK_STATES = ["waiting", "blocked", "working", "done"] as const;
-export type WorkState = (typeof WORK_STATES)[number];
+export function agentCard(status: Status, backing: Backing): AgentCard {
+  return {
+    agentId: status.agentId,
+    state: status.state,
+    ...(isAnswered(status, backing.running) ? { answered: true } : {}),
+    updatedAt: Date.parse(status.updatedAt),
+    ...(backing.live ? { live: true } : {}),
+    ...(backing.lastLiveAt !== undefined ? { lastLiveAt: backing.lastLiveAt } : {}),
+    ...(backing.liveChildren?.length ? { liveChildren: [...backing.liveChildren] } : {}),
+  };
+}
+
+export const BackingSchema = z.object({
+  running: z.boolean(),
+  live: z.boolean(),
+  lastLiveAt: z.number().optional(),
+  liveChildren: z.array(z.string()).optional(),
+});
 
 /**
- * Where one workspace's work stands for Paseo's agent-reported sidebar grouping, from the cards of
- * its agents: `waiting` while a card still waits on the human (see `needsYou`); `working`
- * while live work backs a `working` card, or within `WORKING_GRACE_MS` of its update or of the last live
- * work: a claim nothing backs is not believed; `blocked` otherwise, while a card is blocked (Paseo's
- * Blocked group, not needs you; hosts before it drop the value and group by the turn). `null` leaves the
- * workspace to Paseo's own turn state, as for an answered question. A `done` card counts even when stale: agents skip status_set on
- * turns that change nothing (answering an ask, a reminder), and those turns must not drop the workspace
- * back to Ready to review.
+ * The agent to report when a snoozed workspace needs you: the newest card written after the snooze began that
+ * still waits on the human (see `needsYou`), or, once every card says done, says done. A workspace that already
+ * needed you when it was snoozed stays snoozed; the human snoozed it knowing that. A blocked card waits on
+ * someone else, so it never wakes one. Only a trigger: Paseo decides how the workspace groups.
  */
-export function workspaceWorkState(
-  statuses: readonly Status[],
-  now: number,
-  backing: (agentId: string) => Backing = () => ({ running: false, live: false }),
-): WorkState | null {
+export function needsYouSince(statuses: readonly Status[], snoozedAt: string, running: (agentId: string) => boolean): string | null {
   const cards = statuses.filter((status) => !status.archived);
-  if (cards.length === 0) return null;
-  if (cards.some((status) => needsYou(status, backing(status.agentId).running))) return "waiting";
-  const blocked = cards.some((status) => status.state === "blocked");
-  if (cards.some((status) => status.state === "waiting_on_you")) return null;
-  const heldWorking = cards.some((status) => {
-    if (status.state !== "working") return false;
-    const { live, lastLiveAt = 0 } = backing(status.agentId);
-    return live || now - Math.max(Date.parse(status.updatedAt), lastLiveAt) < WORKING_GRACE_MS;
-  });
-  // Work still moving outranks a card waiting on something else.
-  if (heldWorking) return "working";
-  if (blocked) return "blocked";
-  if (cards.every((status) => status.state === "done")) return "done";
-  return null;
-}
-
-/**
- * The agent to report when a snoozed workspace needs you: its work state (`workspaceWorkState`) is
- * `waiting` or `done`, and the card that says so was written after the snooze began. A workspace that
- * already needed you when it was snoozed stays snoozed; the human snoozed it knowing that. Blocked
- * work waits on someone else, so it never wakes one.
- */
-export function needsYouSince(statuses: readonly Status[], state: WorkState | null, snoozedAt: string): string | null {
-  if (state !== "waiting" && state !== "done") return null;
-  const says = (status: Status) => (state === "waiting" ? status.state === "waiting_on_you" : status.state === "done");
+  const allDone = cards.length > 0 && cards.every((status) => status.state === "done");
   const since = Date.parse(snoozedAt);
-  const newest = statuses
-    .filter((status) => !status.archived && says(status) && Date.parse(status.updatedAt) > since)
+  const newest = cards
+    .filter((status) => Date.parse(status.updatedAt) > since)
+    .filter((status) => (allDone ? true : needsYou(status, running(status.agentId))))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
   return newest?.agentId ?? null;
-}
-
-/** An open ask from the asks plugin, when it is installed. Read-only. */
-export const WaitingSchema = z.object({ id: z.string(), title: z.string(), agentId: z.string() });
-export type Waiting = z.infer<typeof WaitingSchema>;
-
-/**
- * Agents whose card still waits on the human (`needsYou`) while they own no open ask: nothing the
- * human can answer records what they wait on. Often it lives in another workspace's asks, or it is
- * already settled. Another agent's ask doesn't count; it records that agent's request.
- */
-export function unrecordedWaits(statuses: readonly Status[], waiting: readonly Waiting[], running: (agentId: string) => boolean): string[] {
-  const owners = new Set(waiting.map((ask) => ask.agentId));
-  return statuses
-    .filter((status) => !status.archived && needsYou(status, running(status.agentId)) && !owners.has(status.agentId))
-    .map((status) => status.agentId);
 }
 
 /** A live agent in the workspace that has not published a status. */
@@ -285,22 +243,19 @@ export const listStatuses = defineRpc({
   name: "status.list",
   input: z.object({
     workspaceId: z.string().optional(),
-    /** Also work out `workStates` (every workspace only); costs a scan of every agent on the host. */
-    withWorkStates: z.boolean().optional(),
+    /** Also report what backs each card (`backing`); costs a scan of every agent on the host. */
+    withBacking: z.boolean().optional(),
   }),
   output: z.object({
     statuses: z.array(StatusSchema),
-    waiting: z.array(WaitingSchema),
     silent: z.array(SilentAgentSchema),
     /** Looked up on the server: Paseo's state hooks only work inside a workspace panel, not on screens or popovers. */
     agents: z.record(z.string(), z.object({ title: z.string().nullable(), running: z.boolean() })),
     workspaces: z.record(z.string(), z.string()),
-    /** Per workspace with a card, for Paseo's sidebar grouping; only when asked for with `withWorkStates`. */
-    workStates: z.record(z.string(), z.enum(WORK_STATES).nullable()).optional(),
+    /** Per agent with a card: what backs it, for Paseo's workspace attention; only when asked for with `withBacking`. */
+    backing: z.record(z.string(), BackingSchema).optional(),
     /** Per agent whose card is blocked and names what it waits on, resolved on the server (PR state, agent titles). */
     blockers: z.record(z.string(), z.array(BlockerViewSchema)).optional(),
-    /** The asks plugin keeps data on this host, so `waiting` is real and a waiting card without an ask is a gap. */
-    asks: z.boolean().optional(),
   }),
 });
 
@@ -330,69 +285,3 @@ export const refreshAll = defineRpc({
   input: z.object({ workspaceId: z.string().optional(), auto: z.boolean().optional() }),
   output: z.object({ asked: z.number() }),
 });
-
-/** Where a workspace stands at a glance. */
-export const WORKSPACE_STATES = ["needs_you", "working", "done"] as const;
-export type WorkspaceState = (typeof WORKSPACE_STATES)[number];
-
-export const WorkspaceSummarySchema = z.object({
-  state: z.enum(WORKSPACE_STATES),
-  /** Open asks plus cards that need the human. */
-  waiting: z.number(),
-});
-export type WorkspaceSummary = z.infer<typeof WorkspaceSummarySchema>;
-
-/** One summary per workspace on this host that has a card, an open ask, or a live agent. */
-export const summarizeWorkspaces = defineRpc({
-  name: "status.summary",
-  input: z.object({}),
-  output: z.object({ workspaces: z.record(z.string(), WorkspaceSummarySchema) }),
-});
-
-/**
- * Needs you beats working beats done. An open ask or a card asking for the human needs you, counted once:
- * a waiting card whose agent has open asks is the same request, so only its asks count. A running
- * agent or a card that says work goes on is working, even between turns. Paseo's own status only
- * sees the agent stop, so it calls a workspace done while its agents still have work queued.
- */
-export function summarize(input: {
-  statuses: readonly Status[];
-  /** The owning agent of each open ask, per workspace. */
-  openAsks: Readonly<Record<string, readonly string[]>>;
-  /** Live agents with the workspace they are in. */
-  agents: readonly { workspaceId: string; running: boolean }[];
-  running: (agentId: string) => boolean;
-}): Record<string, WorkspaceSummary> {
-  const result: Record<string, WorkspaceSummary> = {};
-  const at = (workspaceId: string) => (result[workspaceId] ??= { state: "done", waiting: 0 });
-  const raise = (summary: WorkspaceSummary, state: WorkspaceState) => {
-    if (WORKSPACE_STATES.indexOf(state) < WORKSPACE_STATES.indexOf(summary.state)) summary.state = state;
-  };
-  for (const agent of input.agents) {
-    const summary = at(agent.workspaceId);
-    if (agent.running) raise(summary, "working");
-  }
-  for (const status of input.statuses) {
-    const summary = at(status.workspaceId);
-    if (needsYou(status, input.running(status.agentId))) {
-      if (!input.openAsks[status.workspaceId]?.includes(status.agentId)) summary.waiting += 1;
-      raise(summary, "needs_you");
-    } else if (status.state === "working") raise(summary, "working");
-  }
-  for (const [workspaceId, owners] of Object.entries(input.openAsks)) {
-    if (owners.length === 0) continue;
-    const summary = at(workspaceId);
-    summary.waiting += owners.length;
-    raise(summary, "needs_you");
-  }
-  return result;
-}
-
-/**
- * The sidebar row badge: only "needs you". Paseo's own sections already show working and done,
- * so repeating them added noise; open asks and cards waiting on the human are what Paseo can't see.
- */
-export function rowBadgeLabel(summary: WorkspaceSummary | undefined): string | null {
-  if (summary?.state !== "needs_you") return null;
-  return summary.waiting > 1 ? `needs you (${summary.waiting})` : "needs you";
-}

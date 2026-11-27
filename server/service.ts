@@ -1,8 +1,6 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import type { AgentTimelineItem } from "@getpaseo/protocol/agent-types";
 import { z } from "zod";
-import { DONE_WITH_NEXT, isDoneWithNext, STALE_TURNS, StatusInputSchema, type Status, type Waiting } from "../shared/status";
+import { DONE_WITH_NEXT, isDoneWithNext, STALE_TURNS, StatusInputSchema, type Status } from "../shared/status";
 import type { StatusStore } from "./store";
 
 export const INSTRUCTIONS = `status_set publishes where your work stands to a status card the human reads in Paseo instead of asking you "where are we?".
@@ -218,47 +216,6 @@ export class StatusService {
 
   /** Refresh requests for agents that have never published a status; in memory only. */
   private readonly pendingWithoutStatus = new Set<string>();
-}
-
-/** Open asks from the asks plugin's store, if that plugin is installed. Never written to. */
-export function readWaiting(asksDir: string, workspaceIds: readonly string[]): Waiting[] {
-  const waiting: Waiting[] = [];
-  for (const workspaceId of workspaceIds) {
-    const path = join(asksDir, "workspaces", `${encodeURIComponent(workspaceId)}.json`);
-    if (!existsSync(path)) continue;
-    try {
-      const file = JSON.parse(readFileSync(path, "utf8")) as { asks?: { id: string; title: string; ownerAgentId: string; status: string }[] };
-      for (const ask of file.asks ?? []) {
-        if (ask.status === "open") waiting.push({ id: ask.id, title: ask.title, agentId: ask.ownerAgentId });
-      }
-    } catch (error) {
-      console.error(`[status] could not read asks for ${workspaceId}`, error);
-    }
-  }
-  return waiting;
-}
-
-/** The owning agent of each open ask, per workspace, across every workspace the asks plugin has a file for. Never written to. */
-export function readOpenAskOwners(asksDir: string): Record<string, string[]> {
-  const dir = join(asksDir, "workspaces");
-  if (!existsSync(dir)) return {};
-  const owners: Record<string, string[]> = {};
-  for (const file of readdirSync(dir)) {
-    if (!file.endsWith(".json")) continue;
-    const workspaceId = decodeURIComponent(file.slice(0, -".json".length));
-    try {
-      const parsed = JSON.parse(readFileSync(join(dir, file), "utf8")) as { asks?: { status: string; ownerAgentId: string }[] };
-      const open = (parsed.asks ?? []).filter((ask) => ask.status === "open").map((ask) => ask.ownerAgentId);
-      if (open.length > 0) owners[workspaceId] = open;
-    } catch (error) {
-      console.error(`[status] could not read asks for ${workspaceId}`, error);
-    }
-  }
-  return owners;
-}
-
-export function workspacesOf(statuses: readonly Status[]): string[] {
-  return [...new Set(statuses.map((status) => status.workspaceId))];
 }
 
 /** The assistant text after the last user message; streamed replies arrive as several items. */

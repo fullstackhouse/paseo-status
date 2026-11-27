@@ -1,4 +1,4 @@
-import type { SilentAgent, Status, StatusInput, Waiting } from "../shared/status";
+import type { SilentAgent, Status, StatusInput } from "../shared/status";
 
 export const workspaces: Record<string, string> = {
   api: "shop-api",
@@ -62,10 +62,6 @@ export const statuses: Status[] = [
     updatedAt: ago(20),
     turnsSince: 0,
   },
-];
-
-export const waiting: Waiting[] = [
-  { id: "A4", title: "Partial refunds: back to the gift card or to the original card?", agentId: "agent-giftcards" },
 ];
 
 export const silent: SilentAgent[] = [{ agentId: "agent-legacy", title: "Coupon code cleanup" }];

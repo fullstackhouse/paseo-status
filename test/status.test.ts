@@ -1,10 +1,10 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { BACKGROUND_SKIP, FALLBACK_PROMPT, HELPER_SKIP, INSTRUCTIONS, readOpenAskOwners, readWaiting, REFRESH_PROMPT, StatusService, SYNC_ASKS_PROMPT, TOOLS, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
+import { BACKGROUND_SKIP, FALLBACK_PROMPT, HELPER_SKIP, INSTRUCTIONS, REFRESH_PROMPT, StatusService, SYNC_ASKS_PROMPT, TOOLS, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
-import { DONE_WITH_NEXT, isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, rowBadgeLabel, workspaceOverviewStatus, summarize, unrecordedWaits, withLiveChildren, workspaceWorkState, type Status } from "../shared/status";
+import { agentCard, DONE_WITH_NEXT, isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, workspaceOverviewStatus, type Status } from "../shared/status";
 
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
@@ -256,22 +256,6 @@ describe("status", () => {
     expect(store.get(AGENT)).toBeUndefined();
   });
 
-  it("reads open asks from the asks plugin's store, when present", () => {
-    const asksDir = join(dir, "asks");
-    mkdirSync(join(asksDir, "workspaces"), { recursive: true });
-    writeFileSync(
-      join(asksDir, "workspaces", `${WS}.json`),
-      JSON.stringify({
-        nextId: 3,
-        asks: [
-          { id: "A1", title: "Merge PR #7?", ownerAgentId: AGENT, status: "open" },
-          { id: "A2", title: "Call it store credit?", ownerAgentId: AGENT, status: "done" },
-        ],
-      }),
-    );
-    expect(readWaiting(asksDir, [WS, "wks_missing"])).toEqual([{ id: "A1", title: "Merge PR #7?", agentId: AGENT }]);
-  });
-
   it("a card waiting on the human stops needing them once a turn starts after it", async () => {
     await service.callTool(AGENT, "status_set", { ...status, state: "waiting_on_you" });
     expect(needsYou(store.get(AGENT)!, true)).toBe(true); // set during the turn still running
@@ -309,102 +293,6 @@ describe("wake", () => {
     courier.states.set(AGENT, "idle");
     await service.turnEnded(AGENT);
     expect(courier.sent.at(-1)).toEqual({ agentId: AGENT, text: REFRESH_PROMPT });
-  });
-});
-
-describe("summarize", () => {
-  const card = (workspaceId: string, agentId: string, state: Status["state"], turnsSince = 0): Status => ({
-    agentId,
-    workspaceId,
-    state,
-    tldr: "t",
-    done: [],
-    next: [],
-    updatedAt: "2026-10-22T00:00:00Z",
-    turnsSince,
-  });
-
-  it("ranks needs you over working over done", () => {
-    const result = summarize({
-      statuses: [card("ws-a", "a1", "done"), card("ws-b", "b1", "working"), card("ws-c", "c1", "waiting_on_you"), card("ws-c", "c2", "working")],
-      openAsks: {},
-      agents: [],
-      running: () => false,
-    });
-    expect(result).toEqual({
-      "ws-a": { state: "done", waiting: 0 },
-      "ws-b": { state: "working", waiting: 0 },
-      "ws-c": { state: "needs_you", waiting: 1 },
-    });
-  });
-
-  it("counts open asks as needing you, even when every card says done", () => {
-    const result = summarize({ statuses: [card("ws-a", "a1", "done")], openAsks: { "ws-a": ["x1", "x2"], "ws-b": [] }, agents: [], running: () => false });
-    expect(result).toEqual({ "ws-a": { state: "needs_you", waiting: 2 } });
-  });
-
-  it("counts a waiting card once when its agent's open asks already say what it needs", () => {
-    const result = summarize({
-      statuses: [card("ws-a", "a1", "blocked"), card("ws-a", "a2", "waiting_on_you")],
-      openAsks: { "ws-a": ["a1"] },
-      agents: [],
-      running: () => false,
-    });
-    expect(result).toEqual({ "ws-a": { state: "needs_you", waiting: 2 } });
-  });
-
-  it("never counts a blocked card as needing you", () => {
-    const result = summarize({ statuses: [card("ws-a", "a1", "blocked")], openAsks: {}, agents: [], running: () => false });
-    expect(result).toEqual({ "ws-a": { state: "done", waiting: 0 } });
-    expect(rowBadgeLabel(result["ws-a"])).toBeNull();
-  });
-
-  it("treats a running agent as working and an answered card as no longer waiting", () => {
-    const result = summarize({
-      statuses: [card("ws-a", "a1", "waiting_on_you", 1)],
-      openAsks: {},
-      agents: [{ workspaceId: "ws-a", running: true }, { workspaceId: "ws-b", running: false }],
-      running: () => true,
-    });
-    expect(result).toEqual({ "ws-a": { state: "working", waiting: 0 }, "ws-b": { state: "done", waiting: 0 } });
-  });
-});
-
-describe("unrecordedWaits", () => {
-  const card = (agentId: string, state: Status["state"], turnsSince = 0): Status => ({
-    agentId,
-    workspaceId: WS,
-    state,
-    tldr: "t",
-    done: [],
-    next: ["You: merge #1543"],
-    updatedAt: "2026-11-26T00:00:00Z",
-    turnsSince,
-  });
-  const idle = () => false;
-
-  it("lists agents whose card waits on the human with no open ask of theirs", () => {
-    expect(unrecordedWaits([card("a1", "waiting_on_you")], [], idle)).toEqual(["a1"]);
-  });
-
-  it("leaves out an agent that owns an open ask, but not one whose sibling does", () => {
-    const waiting = [{ id: "A3", title: "Merge PR #12", agentId: "a1" }];
-    expect(unrecordedWaits([card("a1", "waiting_on_you"), card("a2", "waiting_on_you")], waiting, idle)).toEqual(["a2"]);
-  });
-
-  it("leaves out answered, blocked, working and done cards", () => {
-    const cards = [card("a1", "waiting_on_you", 1), card("a2", "blocked"), card("a3", "working"), card("a4", "done")];
-    expect(unrecordedWaits(cards, [], idle)).toEqual([]);
-  });
-});
-
-describe("rowBadgeLabel", () => {
-  it("shows a badge only when the workspace needs you", () => {
-    expect(rowBadgeLabel(undefined)).toBeNull();
-    expect(rowBadgeLabel({ state: "working", waiting: 0 })).toBeNull();
-    expect(rowBadgeLabel({ state: "done", waiting: 0 })).toBeNull();
-    expect(rowBadgeLabel({ state: "needs_you", waiting: 1 })).toBe("needs you");
-    expect(rowBadgeLabel({ state: "needs_you", waiting: 6 })).toBe("needs you (6)");
   });
 });
 
@@ -472,132 +360,25 @@ describe("overviewStatus", () => {
   });
 });
 
-describe("readOpenAskOwners", () => {
-  it("lists each open ask's owner per workspace file and ignores closed ones", () => {
-    const asksDir = mkdtempSync(join(tmpdir(), "asks-"));
-    mkdirSync(join(asksDir, "workspaces"));
-    writeFileSync(
-      join(asksDir, "workspaces", `${encodeURIComponent("wks/1")}.json`),
-      JSON.stringify({
-        asks: [
-          { status: "open", ownerAgentId: "a1" },
-          { status: "done", ownerAgentId: "a1" },
-          { status: "open", ownerAgentId: "a2" },
-          { status: "in_progress", ownerAgentId: "a2" },
-        ],
-      }),
-    );
-    writeFileSync(join(asksDir, "workspaces", "wks_2.json"), JSON.stringify({ asks: [{ status: "dropped" }] }));
-    expect(readOpenAskOwners(asksDir)).toEqual({ "wks/1": ["a1", "a2"] });
-    expect(readOpenAskOwners(join(asksDir, "missing"))).toEqual({});
-  });
-});
-
-describe("workspaceWorkState", () => {
-  const now = Date.parse("2026-11-12T12:00:00Z");
+describe("agentCard", () => {
   const card = (fields: Partial<Status>): Status => ({
-    agentId: AGENT,
-    workspaceId: WS,
-    state: "working",
-    tldr: "t",
-    done: [],
-    next: [],
-    updatedAt: "2026-11-12T10:00:00Z",
-    turnsSince: 0,
-    ...fields,
+    agentId: AGENT, workspaceId: WS, state: "waiting_on_you", tldr: "t", done: [], next: [], updatedAt: "2026-11-26T10:00:00Z", turnsSince: 0, ...fields,
   });
-
-  const live = { running: false, live: true };
   const idle = { running: false, live: false };
 
-  describe("a working card", () => {
-    it("keeps a workspace working while live work backs the card, however old the card", () => {
-      expect(workspaceWorkState([card({ turnsSince: 5, updatedAt: "2026-11-01T00:00:00Z" })], now, () => live)).toBe("working");
-      expect(workspaceWorkState([card({})], now, () => ({ running: true, live: true }))).toBe("working");
-    });
-
-    it("holds an unbacked working card for the grace period after its update", () => {
-      expect(workspaceWorkState([card({ updatedAt: "2026-11-12T11:56:00Z" })], now, () => idle)).toBe("working");
-      expect(workspaceWorkState([card({ updatedAt: "2026-11-12T11:55:00Z" })], now, () => idle)).toBeNull();
-    });
-
-    it("holds it for the grace period after live work was last seen, then falls back to Paseo", () => {
-      const lastLiveAt = (minutesAgo: number) => () => ({ running: false, live: false, lastLiveAt: now - minutesAgo * 60_000 });
-      expect(workspaceWorkState([card({})], now, lastLiveAt(4))).toBe("working");
-      expect(workspaceWorkState([card({})], now, lastLiveAt(6))).toBeNull();
-      expect(workspaceWorkState([card({})], now, undefined)).toBeNull();
-    });
-
-    it("lapses as soon as the grace period passes with nothing live, however recent its turns", () => {
-      expect(workspaceWorkState([card({ turnsSince: 5 })], now, () => idle)).toBeNull();
-    });
-
-    it("counts another agent's backed working card over a done one", () => {
-      expect(workspaceWorkState([card({ state: "done" }), card({ agentId: "b", state: "working" })], now, () => idle)).toBeNull();
-      expect(workspaceWorkState([card({ state: "done" }), card({ agentId: "b", state: "working" })], now, (id) => (id === "b" ? live : idle))).toBe("working");
-    });
+  it("reports the card's facts, not a verdict: the state as written, when, and what backs it", () => {
+    expect(agentCard(card({}), idle)).toEqual({ agentId: AGENT, state: "waiting_on_you", updatedAt: Date.parse("2026-11-26T10:00:00Z") });
+    expect(agentCard(card({ state: "working" }), { running: false, live: true, lastLiveAt: 5 })).toMatchObject({ state: "working", live: true, lastLiveAt: 5 });
   });
 
-  it("reports done while every card says done, even after quiet turns made it stale", () => {
-    expect(workspaceWorkState([card({ state: "done" })], now)).toBe("done");
-    expect(workspaceWorkState([card({ state: "done", turnsSince: 3 })], now)).toBe("done");
-    expect(workspaceWorkState([card({ state: "done" }), card({ agentId: "b", state: "working", updatedAt: "2026-11-11T11:00:00Z" })], now)).toBeNull();
+  it("marks a card a turn started after as answered", () => {
+    expect(agentCard(card({ turnsSince: 1 }), idle)).toMatchObject({ answered: true });
+    expect(agentCard(card({ state: "blocked", turnsSince: 1 }), idle)).not.toHaveProperty("answered");
   });
 
-  it("reports waiting while a card waits on the human, over another agent's working card", () => {
-    expect(workspaceWorkState([card({}), card({ agentId: "b", state: "waiting_on_you" })], now)).toBe("waiting");
-    expect(workspaceWorkState([card({ state: "blocked" }), card({ agentId: "b", state: "waiting_on_you" })], now)).toBe("waiting");
-  });
-
-  it("reports blocked, not waiting, while a main workspace's card waits on its child workspaces", () => {
-    expect(workspaceWorkState([card({ state: "blocked" })], now)).toBe("blocked");
-    expect(workspaceWorkState([card({ state: "blocked" }), card({ agentId: "b", updatedAt: "2026-11-01T00:00:00Z" })], now, () => idle)).toBe("blocked");
-    expect(workspaceWorkState([card({ state: "blocked" }), card({ agentId: "b", state: "done" })], now)).toBe("blocked");
-  });
-
-  it("lets another agent's live work outrank a blocked card", () => {
-    expect(workspaceWorkState([card({ state: "blocked" }), card({ agentId: "b" })], now, (id) => (id === "b" ? live : idle))).toBe("working");
-  });
-
-  it("keeps a blocked card blocked across later turns until the agent publishes again", () => {
-    // A reminder or ask-check turn ran after the card; it waits on someone else, so that is no answer.
-    expect(workspaceWorkState([card({ state: "blocked", turnsSince: 2 })], now)).toBe("blocked");
-    expect(workspaceWorkState([card({ state: "blocked" })], now, () => ({ running: true, live: false }))).toBe("blocked");
-  });
-
-  it("leaves answered questions, archived cards and empty workspaces to Paseo", () => {
-    expect(workspaceWorkState([card({ state: "waiting_on_you", turnsSince: 1 })], now)).toBeNull();
-    expect(workspaceWorkState([card({ archived: true })], now)).toBeNull();
-    expect(workspaceWorkState([], now)).toBeNull();
-  });
-});
-
-describe("withLiveChildren", () => {
-  const card = (state: Status["state"], fields: Partial<Status> = {}): Status => ({
-    agentId: AGENT, workspaceId: WS, state, tldr: "t", done: [], next: [], updatedAt: "2026-11-24T10:00:00Z", turnsSince: 0, ...fields,
-  });
-  const held = () => ({ running: false, live: false, liveChildren: ["child-1"] });
-  const quiet = () => ({ running: false, live: false });
-
-  it("reads a waiting card as blocked on its live child, which groups it Blocked instead of needs you", () => {
-    const [derived] = withLiveChildren([card("waiting_on_you")], held, () => false);
-    expect(derived).toMatchObject({ state: "blocked", blockedBy: [{ kind: "agent", ref: "child-1" }] });
-    expect(workspaceWorkState([derived], Date.now(), held)).toBe("blocked");
-    expect(workspaceWorkState([card("waiting_on_you")], Date.now(), held)).toBe("waiting");
-  });
-
-  it("leaves a done card alone: work handed off for good runs on its own", () => {
-    expect(withLiveChildren([card("done")], held, () => false)[0]?.state).toBe("done");
-  });
-
-  it("keeps the card when the agent has an open ask: the human still has something to do", () => {
-    expect(withLiveChildren([card("waiting_on_you")], held, () => true)[0]?.state).toBe("waiting_on_you");
-  });
-
-  it("keeps the card when no child is live, and leaves working and blocked cards alone", () => {
-    expect(withLiveChildren([card("waiting_on_you")], quiet, () => false)[0]?.state).toBe("waiting_on_you");
-    const own = card("blocked", { blockedBy: [{ kind: "pr", ref: "o/r#1" }] });
-    expect(withLiveChildren([own, card("working")], held, () => false)).toEqual([own, card("working")]);
+  it("passes live children through as they are: Paseo decides that the card reads blocked", () => {
+    expect(agentCard(card({}), { ...idle, liveChildren: ["child-1"] })).toMatchObject({ state: "waiting_on_you", liveChildren: ["child-1"] });
+    expect(agentCard(card({}), { ...idle, liveChildren: [] })).not.toHaveProperty("liveChildren");
   });
 });
 
@@ -615,31 +396,34 @@ describe("needsYouSince", () => {
     ...fields,
   });
 
-  it("names the agent whose card turned waiting or done after the snooze", () => {
-    expect(needsYouSince([card({})], "done", SNOOZED_AT)).toBe(AGENT);
+  const idle = () => false;
+
+  it("names the agent whose card turned waiting after the snooze, or done once every card is", () => {
+    expect(needsYouSince([card({})], SNOOZED_AT, idle)).toBe(AGENT);
     const waiting = card({ agentId: "parent", state: "waiting_on_you" });
-    expect(needsYouSince([card({ agentId: "child", state: "working" }), waiting], "waiting", SNOOZED_AT)).toBe("parent");
+    expect(needsYouSince([card({ agentId: "child", state: "working" }), waiting], SNOOZED_AT, idle)).toBe("parent");
   });
 
   it("leaves a workspace that already needed you when it was snoozed", () => {
-    expect(needsYouSince([card({ updatedAt: "2026-11-17T09:00:00Z" })], "done", SNOOZED_AT)).toBeNull();
+    expect(needsYouSince([card({ updatedAt: "2026-11-17T09:00:00Z" })], SNOOZED_AT, idle)).toBeNull();
   });
 
   it("never wakes a workspace for a blocked card", () => {
-    expect(needsYouSince([card({ state: "blocked" })], "blocked", SNOOZED_AT)).toBeNull();
+    expect(needsYouSince([card({ state: "blocked" })], SNOOZED_AT, idle)).toBeNull();
     const blocked = card({ agentId: "a", state: "blocked", updatedAt: "2026-11-17T11:30:00Z" });
     const waiting = card({ agentId: "b", state: "waiting_on_you" });
-    expect(needsYouSince([blocked, waiting], "waiting", SNOOZED_AT)).toBe("b");
+    expect(needsYouSince([blocked, waiting], SNOOZED_AT, idle)).toBe("b");
   });
 
-  it("leaves a workspace whose work is still going", () => {
-    expect(needsYouSince([card({ state: "working" })], "working", SNOOZED_AT)).toBeNull();
-    expect(needsYouSince([card({})], null, SNOOZED_AT)).toBeNull();
+  it("leaves a workspace whose work is still going, or whose question was answered", () => {
+    expect(needsYouSince([card({ state: "working" })], SNOOZED_AT, idle)).toBeNull();
+    expect(needsYouSince([card({}), card({ agentId: "b", state: "working" })], SNOOZED_AT, idle)).toBeNull();
+    expect(needsYouSince([card({ state: "waiting_on_you", turnsSince: 1 })], SNOOZED_AT, idle)).toBeNull();
   });
 
   it("picks the newest matching card", () => {
     const older = card({ agentId: "a", updatedAt: "2026-11-17T10:30:00Z" });
     const newer = card({ agentId: "b", updatedAt: "2026-11-17T10:45:00Z" });
-    expect(needsYouSince([older, newer, card({ agentId: "c", archived: true })], "done", SNOOZED_AT)).toBe("b");
+    expect(needsYouSince([older, newer, card({ agentId: "c", archived: true })], SNOOZED_AT, idle)).toBe("b");
   });
 });

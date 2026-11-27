@@ -42,11 +42,6 @@ createRoot(document.getElementById("root")!).render(
     <Frame id="popover" title="Pill popover" width={440} height={560}>
       <AgentStatus theme={theme as any} compact={false} workspaceId="api" agentId="agent-giftcards" />
     </Frame>
-    <Frame id="popover-unrecorded" title="Pill popover: waiting, no ask" width={440} height={420}>
-      <View style={{ padding: 16 }}>
-        <AgentStatus theme={theme as any} compact={false} workspaceId="web" agentId="agent-coordinator" />
-      </View>
-    </Frame>
     <Frame id="overview-entry" title="Overview · Your move" width={440} height={180}>
       <View style={{ padding: 16 }}>
         <SyncAsksEntry theme={theme as any} layout={{ compact: false }} entryId="agent-coordinator" />
