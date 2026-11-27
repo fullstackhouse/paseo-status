@@ -7,6 +7,9 @@ import { StatusService, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
 import { overviewStatus, workspaceOverviewStatus, type BlockerView } from "../shared/status";
 
+const IDLE = { running: false };
+const RUNNING = { running: true };
+
 const PR: PullRequestFacts = {
   number: 25,
   title: "Keep a blocked card blocked",
@@ -135,9 +138,9 @@ describe("blockedBy on the card", () => {
 
   it("reaches the Overview only while the card is blocked", () => {
     const card = { agentId: "agent", workspaceId: "ws", ...base, updatedAt: "2026-11-21T10:00:00.000Z", turnsSince: 0 };
-    expect(overviewStatus({ ...card, state: "blocked" }, false, view).blockedBy).toEqual(view);
-    expect(overviewStatus({ ...card, state: "working" }, false, view).blockedBy).toBeUndefined();
-    expect(overviewStatus({ ...card, state: "blocked" }, false, []).blockedBy).toBeUndefined();
-    expect(workspaceOverviewStatus([{ ...card, state: "blocked" }], () => false, { agent: view })?.blockedBy).toEqual(view);
+    expect(overviewStatus({ ...card, state: "blocked" }, IDLE, view).blockedBy).toEqual(view);
+    expect(overviewStatus({ ...card, state: "working" }, IDLE, view).blockedBy).toBeUndefined();
+    expect(overviewStatus({ ...card, state: "blocked" }, IDLE, []).blockedBy).toBeUndefined();
+    expect(workspaceOverviewStatus([{ ...card, state: "blocked" }], () => IDLE, { agent: view })?.blockedBy).toEqual(view);
   });
 });

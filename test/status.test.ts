@@ -6,6 +6,9 @@ import { BACKGROUND_SKIP, FALLBACK_PROMPT, HELPER_SKIP, INSTRUCTIONS, REFRESH_PR
 import { StatusStore } from "../server/store";
 import { agentCard, answersCard, answersTurn, runsReply, DONE_WITH_NEXT, isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, workspaceOverviewStatus, type Status } from "../shared/status";
 
+const IDLE = { running: false };
+const RUNNING = { running: true };
+
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
   sent: { agentId: string; text: string }[] = [];
@@ -258,23 +261,23 @@ describe("status", () => {
 
   it("a card waiting on the human stops needing them once a turn starts after it", async () => {
     await service.callTool(AGENT, "status_set", { ...status, state: "waiting_on_you" });
-    expect(needsYou(store.get(AGENT)!, true)).toBe(true); // set during the turn still running
+    expect(needsYou(store.get(AGENT)!, RUNNING)).toBe(true); // set during the turn still running
     await service.turnEnded(AGENT);
-    expect(needsYou(store.get(AGENT)!, false)).toBe(true);
-    expect(needsYou(store.get(AGENT)!, true)).toBe(false); // the human replied; the agent is running
+    expect(needsYou(store.get(AGENT)!, IDLE)).toBe(true);
+    expect(needsYou(store.get(AGENT)!, RUNNING)).toBe(false); // the human replied; the agent is running
     await service.turnEnded(AGENT);
-    expect(needsYou(store.get(AGENT)!, false)).toBe(false); // that turn ended without a new status
+    expect(needsYou(store.get(AGENT)!, IDLE)).toBe(false); // that turn ended without a new status
     await service.callTool(AGENT, "status_set", { ...status, state: "waiting_on_you" });
-    expect(needsYou(store.get(AGENT)!, false)).toBe(true);
+    expect(needsYou(store.get(AGENT)!, IDLE)).toBe(true);
   });
 
   it("a blocked card never needs the human and stays unanswered across later turns", async () => {
     await service.callTool(AGENT, "status_set", { ...status, state: "blocked" });
-    expect(needsYou(store.get(AGENT)!, false)).toBe(false);
-    expect(isAnswered(store.get(AGENT)!, false)).toBe(false);
+    expect(needsYou(store.get(AGENT)!, IDLE)).toBe(false);
+    expect(isAnswered(store.get(AGENT)!, IDLE)).toBe(false);
     await service.turnEnded(AGENT);
-    expect(isAnswered(store.get(AGENT)!, false)).toBe(false);
-    expect(isAnswered(store.get(AGENT)!, true)).toBe(false);
+    expect(isAnswered(store.get(AGENT)!, IDLE)).toBe(false);
+    expect(isAnswered(store.get(AGENT)!, RUNNING)).toBe(false);
   });
 });
 
@@ -326,37 +329,50 @@ describe("overviewStatus", () => {
   });
 
   it("maps a card to the Overview's status shape", () => {
-    expect(overviewStatus(card({}), false)).toEqual({
+    expect(overviewStatus(card({}), IDLE)).toEqual({
       state: "waiting_on_you",
       summary: "Spec ready",
       now: "Waiting on your review",
       updatedAt: Date.parse("2026-11-12T10:00:00Z"),
     });
-    expect(overviewStatus(card({ state: "working", now: undefined }), true)).not.toHaveProperty("now");
-    expect(overviewStatus(card({ goal: "Ship the spec" }), false).goal).toBe("Ship the spec");
+    expect(overviewStatus(card({ state: "working", now: undefined }), RUNNING)).not.toHaveProperty("now");
+    expect(overviewStatus(card({ goal: "Ship the spec" }), IDLE).goal).toBe("Ship the spec");
   });
 
   it("shows the workspace's newest card with the newest goal any agent set", () => {
     const lead = card({ agentId: "lead", goal: "Ship gift cards as 3 PRs; 1 merged.", updatedAt: "2026-11-12T10:00:00Z" });
     const helper = card({ agentId: "helper", tldr: "Tests pass", updatedAt: "2026-11-12T11:00:00Z" });
-    expect(workspaceOverviewStatus([lead, helper], () => false)).toMatchObject({ summary: "Tests pass", goal: "Ship gift cards as 3 PRs; 1 merged." });
-    expect(workspaceOverviewStatus([helper], () => false)).not.toHaveProperty("goal");
-    expect(workspaceOverviewStatus([], () => false)).toBeNull();
+    expect(workspaceOverviewStatus([lead, helper], () => IDLE)).toMatchObject({ summary: "Tests pass", goal: "Ship gift cards as 3 PRs; 1 merged." });
+    expect(workspaceOverviewStatus([helper], () => IDLE)).not.toHaveProperty("goal");
+    expect(workspaceOverviewStatus([], () => IDLE)).toBeNull();
   });
 
   it("marks a waiting card answered once a turn started after it", () => {
-    expect(isAnswered(card({}), false)).toBe(false);
-    expect(overviewStatus(card({ turnsSince: 1 }), false).answered).toBe(true);
-    expect(overviewStatus(card({}), true).answered).toBe(true); // the human replied; the agent is running
-    expect(overviewStatus(card({ setThisTurn: true }), true)).not.toHaveProperty("answered");
-    expect(overviewStatus(card({ state: "working", turnsSince: 3 }), false)).not.toHaveProperty("answered");
-    expect(overviewStatus(card({ state: "done", turnsSince: 3 }), false)).not.toHaveProperty("answered");
+    expect(isAnswered(card({}), IDLE)).toBe(false);
+    expect(overviewStatus(card({ turnsSince: 1 }), IDLE).answered).toBe(true);
+    expect(overviewStatus(card({}), RUNNING).answered).toBe(true); // the human replied; the agent is running
+    expect(overviewStatus(card({ setThisTurn: true }), RUNNING)).not.toHaveProperty("answered");
+    expect(overviewStatus(card({ state: "working", turnsSince: 3 }), IDLE)).not.toHaveProperty("answered");
+    expect(overviewStatus(card({ state: "done", turnsSince: 3 }), IDLE)).not.toHaveProperty("answered");
+  });
+
+  it("reads the same for every surface while a plugin's own turn runs: not answered", () => {
+    // The chat pill used to pass the agent's raw `running`, so a running Asks check read "answered" there
+    // while the Overview card (agentCard, via runsReply) still read waiting. Every caller now passes the agent.
+    const pluginTurn = { running: true, pluginTurn: true };
+    const reply = { running: true };
+    const waiting = card({ turnsSince: 2, repliesSince: 0 });
+    expect(isAnswered(waiting, pluginTurn)).toBe(false);
+    expect(agentCard(waiting, { ...pluginTurn, live: true })).not.toHaveProperty("answered");
+    expect(overviewStatus(waiting, pluginTurn)).not.toHaveProperty("answered");
+    expect(isAnswered(waiting, reply)).toBe(true);
+    expect(isAnswered(card({ turnsSince: 3, repliesSince: 1 }), undefined)).toBe(true);
   });
 
   it("never marks a blocked card answered", () => {
-    expect(isAnswered(card({ state: "blocked", turnsSince: 1 }), false)).toBe(false);
-    expect(overviewStatus(card({ state: "blocked", turnsSince: 1 }), false)).not.toHaveProperty("answered");
-    expect(workspaceOverviewStatus([card({ state: "blocked", turnsSince: 1 })], () => true)).not.toHaveProperty("answered");
+    expect(isAnswered(card({ state: "blocked", turnsSince: 1 }), IDLE)).toBe(false);
+    expect(overviewStatus(card({ state: "blocked", turnsSince: 1 }), IDLE)).not.toHaveProperty("answered");
+    expect(workspaceOverviewStatus([card({ state: "blocked", turnsSince: 1 })], () => RUNNING)).not.toHaveProperty("answered");
   });
 });
 
@@ -396,7 +412,7 @@ describe("needsYouSince", () => {
     ...fields,
   });
 
-  const idle = () => false;
+  const idle = () => IDLE;
 
   it("names the agent whose card turned waiting after the snooze, or done once every card is", () => {
     expect(needsYouSince([card({})], SNOOZED_AT, idle)).toBe(AGENT);
@@ -469,11 +485,11 @@ describe("turns plugins start", () => {
     await service.turnEnded(AGENT); // the turn that set it
     await service.turnEnded(AGENT, userTurn(ASKS_CHECK));
     await service.turnEnded(AGENT, userTurn(STUCK));
-    expect(needsYou(store.get(AGENT)!, false)).toBe(true);
-    expect(isAnswered(store.get(AGENT)!, false)).toBe(false);
+    expect(needsYou(store.get(AGENT)!, IDLE)).toBe(true);
+    expect(isAnswered(store.get(AGENT)!, IDLE)).toBe(false);
     expect(store.get(AGENT)!.turnsSince).toBe(2); // still stale for Refresh's count
     await service.turnEnded(AGENT, userTurn("merged, thanks"));
-    expect(isAnswered(store.get(AGENT)!, false)).toBe(true);
+    expect(isAnswered(store.get(AGENT)!, IDLE)).toBe(true);
   });
 
   it("with the host's origin, an unknown plugin prompt leaves the card waiting and a person's answers it", async () => {
@@ -483,10 +499,10 @@ describe("turns plugins start", () => {
     await service.turnEnded(AGENT);
     await service.turnEnded(AGENT, userTurn("Any news on the deploy?"), { kind: "plugin", pluginId: "pinger" });
     await service.turnEnded(AGENT, userTurn("Resume working."), { kind: "system" });
-    expect(isAnswered(store.get(AGENT)!, false)).toBe(false);
+    expect(isAnswered(store.get(AGENT)!, IDLE)).toBe(false);
     // The origin can also come on the timeline's user message itself.
     await service.turnEnded(AGENT, [{ type: "user_message", text: "[status] anything", origin: { kind: "human" } }] as any);
-    expect(isAnswered(store.get(AGENT)!, false)).toBe(true);
+    expect(isAnswered(store.get(AGENT)!, IDLE)).toBe(true);
   });
 
   it("a plugin's turn still running doesn't answer the card; a person's does", async () => {
