@@ -2,7 +2,7 @@ Status puts a short, plain-language summary of where each agent's work stands on
 
 ## How it works
 
-Every agent created after the plugin is installed gets a `status` MCP server with one tool, `status_set`. The server's instructions tell the agent to call it at the end of any turn that changed where things stand. A status has a goal (the whole job and its overall progress, kept until the agent sends a new one), a one or two sentence summary of where things stand now, what the agent is doing now, what is done with its proof, what is next, and a state: working, waiting on you, blocked or done. A done status can't list next steps: finished work that you still have to test or merge says waiting on you, because Paseo offers Archive for a done workspace. Each call replaces the previous status, except the goal when the call leaves it out.
+Every agent created after the plugin is installed gets a `status` MCP server with one tool, `status_set`. The server's instructions tell the agent to call it at the end of any turn that changed where things stand. A status has a goal (the whole job and its overall progress, kept until the agent sends a new one), a one or two sentence summary of where things stand now, what the agent is doing now, what is done with its proof, what is next, and a state: working, waiting on you, blocked or done. A done status can't list next steps: finished work that you still have to test or merge says waiting on you, because Paseo offers Archive for a done workspace. Each call replaces the previous status, except the goal when the call leaves it out. A call can also carry a short title for the chat, which Paseo uses when its Chat titles setting is "From the status card".
 
 ## Where you see it
 
