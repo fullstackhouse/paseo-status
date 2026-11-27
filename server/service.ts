@@ -1,6 +1,6 @@
 import type { AgentTimelineItem } from "@getpaseo/protocol/agent-types";
 import { z } from "zod";
-import { answersCard, DONE_WITH_NEXT, isDoneWithNext, STALE_TURNS, StatusInputSchema, turnPrompt, type Status } from "../shared/status";
+import { answersTurn, DONE_WITH_NEXT, isDoneWithNext, STALE_TURNS, StatusInputSchema, turnPrompt, type Status, type TurnOrigin } from "../shared/status";
 import type { StatusStore } from "./store";
 
 export const INSTRUCTIONS = `status_set publishes where your work stands to a status card the human reads in Paseo instead of asking you "where are we?".
@@ -178,9 +178,11 @@ export class StatusService {
     return { asked };
   }
 
-  async turnEnded(agentId: string, timeline: readonly AgentTimelineItem[] = []): Promise<void> {
+  /** `origin`: who started the turn, from the host's `agent.turn.before`; else the timeline's user message says. */
+  async turnEnded(agentId: string, timeline: readonly AgentTimelineItem[] = [], origin?: TurnOrigin): Promise<void> {
     await this.captureFromReply(agentId, timeline);
-    const status = this.store.turnEnded(agentId, answersCard(turnPrompt(timeline)));
+    const prompt = turnPrompt(timeline);
+    const status = this.store.turnEnded(agentId, answersTurn(origin ? { ...prompt, origin } : prompt));
     const pending = status?.refreshPending || this.pendingWithoutStatus.delete(agentId);
     if (!pending) return;
     if (status) this.store.patch(agentId, { refreshPending: false });

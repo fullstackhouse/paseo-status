@@ -100,9 +100,15 @@ function stillWaiting(status: Status, running: boolean): boolean {
   return (status.repliesSince ?? status.turnsSince) === 0 && !(running && !status.setThisTurn);
 }
 
-// Prompts that plugins send on their own, not on the human's behalf. The host tags no prompt with its
-// sender, so these match the fixed texts paseo-status (server/service.ts) and paseo-asks (shared/prompts.ts,
-// server/watcher.ts) send. An `[asks]` message for a button press or reply is the human answering, so it counts.
+// Prompts that plugins send on their own, not on the human's behalf: the fixed texts paseo-status
+// (server/service.ts) and paseo-asks (shared/prompts.ts, server/watcher.ts) send. Hosts with
+// `turnOrigin` say who sent a prompt (`answersTurn`); these patterns are the fallback for older hosts,
+// and tell paseo-asks relaying the human's button press or reply from its own nudges.
+// An `[asks]` message for a button press or reply is the human answering, so it counts.
+/** Where a batch of plugin messages splits into its messages. */
+const BATCHED = /\n(?=\[(?:asks|status)\] )/;
+/** An `[asks]` message about one ask: a relayed answer, or the watcher's own update. */
+const ASK_EVENT = /^\[asks\] A\d+ /;
 const PLUGIN_PROMPTS: readonly RegExp[] = [
   /^\[status\] /,
   /^\[asks\] A check found that your last reply /,
@@ -119,7 +125,31 @@ const PLUGIN_PROMPTS: readonly RegExp[] = [
  */
 export function answersCard(prompt: string | undefined): boolean {
   if (prompt === undefined) return true;
-  return prompt.split(/\n(?=\[(?:asks|status)\] )/).some((part) => !PLUGIN_PROMPTS.some((re) => re.test(part)));
+  return prompt.split(BATCHED).some((part) => !PLUGIN_PROMPTS.some((re) => re.test(part)));
+}
+
+/**
+ * Who sent the prompt that started a turn, as FSH hosts with `server_info.features.turnOrigin` stamp it
+ * on `agent.turn.before` and on the turn's `user_message`. Mirrors the host's `AgentTurnOrigin`.
+ */
+export type TurnOrigin =
+  | { kind: "human" }
+  | { kind: "agent"; agentId?: string }
+  | { kind: "plugin"; pluginId: string }
+  | { kind: "system" };
+
+/**
+ * Whether a turn answers a waiting card, from who started it: a person or another agent does; the
+ * daemon (schedules, restart recovery) doesn't; a plugin does only when it relays the human, which is
+ * paseo-asks passing on a button press or reply (`[asks] A12 …` that `answersCard` accepts). A plugin
+ * prompt worded any other way doesn't answer. Without an origin (older hosts) the prompt text decides.
+ */
+export function answersTurn(prompt: { text?: string; origin?: TurnOrigin } | undefined): boolean {
+  const origin = prompt?.origin;
+  if (!origin) return answersCard(prompt?.text);
+  if (origin.kind === "human" || origin.kind === "agent") return true;
+  if (origin.kind === "system") return false;
+  return (prompt.text ?? "").split(BATCHED).some((part) => ASK_EVENT.test(part) && answersCard(part));
 }
 
 /** The agent runs a turn that answers its card: one a person or child agent started, not a plugin. */
@@ -127,9 +157,12 @@ export function runsReply(agent: { running: boolean; pluginTurn?: boolean } | un
   return !!agent?.running && !agent.pluginTurn;
 }
 
-/** The prompt that started a turn, from `latestTurn`'s items. */
-export function turnPrompt(turn: readonly { type: string; text?: string }[]): string | undefined {
-  return turn.find((item) => item.type === "user_message")?.text;
+/** The prompt that started a turn, from `latestTurn`'s items, with its origin when the host stamped one. */
+export function turnPrompt(
+  turn: readonly { type: string; text?: string; origin?: TurnOrigin }[],
+): { text?: string; origin?: TurnOrigin } | undefined {
+  const item = turn.find((entry) => entry.type === "user_message");
+  return item ? { text: item.text, ...(item.origin ? { origin: item.origin } : {}) } : undefined;
 }
 
 /**

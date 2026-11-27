@@ -1,6 +1,6 @@
 import type { PaseoApi } from "@getpaseo/client";
 import { latestTurn, type PluginServerContext } from "@getpaseo/plugin/server";
-import { answersCard, type Backing, runsReply, turnPrompt, listStatuses, needsYouSince, type BlockerView, type Status, refreshAll, refreshStatus, syncAsks, type SilentAgent } from "./shared/status";
+import { answersTurn, type Backing, type TurnOrigin, runsReply, turnPrompt, listStatuses, needsYouSince, type BlockerView, type Status, refreshAll, refreshStatus, syncAsks, type SilentAgent } from "./shared/status";
 import { AgentDirectory, pickCaller } from "./server/agents";
 import { BlockerResolver, ghPullRequest, type AgentFacts } from "./server/blockers";
 import { installBridge } from "./server/bridge";
@@ -211,21 +211,36 @@ export default function contribute(server: PluginServerContext) {
   const pluginTurns = new Set<string>();
   const withPluginTurn = <T extends { running: boolean }>(agentId: string, agent: T): T =>
     agent.running && pluginTurns.has(agentId) ? { ...agent, pluginTurn: true } : agent;
-  server.on("agent.turn_started", ({ agent }, { paseo: api }) => {
+  // Who started each running turn, when the host says (`turnOrigin`); read again when the turn ends.
+  const turnOrigins = new Map<string, TurnOrigin>();
+  server.on("agent.turn_started", (event, { paseo: api }) => {
+    const { agent } = event;
     capture(api);
+    // COMPAT(turnOrigin): FSH hosts since fullstackhouse/paseo#271 send `origin`; the npm SDK types don't have it yet.
+    const origin = (event as { origin?: TurnOrigin }).origin;
+    if (origin) turnOrigins.set(agent.id, origin);
+    else turnOrigins.delete(agent.id);
+    const mark = (answers: boolean) => (answers ? pluginTurns.delete(agent.id) : pluginTurns.add(agent.id));
+    // A plugin's relayed answer still needs the prompt text to tell from its own nudges.
+    if (origin && origin.kind !== "plugin") {
+      mark(answersTurn({ origin }));
+      return;
+    }
     void latestTurn(api.agents.ref(agent.id).timeline)
       .then((turn) => {
-        if (answersCard(turnPrompt(turn))) pluginTurns.delete(agent.id);
-        else pluginTurns.add(agent.id);
+        const prompt = turnPrompt(turn);
+        mark(answersTurn(origin ? { ...prompt, origin } : prompt));
       })
       .catch((error) => console.error("[status] could not read the turn's prompt", error));
   });
   server.on("agent.turn_ended", ({ agent }, { paseo: api }) => {
     capture(api);
     pluginTurns.delete(agent.id);
+    const origin = turnOrigins.get(agent.id);
+    turnOrigins.delete(agent.id);
     liveness.turnEnded(agent.id);
     void latestTurn(api.agents.ref(agent.id).timeline)
-      .then((timeline) => service.turnEnded(agent.id, timeline))
+      .then((timeline) => service.turnEnded(agent.id, timeline, origin))
       // A child stopping may leave its parent's working card with nothing behind it.
       .then(() => assess(api))
       .then(() => afterStatusChange(api))

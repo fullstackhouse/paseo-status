@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { BACKGROUND_SKIP, FALLBACK_PROMPT, HELPER_SKIP, INSTRUCTIONS, REFRESH_PROMPT, StatusService, SYNC_ASKS_PROMPT, TOOLS, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
 import { StatusStore } from "../server/store";
-import { agentCard, answersCard, runsReply, DONE_WITH_NEXT, isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, workspaceOverviewStatus, type Status } from "../shared/status";
+import { agentCard, answersCard, answersTurn, runsReply, DONE_WITH_NEXT, isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, workspaceOverviewStatus, type Status } from "../shared/status";
 
 class FakeCourier implements Courier {
   states = new Map<string, AgentState>();
@@ -443,6 +443,25 @@ describe("turns plugins start", () => {
       expect(answersCard(text), String(text)).toBe(true);
   });
 
+  it("reads who started the turn when the host says so", () => {
+    const human = { kind: "human" } as const;
+    const plugin = { kind: "plugin", pluginId: "paseo-asks" } as const;
+    expect(answersTurn({ text: ASKS_CHECK, origin: human })).toBe(true);
+    expect(answersTurn({ text: "merge it", origin: { kind: "agent", agentId: "child" } })).toBe(true);
+    expect(answersTurn({ text: "Resume working.", origin: { kind: "system" } })).toBe(false);
+    // A plugin's own prompt doesn't answer, even worded in a way no pattern knows.
+    expect(answersTurn({ text: "[asks] A brand new nudge nobody wrote a pattern for.", origin: plugin })).toBe(false);
+    expect(answersTurn({ text: "Please double-check your plan.", origin: { kind: "plugin", pluginId: "other" } })).toBe(false);
+    for (const text of [ASKS_CHECK, STUCK, PR_UPDATE, NOTHING_MOVING]) expect(answersTurn({ text, origin: plugin }), text).toBe(false);
+    // paseo-asks relaying the human's button press or reply is the human answering.
+    expect(answersTurn({ text: ASK_ANSWER, origin: plugin })).toBe(true);
+    expect(answersTurn({ text: `${STUCK}\n${ASK_ANSWER}`, origin: plugin })).toBe(true);
+    // Older hosts send no origin: fall back to the prompt text.
+    expect(answersTurn({ text: ASKS_CHECK })).toBe(false);
+    expect(answersTurn({ text: "[asks] A brand new nudge nobody wrote a pattern for." })).toBe(true);
+    expect(answersTurn(undefined)).toBe(true);
+  });
+
   it("a waiting card stays unanswered through an Asks check turn, and a human reply answers it", async () => {
     const store = new StatusStore(mkdtempSync(join(tmpdir(), "status-")));
     const service = new StatusService(store, new FakeCourier(), async () => WS);
@@ -454,6 +473,19 @@ describe("turns plugins start", () => {
     expect(isAnswered(store.get(AGENT)!, false)).toBe(false);
     expect(store.get(AGENT)!.turnsSince).toBe(2); // still stale for Refresh's count
     await service.turnEnded(AGENT, userTurn("merged, thanks"));
+    expect(isAnswered(store.get(AGENT)!, false)).toBe(true);
+  });
+
+  it("with the host's origin, an unknown plugin prompt leaves the card waiting and a person's answers it", async () => {
+    const store = new StatusStore(mkdtempSync(join(tmpdir(), "status-")));
+    const service = new StatusService(store, new FakeCourier(), async () => WS);
+    await service.callTool(AGENT, "status_set", { ...status, state: "waiting_on_you" });
+    await service.turnEnded(AGENT);
+    await service.turnEnded(AGENT, userTurn("Any news on the deploy?"), { kind: "plugin", pluginId: "pinger" });
+    await service.turnEnded(AGENT, userTurn("Resume working."), { kind: "system" });
+    expect(isAnswered(store.get(AGENT)!, false)).toBe(false);
+    // The origin can also come on the timeline's user message itself.
+    await service.turnEnded(AGENT, [{ type: "user_message", text: "[status] anything", origin: { kind: "human" } }] as any);
     expect(isAnswered(store.get(AGENT)!, false)).toBe(true);
   });
 
