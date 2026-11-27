@@ -179,6 +179,60 @@ describe("status", () => {
     expect((await scoped.callTool(AGENT, "status_set", status)).text).toBe("Status published (working).");
   });
 
+  describe("a chat title", () => {
+    let named: { agentId: string; title: string }[];
+    let titled: StatusService;
+    let nameChat: (agentId: string, title: string) => Promise<boolean>;
+    beforeEach(() => {
+      named = [];
+      nameChat = async (agentId, title) => {
+        named.push({ agentId, title });
+        return true;
+      };
+      titled = new StatusService(store, courier, async () => WS, () => true, undefined, undefined, undefined, (agentId, title) => nameChat(agentId, title));
+    });
+
+    it("is offered in the tool schema and the instructions", () => {
+      expect(JSON.stringify(TOOLS[0]!.inputSchema)).toContain('"title"');
+      expect(INSTRUCTIONS).toMatch(/^ {2}- title: /m);
+    });
+
+    it("names the chat, and stays off the stored card", async () => {
+      expect((await titled.callTool(AGENT, "status_set", { ...status, title: "Gift-card checkout" })).text).toBe("Status published (working).");
+      expect(named).toEqual([{ agentId: AGENT, title: "Gift-card checkout" }]);
+      expect(store.get(AGENT)).not.toHaveProperty("title");
+    });
+
+    it("names nothing without a title", async () => {
+      await titled.callTool(AGENT, "status_set", status);
+      await titled.callTool(AGENT, "status_set", { ...status, title: "   " });
+      expect(named).toEqual([]);
+    });
+
+    it("adds the PR when the card links exactly one", async () => {
+      const blocked = { ...status, state: "blocked", title: "Review the login fix" };
+      await titled.callTool(AGENT, "status_set", { ...blocked, blockedBy: [{ kind: "pr", ref: "fullstackhouse/paseo#299" }, { kind: "person", ref: "Ana" }] });
+      await titled.callTool(AGENT, "status_set", { ...blocked, blockedBy: [{ kind: "pr", ref: "https://github.com/fullstackhouse/paseo/pull/300/files" }] });
+      await titled.callTool(AGENT, "status_set", { ...blocked, blockedBy: [{ kind: "pr", ref: "a/b#1" }, { kind: "pr", ref: "a/b#2" }] });
+      await titled.callTool(AGENT, "status_set", { ...blocked, blockedBy: [] });
+      expect(named.map(({ title }) => title)).toEqual(["Review the login fix · PR 299", "Review the login fix · PR 300", "Review the login fix", "Review the login fix"]);
+    });
+
+    it("rejects a title over 60 characters", async () => {
+      const result = await titled.callTool(AGENT, "status_set", { ...status, title: "x".repeat(61) });
+      expect(result.isError).toBe(true);
+      expect(named).toEqual([]);
+    });
+
+    it("still publishes the card when the host rejects the title", async () => {
+      nameChat = async () => {
+        throw new Error("Unknown request type agent.title.automatic.set.request");
+      };
+      expect(await titled.callTool(AGENT, "status_set", { ...status, title: "Gift-card checkout" })).toEqual({ text: "Status published (working)." });
+      expect(store.get(AGENT)?.tldr).toBe(status.tldr);
+    });
+  });
+
   describe("a helper agent (started by another agent)", () => {
     const HELPER = "helper-1";
     let scoped: StatusService;
