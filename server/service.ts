@@ -16,7 +16,17 @@ export const INSTRUCTIONS = `status_set publishes where your work stands to a st
   - state: working, waiting_on_you, blocked or done. Use working while you, a heartbeat or a background job still own the next step; waiting_on_you when the human has to act; blocked only when nothing can move until another workspace or another person acts (a child workspace still running, a peer's code review), not for CI, builds, deploys or your own subagents, which are working; done once nothing is left for you or the human, so next is empty. Finished work that waits on the human to test, review or merge it is waiting_on_you, not done. When blocked, list what blocks you in blockedBy: {kind, ref, reason?} with kind pr (ref "owner/repo#N" or URL), agent (agent id), workspace (workspace id), person (a name) or other.
 - Messages starting with [status] are the human asking for an update: call status_set.`;
 
+/** The title line, added below the goal line for agents created while the "Name chats from the status card" setting is on. */
+const TITLE_LINE = `  - title: a few words naming what this chat is about, at most 60 characters ("Gift-card checkout"). If the chat has its own PR, end with it ("Gift-card checkout · PR 312"); a PR you only wait on isn't the chat's own. Send it on your first call and again when the chat's subject changes.`;
+const GOAL_LINE = /^ {2}- goal: .*$/m;
+
+/** The instructions for an agent that names its chat: INSTRUCTIONS with the title line. */
+export const TITLED_INSTRUCTIONS = INSTRUCTIONS.replace(GOAL_LINE, (line) => `${line}\n${TITLE_LINE}`);
+
+/** Parses every call: agents created while the setting was on send a title, the rest don't. */
 const SetInput = StatusInputSchema;
+/** The tool schema for agents that don't name their chat. */
+const UntitledInput = StatusInputSchema.omit({ title: true });
 
 /** What an agent in a background workspace gets back instead of a status card. */
 export const BACKGROUND_SKIP =
@@ -26,13 +36,16 @@ export const BACKGROUND_SKIP =
 export const HELPER_SKIP =
   "Skipped: another agent started you, and that agent reports status for the work. Put what you have in your final reply and don't call status_set again.";
 
-export const TOOLS = [
+const toolsWith = (input: z.ZodType) => [
   {
     name: "status_set",
     description: "Publish where your work stands (replaces your previous status). When blocked, name what blocks you in blockedBy. See the server instructions for when and how.",
-    inputSchema: z.toJSONSchema(SetInput, { io: "input" }),
+    inputSchema: z.toJSONSchema(input, { io: "input" }),
   },
 ];
+export const TOOLS = toolsWith(UntitledInput);
+/** The tools for an agent that names its chat: status_set takes a title. */
+export const TITLED_TOOLS = toolsWith(SetInput);
 
 export const REFRESH_PROMPT =
   "[status] The human asked where things stand. Call status_set with your current status, then carry on with what you were doing, if anything.";
@@ -88,14 +101,28 @@ export class StatusService {
      * dropped (the create hook doesn't see labels).
      */
     private readonly isHelper: (agentId: string) => Promise<boolean> = async () => false,
+    /** Names the agent's chat from its card's title (`setAutomaticTitle` in `server/chat-title.ts`); resolves to whether it landed. */
+    private readonly nameChat: (agentId: string, title: string) => Promise<boolean> = async () => false,
+    /**
+     * The "Name chats from the status card" setting is on and the host can take the title. An agent's tools and
+     * instructions are fixed when it is created, so turning it on reaches only agents created afterwards.
+     */
+    private readonly namesChats: () => Promise<boolean> = async () => false,
   ) {}
 
   async instructionsFor(agentId: string | null): Promise<{ instructions: string | undefined }> {
-    return { instructions: (await this.helper(agentId)) ? undefined : INSTRUCTIONS };
+    if (await this.helper(agentId)) return { instructions: undefined };
+    return { instructions: (await this.titles()) ? TITLED_INSTRUCTIONS : INSTRUCTIONS };
   }
 
   async toolsFor(agentId: string | null): Promise<{ tools: typeof TOOLS }> {
-    return { tools: (await this.helper(agentId)) ? [] : TOOLS };
+    if (await this.helper(agentId)) return { tools: [] };
+    return { tools: (await this.titles()) ? TITLED_TOOLS : TOOLS };
+  }
+
+  /** A failed settings read names no chat. */
+  private async titles(): Promise<boolean> {
+    return this.namesChats().catch(() => false);
   }
 
   /** Unknown callers (Codex on hosts without its agent ID) and failed lookups keep the tool. */
@@ -114,6 +141,11 @@ export class StatusService {
       const input = SetInput.parse(args);
       if (isDoneWithNext(input)) return { text: DONE_WITH_NEXT, isError: true };
       const status = this.store.set(workspaceId, agentId, input);
+      // Turning the setting off stops agents created while it was on from naming their chat.
+      if (input.title && (await this.titles())) {
+        // A host that can't take the title (or refuses it) must not fail the card.
+        await this.nameChat(agentId, input.title).catch((error) => console.error(`[status] could not name the chat of ${agentId}`, error));
+      }
       return { text: `Status published (${status.state}).` };
     } catch (error) {
       const text = error instanceof z.ZodError ? z.prettifyError(error) : error instanceof Error ? error.message : String(error);

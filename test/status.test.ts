@@ -2,7 +2,8 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { BACKGROUND_SKIP, FALLBACK_PROMPT, HELPER_SKIP, INSTRUCTIONS, REFRESH_PROMPT, StatusService, SYNC_ASKS_PROMPT, TOOLS, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
+import { BACKGROUND_SKIP, FALLBACK_PROMPT, HELPER_SKIP, INSTRUCTIONS, REFRESH_PROMPT, StatusService, SYNC_ASKS_PROMPT, TITLED_INSTRUCTIONS, TITLED_TOOLS, TOOLS, WAKE_PROMPT, type AgentState, type Courier } from "../server/service";
+import { chatNamer } from "../server/chat-title";
 import { StatusStore } from "../server/store";
 import { agentCard, answersCard, answersTurn, runsReply, DONE_WITH_NEXT, isAnswered, needsYou, stateTone, needsYouSince, overviewStatus, workspaceOverviewStatus, type Status } from "../shared/status";
 
@@ -177,6 +178,98 @@ describe("status", () => {
     // The human opened the run's chat, so it isn't background any more.
     background = false;
     expect((await scoped.callTool(AGENT, "status_set", status)).text).toBe("Status published (working).");
+  });
+
+  describe("a chat title", () => {
+    let named: { agentId: string; title: string }[];
+    let titled: StatusService;
+    let nameChat: (agentId: string, title: string) => Promise<boolean>;
+    let on: boolean;
+    beforeEach(() => {
+      named = [];
+      on = true;
+      nameChat = async (agentId, title) => {
+        named.push({ agentId, title });
+        return true;
+      };
+      titled = new StatusService(
+        store,
+        courier,
+        async () => WS,
+        () => true,
+        undefined,
+        undefined,
+        undefined,
+        (agentId, title) => nameChat(agentId, title),
+        async () => on,
+      );
+    });
+
+    it("is left out of the tool schema and the instructions while the setting is off", async () => {
+      on = false;
+      expect(await titled.toolsFor(AGENT)).toEqual({ tools: TOOLS });
+      expect(await titled.instructionsFor(AGENT)).toEqual({ instructions: INSTRUCTIONS });
+      expect(JSON.stringify(TOOLS)).not.toContain('"title"');
+      expect(INSTRUCTIONS).not.toMatch(/title/);
+    });
+
+    it("is offered in the tool schema and the instructions while the setting is on", async () => {
+      expect(await titled.toolsFor(AGENT)).toEqual({ tools: TITLED_TOOLS });
+      expect(await titled.instructionsFor(AGENT)).toEqual({ instructions: TITLED_INSTRUCTIONS });
+      expect(JSON.stringify(TITLED_TOOLS[0]!.inputSchema)).toContain('"title"');
+      expect(TITLED_INSTRUCTIONS).toMatch(/^ {2}- goal: .*\n {2}- title: .*· PR 312/m);
+      expect(TITLED_INSTRUCTIONS.replace(/\n {2}- title: .*$/m, "")).toBe(INSTRUCTIONS);
+    });
+
+    it("is left out when reading the setting fails", async () => {
+      const failing = new StatusService(store, courier, async () => WS, () => true, undefined, undefined, undefined, nameChat, async () => {
+        throw new Error("settings unavailable");
+      });
+      expect(await failing.toolsFor(AGENT)).toEqual({ tools: TOOLS });
+      expect(await failing.instructionsFor(AGENT)).toEqual({ instructions: INSTRUCTIONS });
+    });
+
+    it("names the chat as the agent wrote it, and stays off the stored card", async () => {
+      const blocked = { ...status, state: "blocked", blockedBy: [{ kind: "pr", ref: "fullstackhouse/paseo#299" }] };
+      expect((await titled.callTool(AGENT, "status_set", { ...blocked, title: "Gift-card checkout · PR 312" })).text).toBe("Status published (blocked).");
+      expect(named).toEqual([{ agentId: AGENT, title: "Gift-card checkout · PR 312" }]);
+      expect(store.get(AGENT)).not.toHaveProperty("title");
+    });
+
+    it("names nothing while the setting is off, and still publishes the card", async () => {
+      on = false;
+      expect((await titled.callTool(AGENT, "status_set", { ...status, title: "Gift-card checkout" })).text).toBe("Status published (working).");
+      expect(named).toEqual([]);
+      expect(store.get(AGENT)?.tldr).toBe(status.tldr);
+    });
+
+    it("names nothing without a title", async () => {
+      await titled.callTool(AGENT, "status_set", status);
+      await titled.callTool(AGENT, "status_set", { ...status, title: "   " });
+      expect(named).toEqual([]);
+    });
+
+    it("rejects a title over 60 characters", async () => {
+      const result = await titled.callTool(AGENT, "status_set", { ...status, title: "x".repeat(61) });
+      expect(result.isError).toBe(true);
+      expect(named).toEqual([]);
+    });
+
+    it("still publishes the card when the host rejects the title", async () => {
+      nameChat = async () => {
+        throw new Error("Unknown request type agent.title.automatic.set.request");
+      };
+      expect(await titled.callTool(AGENT, "status_set", { ...status, title: "Gift-card checkout" })).toEqual({ text: "Status published (working)." });
+      expect(store.get(AGENT)?.tldr).toBe(status.tldr);
+    });
+
+    it("still publishes the card when there is no daemon session yet", async () => {
+      nameChat = chatNamer(() => {
+        throw new Error("No daemon session yet");
+      });
+      expect(await titled.callTool(AGENT, "status_set", { ...status, title: "Gift-card checkout" })).toEqual({ text: "Status published (working)." });
+      expect(store.get(AGENT)?.tldr).toBe(status.tldr);
+    });
   });
 
   describe("a helper agent (started by another agent)", () => {

@@ -4,6 +4,7 @@ import { answersTurn, type Backing, type TurnOrigin, turnPrompt, listStatuses, n
 import { AgentDirectory, pickCaller } from "./server/agents";
 import { BlockerResolver, ghPullRequest, type AgentFacts } from "./server/blockers";
 import { installBridge } from "./server/bridge";
+import { chatNamer, hostNamesChats } from "./server/chat-title";
 import { Equipped } from "./server/equipped";
 import { listen } from "./server/listener";
 import { hasBackgroundWork, Liveness, PARENT_AGENT_ID_LABEL, type LiveAgent } from "./server/liveness";
@@ -12,6 +13,7 @@ import { isStatusPermission } from "./server/permissions";
 import { StatusService, type Courier } from "./server/service";
 import { reportNeedsYou, snoozedWorkspaces } from "./server/snooze";
 import { StatusStore } from "./server/store";
+import { chatTitleSettings } from "./shared/settings";
 
 export default function contribute(server: PluginServerContext) {
   const dir = dataDir();
@@ -58,6 +60,13 @@ export default function contribute(server: PluginServerContext) {
   const isBackground = async (workspaceId: string) =>
     (await requirePaseo().workspaces.ref(workspaceId).refresh())?.background === true;
   const isHelper = async (agentId: string) => !!(await requirePaseo().agents.ref(agentId).refresh())?.agent.labels?.[PARENT_AGENT_ID_LABEL];
+  const chatTitles = server.registerSettings(chatTitleSettings);
+  /** "Name chats from the status card" is on, on a host that takes the title. */
+  const namesChats = async () => {
+    if (!paseo || !hostNamesChats(paseo)) return false;
+    const settings = await chatTitles.read();
+    return settings.status === "ready" && settings.values.nameChats;
+  };
   const service = new StatusService(
     store,
     courier,
@@ -66,6 +75,8 @@ export default function contribute(server: PluginServerContext) {
     undefined,
     isBackground,
     isHelper,
+    chatNamer(requirePaseo),
+    namesChats,
   );
 
   type AgentPayload = Awaited<ReturnType<PaseoApi["agents"]["list"]>>["entries"][number]["agent"];
